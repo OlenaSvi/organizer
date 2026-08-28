@@ -86,6 +86,22 @@ T.ok("заметка на месте", host.innerHTML.indexOf("провероч�
 closeModal();
 n.notes = "";
 
+T.head("ПУСТАЯ ЗАМЕТКА НЕ ПОКАЗЫВАЕТСЯ");
+var q = T.tasks()[1];
+[["", "пустая строка"], ["   ", "одни пробелы"], ["\n\n", "переводы строк"]]
+  .forEach(function (p2) {
+    q.notes = p2[0];
+    openItem(q.id);
+    T.ok("не показана: " + p2[1], host.innerHTML.indexOf(">Заметка<") < 0
+      && host.innerHTML.indexOf("readnote") < 0);
+    closeModal();
+  });
+q.notes = "  настоящая заметка  ";
+openItem(q.id);
+T.ok("настоящая — показана", host.innerHTML.indexOf("настоящая заметка") >= 0);
+closeModal();
+q.notes = "";
+
 T.head("ДЕЙСТВИЯ ИЗ ФУТЕРА РАБОТАЮТ");
 clickOn({ act: "cap" });
 var d2 = S.items.find(function (i) { return i.draft; });

@@ -464,6 +464,9 @@ const dropFromToday = it => { it.today = null; it.notToday = today(); };
 const unpickToday   = it => { it.today = null; };
 const toggleToday  = it => { pickedToday(it) ? dropFromToday(it) : addToToday(it); };
 const inInbox = i => !i.spheres || !i.spheres.length;
+/* Заметка из одних пробелов или переводов строки — не заметка:
+   иначе окно показывало заголовок и пустую плашку. */
+const hasNotes = it => !!String(it.notes || "").trim();
 
 /* Доступно ли отсюда: дела без места видны всегда, дела с местом — только «здесь» */
 const reachable = it => !S.hereNow || !it.place || it.place === S.hereNow;

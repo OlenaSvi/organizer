@@ -1244,6 +1244,9 @@ const dropFromToday = it => { it.today = null; it.notToday = today(); };
 const unpickToday   = it => { it.today = null; };
 const toggleToday  = it => { pickedToday(it) ? dropFromToday(it) : addToToday(it); };
 const inInbox = i => !i.spheres || !i.spheres.length;
+/* Заметка из одних пробелов или переводов строки — не заметка:
+   иначе окно показывало заголовок и пустую плашку. */
+const hasNotes = it => !!String(it.notes || "").trim();
 
 /* Доступно ли отсюда: дела без места видны всегда, дела с местом — только «здесь» */
 const reachable = it => !S.hereNow || !it.place || it.place === S.hereNow;
@@ -1418,7 +1421,7 @@ function cardHTML(it, opts) {
 
     ${leadStep ? `<div class="nextstep"><span class="stepno">Шаг ${
       it.steps.indexOf(step) + 1} из ${it.steps.length}</span> в «${esc(it.title)}»</div>` : ""}
-    ${it.notes ? `<div class="cardnote">${esc(String(it.notes).length > 90
+    ${hasNotes(it) ? `<div class="cardnote">${esc(String(it.notes).length > 90
       ? String(it.notes).slice(0, 89) + "…" : it.notes)}</div>` : ""}
     ${isRoutine(it) ? weekDotsHTML(it) : ""}
     ${opts.why ? `<div class="why">${esc(opts.why)}</div>` : ""}
@@ -2934,7 +2937,7 @@ function openDone(id, when) {
       <div style="margin-bottom:16px">${it.options.map(o =>
         `<div class="readstep"><span class="m">·</span><span class="tx">${esc(o.text)}</span></div>`).join("")}</div>` : ""}
 
-    ${it.notes ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
+    ${hasNotes(it) ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
       <div class="readnote">${esc(it.notes)}</div>` : ""}
 
     ${!it.notes && !hasSteps && !rout && !(it.options || []).length
@@ -3117,7 +3120,7 @@ const refreshEdit = id => {
    отдельно и успели разъехаться.                                     */
 function itemFormHTML(it, ids) {
   const D = ["вс","пн","вт","ср","чт","пт","сб"];
-  const openNotes = formOpen.notes || !!(it.notes || "").trim();
+  const openNotes = formOpen.notes || hasNotes(it);
   const openSteps = !isRoutine(it) && (formOpen.steps || (it.multi && it.steps.length));
   const bNotes = `<button class="addtoday" data-act="formopen" data-k="notes">＋ заметка</button>`;
   const bSteps = `<button class="addtoday" data-act="formopen" data-k="steps">＋ шаги</button>`;
@@ -3440,7 +3443,7 @@ function openItem(id) {
       ${weekDotsHTML(it)}`; })() : "")
     /* Класс .readnote, а не .opt: у вариантов есть верхняя граница,
        и она рисовала лишнюю линию под заголовком «Заметка».        */
-    + (it.notes ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
+    + (hasNotes(it) ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
       <div class="readnote">${esc(it.notes)}</div>` : "");
 
   openModal(`<h3>${kindIcon(it)}${esc(it.title)}</h3>

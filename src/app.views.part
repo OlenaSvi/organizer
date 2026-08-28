@@ -117,7 +117,7 @@ function cardHTML(it, opts) {
 
     ${leadStep ? `<div class="nextstep"><span class="stepno">Шаг ${
       it.steps.indexOf(step) + 1} из ${it.steps.length}</span> в «${esc(it.title)}»</div>` : ""}
-    ${it.notes ? `<div class="cardnote">${esc(String(it.notes).length > 90
+    ${hasNotes(it) ? `<div class="cardnote">${esc(String(it.notes).length > 90
       ? String(it.notes).slice(0, 89) + "…" : it.notes)}</div>` : ""}
     ${isRoutine(it) ? weekDotsHTML(it) : ""}
     ${opts.why ? `<div class="why">${esc(opts.why)}</div>` : ""}

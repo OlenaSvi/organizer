@@ -179,7 +179,7 @@ function openDone(id, when) {
       <div style="margin-bottom:16px">${it.options.map(o =>
         `<div class="readstep"><span class="m">·</span><span class="tx">${esc(o.text)}</span></div>`).join("")}</div>` : ""}
 
-    ${it.notes ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
+    ${hasNotes(it) ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
       <div class="readnote">${esc(it.notes)}</div>` : ""}
 
     ${!it.notes && !hasSteps && !rout && !(it.options || []).length
@@ -362,7 +362,7 @@ const refreshEdit = id => {
    отдельно и успели разъехаться.                                     */
 function itemFormHTML(it, ids) {
   const D = ["вс","пн","вт","ср","чт","пт","сб"];
-  const openNotes = formOpen.notes || !!(it.notes || "").trim();
+  const openNotes = formOpen.notes || hasNotes(it);
   const openSteps = !isRoutine(it) && (formOpen.steps || (it.multi && it.steps.length));
   const bNotes = `<button class="addtoday" data-act="formopen" data-k="notes">＋ заметка</button>`;
   const bSteps = `<button class="addtoday" data-act="formopen" data-k="steps">＋ шаги</button>`;
@@ -685,7 +685,7 @@ function openItem(id) {
       ${weekDotsHTML(it)}`; })() : "")
     /* Класс .readnote, а не .opt: у вариантов есть верхняя граница,
        и она рисовала лишнюю линию под заголовком «Заметка».        */
-    + (it.notes ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
+    + (hasNotes(it) ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
       <div class="readnote">${esc(it.notes)}</div>` : "");
 
   openModal(`<h3>${kindIcon(it)}${esc(it.title)}</h3>
