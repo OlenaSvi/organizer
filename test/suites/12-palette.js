@@ -91,4 +91,13 @@ for (var a = 0; a < kinds.length; a++)
     if (tooClose(kinds[a], kinds[b])) closeK.push(kinds[a] + " ≈ " + kinds[b]);
 T.ok("виды дел различимы", closeK.length === 0, closeK.join(", "));
 
+T.head("НЕЙТРАЛЬНЫЕ СООБЩЕНИЯ — НЕ ТРЕВОЖНОГО ЦВЕТА");
+var dupe = /\.dupe\{[^}]*\}/.exec(CSS.replace(/\s+/g, " "));
+T.ok("правило найдено", !!dupe);
+T.ok("подсказка не красится тёплым",
+  dupe && dupe[0].indexOf("--warm") < 0,
+  "тёплый цвет — для «Разобрать» и переполнения дня, а не для пояснений");
+T.ok("но остаётся отделённой фоном",
+  dupe && /background:var\(--[a-z-]+\)/.test(dupe[0]));
+
 T.done();

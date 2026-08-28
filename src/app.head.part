@@ -446,8 +446,12 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
   border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-bottom:12px}
 .modal input[type=text]:focus,.modal textarea:focus{outline:1.5px solid var(--accent);
   outline-offset:-1px;border-color:transparent}
-.dupe{background:var(--warm-soft);border-radius:10px;padding:11px 14px;margin-bottom:12px;
-  font-size:13.5px;color:var(--warm);line-height:1.45}
+/* Пояснение, а не ошибка: нейтральный фон и обычный текст. Тёплый цвет
+   в приложении значит «обрати внимание» («Разобрать», переполнение
+   дня) — на подсказках он читался как сообщение об ошибке.         */
+.dupe{background:var(--bg);border-radius:10px;padding:11px 14px;margin-bottom:12px;
+  font-size:13.5px;color:var(--chip-ink);line-height:1.45}
+.dupe b{color:var(--ink)}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .chip{padding:7px 13px;border-radius:999px;border:1px solid var(--line);font-size:13px;
   color:var(--chip-ink);transition:.15s;font-weight:500}
