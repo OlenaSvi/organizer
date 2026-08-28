@@ -426,6 +426,10 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
   background:var(--panel);border-top:1px solid var(--hairline);
   justify-content:flex-start;align-items:center}
 .modal .row.modalfoot .spacer{flex:1}
+/* В футере выравнивание держит только распорка. Авто-отступы текстовых
+   кнопок (нужные в рядах без распорки) здесь спорили с ней, и
+   «Сделать сегодня» уезжала со своего места.                        */
+.modal .row.modalfoot .btn.link{margin:0}
 .modal h3{margin:0 0 16px;font-size:17px;font-weight:700;padding-right:42px}
 .modalbar{position:sticky;top:0;height:0;display:flex;justify-content:flex-end;z-index:3}
 .modalx{width:30px;height:30px;margin:-6px -6px 0 0;border-radius:8px;background:var(--soft);

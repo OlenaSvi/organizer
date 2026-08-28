@@ -2,6 +2,15 @@
    остаётся на виду. Класс modalfoot — единый признак такого ряда. */
 T.seed();
 
+/* Стили собранного файла — чтобы проверять правила, а не только разметку. */
+var BUILD_CSS = (function () {
+  try {
+    ObjC.import("Foundation");
+    return $.NSString.stringWithContentsOfFileEncodingError(
+      "Организатор.html", 4, null).js.replace(/\s+/g, " ");
+  } catch (e) { return ""; }
+})();
+
 /* Всё, что идёт после начала футера. Резать по первому </div> нельзя:
    внутри футера есть распорка <div class="spacer">. */
 function foot(html) {
@@ -50,6 +59,16 @@ closeModal();
 openSettings();
 T.ok("в настройках один", (host.innerHTML.match(/row modalfoot/g) || []).length === 1);
 clickOn({ act: "cfgcancel" });
+
+T.head("РАСКЛАДКА ФУТЕРА");
+openItem(x.id);
+var f = foot(host.innerHTML);
+T.ok("порядок: Редактировать → распорка → Сделать сегодня",
+  f.indexOf('data-act="edit"') < f.indexOf('class="spacer"') &&
+  f.indexOf('class="spacer"') < f.indexOf('data-act="pin"'));
+T.ok("выравнивание держит только распорка, без авто-отступов",
+  BUILD_CSS.indexOf(".modal .row.modalfoot .btn.link{margin:0}") >= 0);
+closeModal();
 
 T.head("ДЕЙСТВИЯ ИЗ ФУТЕРА РАБОТАЮТ");
 clickOn({ act: "cap" });
