@@ -16,6 +16,19 @@ T.ok("справа рутина и аппоинтменты",
 T.ok("встреча только справа",
   h.slice(Rc).indexOf(esc(ap.title)) >= 0 && h.slice(L, Rc).indexOf(esc(ap.title)) < 0);
 
+T.head("ЗАГОЛОВКИ ТРЁХ ОБЛАСТЕЙ ОДНОГО РАЗМЕРА");
+var CSS3 = (function () {
+  try { ObjC.import("Foundation");
+    return $.NSString.stringWithContentsOfFileEncodingError(
+      "Организатор.html", 4, null).js.replace(/\s+/g, " ");
+  } catch (e) { return ""; }
+})();
+var hDela = /\.tcol > \.todayhead h2\{[^}]*font-size:([\d.]+)px/.exec(CSS3);
+var hSide = /\.sidepanel h3\{[^}]*font-size:([\d.]+)px/.exec(CSS3);
+T.ok("«Дела» и «Рутина» одного кегля",
+  hDela && hSide && hDela[1] === hSide[1],
+  hDela && hSide ? hDela[1] + "px и " + hSide[1] + "px" : "правило не найдено");
+
 T.head("СЧЁТЧИК ДНЯ");
 T.ok("«сделано 0 из 2»", h.indexOf("сделано 0 из 2") >= 0);
 var seg = /<span class="capseg">([\s\S]*?)<\/span>/.exec(h)[1];
