@@ -62,14 +62,23 @@ var CSS2 = (function () {
 T.ok("правая колонка — вертикальная стопка без своей прокрутки",
   /\.tcol\.side\{[^}]*flex-direction:column/.test(CSS2)
   && /\.tcol\.side\{[^}]*overflow:hidden/.test(CSS2));
-T.ok("панель рутин прокручивается сама — как колонка «Дела»",
-  /\.sidepanel\.routines\{[^}]*overflow-y:auto/.test(CSS2)
-  && /\.tcol\{[^}]*overflow-y:auto/.test(CSS2));
-T.ok("заголовок «Рутина» закреплён над прокруткой",
-  /\.sidepanel h3\{[^}]*position:sticky/.test(CSS2));
-T.ok("панель рутин тянется, встречи — нет",
-  /\.sidepanel\.routines\{[^}]*flex:1/.test(CSS2)
-  && /\.sidepanel\.appts\{[^}]*flex:0 0 auto/.test(CSS2));
+T.ok("прокручивается содержимое, а не вся колонка",
+  /\.tscroll\{[^}]*overflow-y:auto/.test(CSS2)
+  && /\.tcol\{[^}]*overflow:hidden/.test(CSS2));
+T.ok("заголовки вне прокрутки — не липкие, а неподвижные",
+  !/\.tcol > \.todayhead\{[^}]*position:sticky/.test(CSS2)
+  && !/\.sidepanel h3\{[^}]*position:sticky/.test(CSS2));
+T.ok("содержимое дел обёрнуто", view.innerHTML.indexOf('class="tscroll"') >= 0);
+T.ok("заголовок дел — вне обёртки", (function () {
+  var h2 = view.innerHTML;
+  return h2.indexOf('class="todayhead"') < h2.indexOf('class="tscroll"'); })());
+T.ok("рутина забирает свободную высоту",
+  /\.sidepanel\.routines\{[^}]*flex:1 1 auto/.test(CSS2));
+T.ok("встречи держат свою высоту, но крутятся, если их много",
+  /\.sidepanel\.appts\{[^}]*flex:0 1 auto/.test(CSS2)
+  && /\.sidepanel\.appts\{[^}]*max-height/.test(CSS2));
+T.ok("у обеих панелей своя прокручиваемая область",
+  (view.innerHTML.match(/class="panelscroll"/g) || []).length === 2);
 
 T.head("РУТИНА: СТРОКА НЕ РАССЫПАЕТСЯ");
 T.reset();

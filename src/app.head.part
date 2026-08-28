@@ -95,35 +95,42 @@ main.fit{box-sizing:border-box;height:calc(100vh - 66px);min-height:430px;
 main.fit .todayhead{flex:none}
 .tgrid{flex:1;min-height:0;display:grid;gap:20px;align-items:stretch;
   grid-template-columns:minmax(0,1fr) minmax(300px,34%)}
-.tcol{overflow-y:auto;min-height:0;scrollbar-width:thin;
-  background:var(--panel);border-radius:var(--r);box-shadow:var(--shadow);
-  padding:0 24px 22px}
-/* Заголовок «Дела» закреплён: колонка крутится, а шапка со счётчиком
-   остаётся на виду.                                                 */
-.tcol > .todayhead{position:sticky;top:0;z-index:5;background:var(--panel);
-  margin:0 -24px 8px;padding:20px 24px 12px;border-bottom:1px solid var(--hairline);
-  border-radius:var(--r) var(--r) 0 0}
+/* Заголовок стоит неподвижно, прокручивается только содержимое —
+   полоса начинается под шапкой, а не идёт вдоль неё.               */
+.tcol{min-height:0;background:var(--panel);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:0;display:flex;flex-direction:column;
+  overflow:hidden}
+.tcol > .todayhead{flex:none;margin:0;padding:20px 24px 12px;
+  border-bottom:1px solid var(--hairline)}
+.tscroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;
+  padding:14px 24px 22px}
 /* Правая колонка — стопка: список рутин тянется и крутится внутри себя,
    а панель встреч держит свою высоту и остаётся на виду.           */
 .tcol.side{background:transparent;box-shadow:none;padding:2px;border-left:0;
   display:flex;flex-direction:column;overflow:hidden}
 /* Прокручивается сама панель — как колонка «Дела» слева: полоса идёт
    по краю панели, а закреплённый заголовок остаётся на месте.      */
-.sidepanel.routines{flex:1 1 auto;min-height:120px;overflow-y:auto;
-  scrollbar-width:thin}
-.sidepanel.appts{flex:0 0 auto}
+/* Рутина забирает свободную высоту, встречи держат свою — но если
+   встреч много, крутится и их список.                              */
+.sidepanel.routines{flex:1 1 auto;min-height:140px}
+.sidepanel.appts{flex:0 1 auto;max-height:46%}
 .tcol > .lbl:first-child{margin-top:0}
 .sidepanel{background:var(--panel);border-radius:var(--r);box-shadow:var(--shadow);
-  padding:0 22px 20px;margin-bottom:20px}
-/* «Рутина» и «Аппоинтменты» тоже закреплены — каждый заголовок держится,
-   пока прокручивается его панель, потом уступает следующему.        */
-.sidepanel h3{position:sticky;top:0;z-index:4;background:var(--panel);
-  margin:0 -22px 12px;padding:18px 22px 10px;border-bottom:1px solid var(--hairline);
-  border-radius:var(--r) var(--r) 0 0;font-size:17px;font-weight:700}
+  padding:0;margin-bottom:20px;display:flex;flex-direction:column;
+  overflow:hidden;min-height:0}
+.sidepanel h3{flex:none;margin:0;padding:18px 22px 10px;
+  border-bottom:1px solid var(--hairline);font-size:17px;font-weight:700}
+/* Содержимое панели прокручивается само — и у рутины, и у встреч,
+   когда их становится много.                                        */
+.panelscroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;
+  padding:12px 22px 18px}
 @media (max-width:940px){
   main.fit{height:auto;overflow:visible;display:block;padding-bottom:90px}
   .tgrid{display:block}
-  .tcol{overflow:visible;margin-bottom:20px}
+  .tcol{overflow:visible;margin-bottom:20px;display:block}
+  .tscroll,.panelscroll{overflow:visible;min-height:0}
+  .sidepanel{display:block;overflow:visible}
+  .sidepanel.appts{max-height:none}
   /* На узком окне колонки складываются — прокрутка снова страничная. */
   .tcol.side{padding:0;margin-top:0;display:block;overflow:visible}
   .sidepanel.routines{overflow:visible}

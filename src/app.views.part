@@ -383,6 +383,7 @@ function renderToday() {
       <span class="capseg">${segs}</span>
       ${takenN ? `<span class="mineno ${over ? "over" : ""}"
         title="Сделано из поставленных на сегодня. Полоски — лимит дня: ${cap}">сделано ${doneN} из ${takenN}</span>` : ""}</div>` +
+    `<div class="tscroll">` +
     (S.hereNow ? `<p class="sub">Показано доступное из «${esc(S.hereNow)}»${
         away ? ` — ещё ${away} ${plural(away, "дело", "дела", "дел")} ${plural(away,
         "привязано", "привязаны", "привязаны")} к другим местам и ${plural(away,
@@ -422,18 +423,18 @@ function renderToday() {
           whyRest}.</p>` : "")}
     </div>` : `<p class="qs" style="margin:16px 2px 0">Предлагать нечего: ${whyEmpty}.</p>`) +
 
-    `</div><div class="tcol side">` +
+    `</div></div><div class="tcol side">` +
 
     (anyRout ? `<div class="sidepanel routines"><h3>Рутина</h3>
-      <div class="rbox">
+      <div class="panelscroll"><div class="rbox">
         ${routines.map(i => routineRowHTML(i, anyRout > 1)).join("")}
         ${routDone.map(i => doneLineHTML(i, today())).join("")}
-      </div></div>` : "") +
+      </div></div></div>` : "") +
 
     `<div class="sidepanel appts"><h3>Аппоинтменты</h3>
-      <div class="apptbox">${appts.length ? appts.map(apptRowHTML).join("")
+      <div class="panelscroll"><div class="apptbox">${appts.length ? appts.map(apptRowHTML).join("")
         : `<div class="apptempty"><b>На сегодня встреч нет</b>
-             Это не «ничего» — день дышит свободнее.</div>`}</div></div>` +
+             Это не «ничего» — день дышит свободнее.</div>`}</div></div></div>` +
     `</div></div>`;
 }
 
