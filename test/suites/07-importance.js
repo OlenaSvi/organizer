@@ -42,6 +42,26 @@ T.ok("метка не использует класс клетки матриц�
 closeModal();
 S.items = S.items.filter(function (i) { return i.title !== "Проверка важности"; });
 
+T.head("ЛИНИИ В ОКНЕ: ТОЛЬКО МЕЖДУ ЗОНАМИ");
+var bare = live().find(function (i) {
+  return !(i.notes || "").trim() && !(i.multi && i.steps.length)
+      && !isRoutine(i) && !(i.options || []).length; });
+openItem(bare.id);
+T.ok("у дела без деталей — ни одного разделителя внутри",
+  (host.innerHTML.match(/class="sep"/g) || []).length === 0,
+  "линия остаётся только у футера");
+closeModal();
+var rich = live().find(function (i) { return i.multi && i.steps.length; });
+rich.notes = "заметка";
+openItem(rich.id);
+T.ok("у дела с деталями — ровно один разделитель",
+  (host.innerHTML.match(/class="sep"/g) || []).length === 1);
+T.ok("он стоит перед деталями", (function () {
+  var h2 = host.innerHTML;
+  return h2.indexOf('class="sep"') < h2.indexOf("Шаги"); })());
+closeModal();
+rich.notes = "";
+
 T.head("У КОГО МЕТКИ НЕТ");
 var r = T.routine();
 openItem(r.id);

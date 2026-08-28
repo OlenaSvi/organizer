@@ -3416,6 +3416,25 @@ function openItem(id) {
   if (it.done) return openDone(id, it.doneAt);
   const D = ["вс","пн","вт","ср","чт","пт","сб"];
   const doneSteps = (it.steps || []).filter(s => s.done).length;
+  /* Детали дела: шаги, варианты, расписание рутины, заметка. Собираем
+     заранее — если их нет, разделитель не рисуем вовсе, иначе окно
+     показывало две линии подряд с пустотой между ними.              */
+  const details =
+    (it.multi && (it.steps || []).length ? `<p class="lbl">Шаги · сделано ${doneSteps} из ${it.steps.length}</p>
+      <div class="readsteps">${it.steps.map((st, k) => `<div class="readstep ${
+        st.done ? "done" : ""}"><span class="stepnum">${k + 1}</span><span class="tx">${
+        esc(st.text)}</span></div>`).join("")}</div>` : "")
+    + ((isChoice(it) || isIdea(it)) && (it.options || []).length ? `<p class="lbl">Варианты</p>
+      <div>${it.options.map(o => `<div class="opt">· ${esc(o.text)}</div>`).join("")}</div>` : "")
+    + (isRoutine(it) && it.routine ? (() => { const wi = weekInfo(it);
+      return `<p class="lbl">В какие дни</p>
+      <div class="rt">${D.map((d, k) => `<div class="${it.routine.days.indexOf(k) >= 0 ? "hit" : ""}">${d}</div>`).join("")}</div>
+      <p class="qs" style="margin:12px 0 4px">На этой неделе: <b style="color:var(--good)">${
+        wi.hit} из ${wi.of}</b> уже сделано</p>
+      ${weekDotsHTML(it)}`; })() : "")
+    + (it.notes ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
+      <div class="opt" style="white-space:pre-wrap">${esc(it.notes)}</div>` : "");
+
   openModal(`<h3>${kindIcon(it)}${esc(it.title)}</h3>
     <div class="readmeta" style="margin-top:-4px">
       ${sphereTags(it)}
@@ -3427,27 +3446,8 @@ function openItem(id) {
         ? `<span class="tag quadtag" title="Клетка матрицы: срочность из дедлайна, важность — ваша">${
           esc(QUADS[quadrant(it)])}</span>` : ""}
     </div>
-    <div class="sep"></div>
+    ${details ? `<div class="sep"></div>${details}` : ""}
 
-    ${it.multi && (it.steps || []).length ? `<p class="lbl">Шаги · сделано ${doneSteps} из ${it.steps.length}</p>
-      <div class="readsteps">${it.steps.map((st, k) => `<div class="readstep ${
-        st.done ? "done" : ""}"><span class="stepnum">${k + 1}</span><span class="tx">${
-        esc(st.text)}</span></div>`).join("")}</div>` : ""}
-
-    ${(isChoice(it) || isIdea(it)) && (it.options || []).length ? `<p class="lbl">Варианты</p>
-      <div>${it.options.map(o => `<div class="opt">· ${esc(o.text)}</div>`).join("")}</div>` : ""}
-
-    ${isRoutine(it) && it.routine ? (() => { const wi = weekInfo(it);
-      return `<p class="lbl">В какие дни</p>
-      <div class="rt">${D.map((d, k) => `<div class="${it.routine.days.indexOf(k) >= 0 ? "hit" : ""}">${d}</div>`).join("")}</div>
-      <p class="qs" style="margin:12px 0 4px">На этой неделе: <b style="color:var(--good)">${
-        wi.hit} из ${wi.of}</b> уже сделано</p>
-      ${weekDotsHTML(it)}`; })() : ""}
-
-    ${it.notes ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
-      <div class="opt" style="white-space:pre-wrap">${esc(it.notes)}</div>` : ""}
-
-    <div class="sep"></div>
     <div class="row modalfoot">
       <button class="btn link" data-act="edit" data-id="${it.id}">Редактировать</button>
       <div class="spacer"></div>
