@@ -1,0 +1,510 @@
+<body>
+<header>
+  <div class="tabs" id="tabs"></div>
+  <div class="spacer"></div>
+  <div class="headdate" id="headDate"></div>
+  <div class="spacer"></div>
+  <div class="here">Я сейчас:
+    <span id="hereBox"></span>
+  </div>
+  <button class="inbox-pill" id="inboxBtn" hidden></button>
+  <button class="gear" id="gearBtn" title="Настройки"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="4.6"></circle><circle cx="8" cy="8" r="1.6"></circle><path d="M8 3.4V1.6M8 12.6v1.8M3.4 8H1.6M12.6 8h1.8M4.75 4.75 3.47 3.47M11.25 11.25l1.28 1.28M11.25 4.75l1.28-1.28M4.75 11.25l-1.28 1.28"></path></svg></button>
+  <button class="capture-btn" id="capBtn">＋ Добавить дело</button>
+</header>
+<main id="view"></main>
+<div id="modalHost"></div>
+<div id="cheerHost"></div>
+<script>
+"use strict";
+/* ══════════════════════════════════════════════════════════════════
+   ХРАНЕНИЕ — всё лежит в браузере на этом компьютере, никуда не уходит
+   ══════════════════════════════════════════════════════════════════ */
+const KEY = "organizer.v1";
+const uid = () => Math.random().toString(36).slice(2, 10);
+/* Дата берётся по МЕСТНОМУ времени, а не по Гринвичу. Иначе в Амстердаме
+   до 02:00, а на Кипре и в Израиле до 03:00 приложение считало бы, что
+   ещё вчера: дела отмечались бы вчерашним днём.                      */
+const isoDay = d => d.getFullYear() + "-" +
+  (d.getMonth() < 9 ? "0" : "") + (d.getMonth() + 1) + "-" +
+  (d.getDate() < 10 ? "0" : "") + d.getDate();
+const today = () => isoDay(new Date());
+const addDays = (iso, n) => {
+  const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n);
+  return isoDay(d);
+};
+/* 1 день, 2 дня, 5 дней, 11 дней, 21 день — как в русском языке. */
+const plural = (n, one, few, many) => {
+  const a = Math.abs(n) % 100, b = a % 10;
+  return (a > 10 && a < 20) ? many : b > 1 && b < 5 ? few : b === 1 ? one : many;
+};
+const daysWord = n => n + " " + plural(n, "день", "дня", "дней");
+
+const daysUntil = iso => iso
+  ? Math.round((new Date(iso + "T12:00:00") - new Date(today() + "T12:00:00")) / 864e5)
+  : null;
+
+/* Виды дел лежат в данных, их можно переименовывать, добавлять и удалять.
+   Поведение привязано не к названию, а к полю kind:
+     plain   — обычное дело с дедлайном
+     choice  — решение: варианты и дата, до которой надо выбрать
+     routine — повторяется по дням недели                            */
+const DEFAULT_TYPES = [
+  { key: "task",    name: "Сделать",            hint: "обычное дело с дедлайном",        kind: "plain" },
+  { key: "choice",  name: "выбрать / купить",   hint: "решение: варианты + дедлайн",     kind: "choice" },
+  { key: "errand",  name: "сходить / съездить", hint: "привязано к месту",               kind: "plain" },
+  { key: "routine", name: "рутина",             hint: "повторяется, пропуск не страшен", kind: "routine" },
+  { key: "appt",    name: "аппоинтмент",        hint: "точные дата и время",             kind: "appt" },
+  { key: "idea",    name: "идея на будущее",    hint: "мысль без срока — ничего не требует", kind: "idea" },
+];
+/* Вид по умолчанию — обычный, а не первый в списке: если первым окажется
+   «выбрать / купить», новое дело зря получало бы его логику.        */
+const defaultType = () => (S.types.find(t => t.kind === "plain") || S.types[0]).key;
+const typeDef   = k  => S.types.find(t => t.key === k) || S.types[0];
+const typeName  = it => typeDef(it.type).name;
+const kindOf    = it => typeDef(it.type).kind;
+const isRoutine = it => kindOf(it) === "routine";
+const isChoice  = it => kindOf(it) === "choice";
+const isAppt    = it => kindOf(it) === "appt";   // дата + час: врач, встреча
+/* Идея — мысль без срока. Она видна на карте и не теряется, но сама
+   в «Сегодня» не просится и в матрице не участвует: это ещё не
+   обязательство. Взять её в работу можно только руками.             */
+const isIdea    = it => kindOf(it) === "idea";
+/* Встреча на сегодня — не выбор, а факт дня: она уже назначена.
+   Поэтому попадает в «Мой день» сама, а в предложениях встреч нет
+   вовсе — предлагать прийти к врачу в другой день бессмысленно.    */
+const isTodayAppt = it => isAppt(it) && it.due === today();
+/* Сортировка по сроку: у встреч учитываем ещё и время внутри дня. */
+const sortKey = i => (i.due || "9999") + "T" + (i.time || "23:59");
+
+const QUADS = { iu: "Срочное важное",   nu: "Срочное неважное",
+                "in": "Несрочное важное", nn: "Несрочное неважное" };
+
+
+/* 8 слотов из дизайн-пакета: цвет привязан к месту в списке, не к имени.
+   Значения живут в CSS-переменных — тёмная тема подменяет их сама.  */
+const PALETTE = ["var(--sph-1)","var(--sph-2)","var(--sph-3)","var(--sph-4)",
+                 "var(--sph-5)","var(--sph-6)","var(--sph-7)","var(--sph-8)"];
+
+const SPHERES0 = ["Быт","мама","Йони","бюрократия","развитие",
+                  "здоровье физическое","здоровье ментальное","другое"];
+const PLACES0  = ["Амстердам","Кипр","Израиль"];
+const PEOPLE0  = ["Мама","Я","Йони","Нитай"];
+
+/* По одному делу каждого вида — как образец, а не как список задач. */
+function templateItems() {
+  const t = (o) => Object.assign({
+    id: uid(), title: "", type: "errand", multi: false, spheres: [], place: null, person: null,
+    due: null, time: null, steps: [], options: [], routine: null,
+    done: false, created: today(), notes: "", forceImp: null,
+    today: null, notToday: null,
+  }, o);
+  return [
+    t({ title: "Позвонить в банк", type: "task", spheres: ["бюрократия"],
+        person: "Я", due: addDays(today(), 5) }),
+    t({ title: "Выбрать новый матрас", type: "choice", spheres: ["Быт"],
+        place: "Амстердам", person: "Я", due: addDays(today(), 14),
+        options: [{ text: "подешевле, но жёстче" }, { text: "подороже, с доставкой" }] }),
+    t({ title: "Забрать посылку на почте", type: "errand", spheres: ["другое"],
+        place: "Кипр", person: "Я", due: addDays(today(), 3), multi: true,
+        steps: [{ text: "найти номер отправления", done: false },
+                { text: "съездить на почту", done: false }] }),
+    t({ title: "Зарядка 15 минут", type: "routine", spheres: ["здоровье физическое"],
+        person: "Я", routine: { days: [1,2,3,4,5], history: [] } }),
+    t({ title: "Приём у стоматолога", type: "appt", spheres: ["здоровье физическое"],
+        place: "Амстердам", person: "Я", due: addDays(today(), 7), time: "10:30",
+        notes: "Кайзерсграхт 12, 2 этаж · +31 20 123 45 67 · взять страховку" }),
+    t({ title: "Отвезти маму на анализы", type: "errand", spheres: ["мама"],
+        place: "Израиль", person: "Мама", due: addDays(today(), 6) }),
+    t({ title: "Собрать документы в школу", type: "task", spheres: ["Йони"],
+        person: "Йони", due: addDays(today(), 10), multi: true,
+        steps: [{ text: "список нужных справок", done: false },
+                { text: "заказать выписку", done: false },
+                { text: "отнести в школу", done: false }] }),
+    t({ title: "Читать 20 минут", type: "routine", spheres: ["развитие"],
+        person: "Я", routine: { days: [0,1,2,3,4,5,6], history: [] } }),
+    t({ title: "Найти психолога", type: "choice", spheres: ["здоровье ментальное"],
+        person: "Я", due: addDays(today(), 21),
+        options: [{ text: "по рекомендации" }, { text: "через платформу онлайн" }] }),
+    t({ title: "Рассмотреть брекеты или инвизилайн", type: "idea",
+        spheres: ["здоровье физическое"], person: "Я",
+        options: [{ text: "брекеты — дешевле, заметнее" },
+                  { text: "инвизилайн — дороже, незаметно" }] }),
+  ];
+}
+
+function seed() {
+  const S = SPHERES0.slice();
+  const P = PLACES0.slice();
+  const H = PEOPLE0.slice();
+  return {
+    spheres: S, places: P, people: H,
+    types: JSON.parse(JSON.stringify(DEFAULT_TYPES)),
+    hereNow: null, open: [],
+    items: templateItems(),
+  };
+}
+
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch (e) { S = seed(); }
+delete S.branch;   // состояние ветки убрано: пауза не значила «неважно»
+/* Числа, которые раньше были зашиты в код. Теперь их видно и можно менять. */
+const DEFAULT_CFG = {
+  todayCap: 5,            // сколько дел помещается в «Сегодня»
+  urgentDays: 3,          // за сколько дней до дедлайна дело считается срочным
+  weekStart: 1,           // 1 — понедельник, 0 — воскресенье
+  theme: "light",         // light | dark — по выбору, система не вмешивается
+};
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+
+S.cfg = Object.assign({}, DEFAULT_CFG, S.cfg || {});
+/* Настройка «какие вкладки показывать» убрана: спрятанная карта уносила
+   с собой фокус и паузу веток — единственное место, где они
+   переключаются. Все виды всегда на месте.                          */
+delete S.cfg.tabs;
+/* Три настройки ушли вместе со своими механизмами: скрытый дедлайн у
+   «выбрать/купить», выключатель гаранта «важного, но не горит» и рутина
+   в календаре. Поведение стало одинаковым у всех — настраивать нечего. */
+delete S.cfg.decideDays; delete S.cfg.heroGuarantee; delete S.cfg.routinesInCalendar;
+
+/* Тема: только ручной выбор. Вариант «как в системе» убран по просьбе
+   Елены — старое значение тихо становится светлой.                  */
+if (S.cfg.theme !== "dark" && S.cfg.theme !== "light") S.cfg.theme = "light";
+function applyTheme() {
+  const root = typeof document !== "undefined" && document.documentElement;
+  if (root && root.setAttribute)
+    root.setAttribute("data-theme", S.cfg.theme === "dark" ? "dark" : "light");
+}
+applyTheme();
+
+/* Однократный сброс к шаблону — по договорённости с Еленой. Идёт РАНЬШЕ
+   остальных одноразовых доносов: они дополняют собранную базу, и на
+   чистом старте сброс не должен стирать их работу (эта ошибка съедала
+   пример-встречу и заметку стоматолога у новых пользователей).      */
+if (!S.reset2026_08) {
+  S.spheres = SPHERES0.slice();
+  S.places  = PLACES0.slice();
+  S.people  = PEOPLE0.slice();
+  S.types   = JSON.parse(JSON.stringify(DEFAULT_TYPES));
+  S.open = [];
+  S.hereNow = null;
+  S.items = templateItems();
+  S.reset2026_08 = true;
+  save();
+}
+
+if (!Array.isArray(S.types) || !S.types.length)
+  S.types = JSON.parse(JSON.stringify(DEFAULT_TYPES));
+if (!S.apptAdded) {          // однократно доносим новый вид тем, у кого данные старые
+  if (!S.types.some(t => t.kind === "appt"))
+    S.types.push(DEFAULT_TYPES.find(t => t.kind === "appt"));
+  S.apptAdded = true;
+}
+/* Вид «Сделать» — общее дело. Добавляем один раз: если его потом убрать
+   в настройках, он больше не вернётся.                               */
+/* По одному делу в каждой сфере — как образец. Однократно. */
+if (!S.apptNoteAdded) {      // однократно показываем, зачем это поле
+  const a = S.items.find(i => i.title === "Приём у стоматолога");
+  if (a && !a.notes) a.notes = "Кайзерсграхт 12, 2 этаж · +31 20 123 45 67 · взять страховку";
+  S.apptNoteAdded = true;
+  save();
+}
+
+/* Демонстрационные дела удалены по просьбе Елены. Однократно.
+   Заодно снимаем пометки «взято на сегодня» и «не сегодня»: они были
+   расставлены для показа и создавали выдуманную историю вроде
+   «не успели вчера».                                                */
+if (!S.demoRemoved) {
+  S.items = S.items.filter(i => !i.demo);
+  S.items.forEach(i => { i.today = null; i.notToday = null; });
+  S.todayOrder = null;
+  S.demoRemoved = true;
+  save();
+}
+
+/* Встреча на сегодня — образец для новой области «Аппоинтменты».
+   Однократно; дата — день первого открытия.                        */
+if (!S.apptTodayExample) {
+  S.items.push({
+    id: uid(), title: "Созвон с бухгалтером", multi: false,
+    type: (S.types.find(t => t.kind === "appt") || { key: "appt" }).key,
+    spheres: ["бюрократия"], place: null, person: "Я",
+    due: today(), time: "16:00", steps: [], options: [], routine: null,
+    done: false, created: today(), notes: "по видео · ссылка в письме",
+    forceImp: null, today: null, notToday: null,
+  });
+  S.apptTodayExample = true;
+  save();
+}
+
+/* Пример для точек недели, по просьбе Елены: первая рутина живёт во все
+   дни, кроме вторника, а среда этой недели отмечена сделанной.
+   Однократно.                                                       */
+if (!S.routineWeekExample) {
+  const r = S.items.find(i => !i.draft && typeDef(i.type).kind === "routine" && i.routine);
+  if (r) {
+    r.routine.days = [0, 1, 3, 4, 5, 6];          // без вторника (2)
+    const t0 = new Date(today() + "T12:00:00");
+    const ws = S.cfg.weekStart;
+    const wkStart = addDays(today(), -((t0.getDay() - ws + 7) % 7));
+    const wed = addDays(wkStart, (3 - ws + 7) % 7); // среда текущей недели
+    if (r.routine.history.indexOf(wed) < 0) r.routine.history.push(wed);
+  }
+  S.routineWeekExample = true;
+  save();
+}
+
+
+if (!S.spheresFilled) {
+  const add = (o) => {
+    if (S.items.some(i => i.title === o.title)) return;
+    S.items.push(Object.assign({
+      id: uid(), title: "", type: "task", multi: false, spheres: [], place: null, person: null,
+      due: null, time: null, steps: [], options: [], routine: null, done: false,
+      created: today(), notes: "", forceImp: null, today: null, notToday: null,
+    }, o));
+  };
+  add({ title: "Отвезти маму на анализы", type: "errand", spheres: ["мама"],
+        place: "Израиль", person: "Мама", due: addDays(today(), 6) });
+  add({ title: "Собрать документы в школу", type: "task", spheres: ["Йони"],
+        person: "Йони", due: addDays(today(), 10), multi: true,
+        steps: [{ text: "список нужных справок", done: false },
+                { text: "заказать выписку", done: false },
+                { text: "отнести в школу", done: false }] });
+  add({ title: "Читать 20 минут", type: "routine", spheres: ["развитие"],
+        person: "Я", routine: { days: [0,1,2,3,4,5,6], history: [] } });
+  add({ title: "Найти психолога", type: "choice", spheres: ["здоровье ментальное"],
+        person: "Я", due: addDays(today(), 21),
+        options: [{ text: "по рекомендации" }, { text: "через платформу онлайн" }] });
+  S.spheresFilled = true;
+  save();
+}
+
+if (!S.ideaTypeAdded) {
+  if (!S.types.some(t => t.kind === "idea"))
+    S.types.push(JSON.parse(JSON.stringify(DEFAULT_TYPES.find(t => t.kind === "idea"))));
+  if (!S.items.some(i => i.title === "Рассмотреть брекеты или инвизилайн"))
+    S.items.push({
+      id: uid(), title: "Рассмотреть брекеты или инвизилайн", type: "idea", multi: false,
+      spheres: ["здоровье физическое"], place: null, person: "Я",
+      due: null, time: null, steps: [],
+      options: [{ text: "брекеты — дешевле, заметнее" }, { text: "инвизилайн — дороже, незаметно" }],
+      routine: null, done: false, created: today(), notes: "",
+      forceImp: null, today: null, notToday: null,
+    });
+  S.ideaTypeAdded = true;
+  save();
+}
+if (!S.taskTypeAdded) {
+  if (!S.types.some(t => t.key === "task"))
+    S.types.unshift(JSON.parse(JSON.stringify(DEFAULT_TYPES[0])));
+  if (!S.items.some(i => i.title === "Позвонить в банк"))
+    S.items.push({
+      id: uid(), title: "Позвонить в банк", type: "task", multi: false,
+      spheres: ["бюрократия"], place: null, person: "Я",
+      due: addDays(today(), 5), time: null, steps: [], options: [], routine: null,
+      done: false, created: today(), notes: "", forceImp: null,
+      today: null, notToday: null,
+    });
+  S.taskTypeAdded = true;
+  save();
+}
+if (!Array.isArray(S.open)) S.open = [];   // раскрытые ветки — их может быть сколько угодно
+/* Дело может относиться сразу к нескольким сферам (Йони + Юридическое).
+   Раньше сфера была одна — и это заставляло записывать дело дважды,
+   то есть само порождало дубликаты. Переносим старые данные.        */
+S.items.forEach(i => {
+  if (!Array.isArray(i.spheres)) i.spheres = i.sphere ? [i.sphere] : [];
+  i.spheres = i.spheres.filter((s, k) => s && i.spheres.indexOf(s) === k);  // на всякий случай
+  delete i.sphere;
+  /* Многоэтапность была отдельным ВИДОМ дела. Теперь это свойство,
+     которое можно включить любому: и покупке, и поездке.            */
+  if (i.type === "process") { i.type = "task"; i.multi = true; }
+  if (i.multi === undefined) i.multi = !!(i.steps && i.steps.length);
+  if (!S.types.some(t => t.key === i.type)) i.type = S.types[0].key;
+  /* «Выбрать до» и «Дедлайн» были двумя разными полями, хотя означали
+     одно и то же. Сводим в одно — due.                              */
+  if (i.decideBy && !i.due) i.due = i.decideBy;
+  delete i.decideBy;
+  delete i.forceUrg;      // срочность больше не переопределяется вручную
+});
+S.items = S.items.filter(i => !i.draft);   // недозаполненное из прошлого раза
+
+
+/* ══════════════════════════════════════════════════════════════════
+   ЛОГИКА
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Важность НЕ ставится на задаче — она наследуется от ветки.
+   Семь решений вместо двухсот, и они не устаревают.            */
+
+/* Важность — всегда ваше решение и ничьё больше. По умолчанию дело
+   важное: вы его записали, значит оно зачем-то нужно. «Неважное»
+   ставится руками, когда вы сами так решили.
+   Срочность к важности отношения не имеет — она из дедлайна.       */
+const isImportant = it => it.forceImp !== false;
+
+/* Срочность НЕ ставится руками — она считается из даты и пересчитывается
+   каждый день сама. Поэтому она никогда не врёт.                */
+/* Срочность — факт календаря, её не переопределяют: она всегда считается
+   из дедлайна. Хотите изменить — меняйте дедлайн.                    */
+function urgency(it) {
+  const d = it.due;
+  if (isRoutine(it)) return dueToday(it) ? 1 : 0;
+  const n = daysUntil(d);
+  return n === null ? 0 : (n <= S.cfg.urgentDays ? 1 : 0);
+}
+
+/* Рутина стоит в расписании на сегодня — независимо от того, отмечена уже
+   или нет. dueToday ниже означает «стоит и ещё не сделана».         */
+function scheduledToday(it) {
+  if (!isRoutine(it) || !it.routine) return false;
+  return it.routine.days.indexOf(new Date(today() + "T12:00:00").getDay()) >= 0;
+}
+const routineDoneToday = it => !!(it.routine && it.routine.history.indexOf(today()) >= 0);
+
+function dueToday(it) {
+  if (!isRoutine(it) || !it.routine) return false;
+  const wd = new Date().getDay();
+  return it.routine.days.includes(wd) && !it.routine.history.includes(today());
+}
+
+/* Мягкая серия: считаем «сделано X из последних 7», а не хрупкий стрик.
+   Один пропуск ничего не обнуляет — по устройству, а не по доброте.  */
+function routineScore(it) {
+  if (!it.routine) return { hit: 0, of: 0, week: [], fresh: true };
+  let hit = 0, of = 0, week = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = addDays(today(), -i);
+    /* Дни до создания рутины не считаем: иначе новая привычка сразу
+       показывала бы «0 из 7» — то есть провал за неделю, которой не было. */
+    const existed = !it.created || d >= it.created;
+    const planned = existed && it.routine.days.includes(new Date(d + "T12:00:00").getDay());
+    const done = it.routine.history.includes(d);
+    if (planned) { of++; if (done) hit++; }
+    week.push({ d, planned, done });
+  }
+  return { hit, of, week, fresh: it.created === today() };
+}
+
+/* Дело, которое сейчас заполняют в окне «Добавить дело», лежит в списке
+   черновиком: так все обычные блоки редактирования работают с ним как
+   с настоящим. Но нигде не показывается, пока не нажали «Добавить».  */
+const live = () => S.items.filter(i => !i.done && !i.draft);
+/* Выбор на сегодня привязан к дате: завтра список снова чистый,
+   иначе выбранное копилось бы и экран перестал быть коротким.      */
+const pickedToday  = it => it.today === today();
+const skippedToday = it => it.notToday === today();
+/* Ровно два действия и ровно два состояния. Убирание ОБЯЗАТЕЛЬНО ставит
+   «не сегодня»: иначе дело сразу возвращается автоподбором, и кажется,
+   что нажатие не сработало.                                          */
+/* Ручной порядок дел на сегодня. Живёт один день, как и сами пометки:
+   завтра список снова собирается сам.                               */
+function ensureTodayOrder(ids) {
+  if (!S.todayOrder || S.todayOrder.date !== today())
+    S.todayOrder = { date: today(), ids: ids.slice() };
+  ids.forEach(id => { if (S.todayOrder.ids.indexOf(id) < 0) S.todayOrder.ids.push(id); });
+}
+/* Куда встанет дело, определяет линия, которую видно при перетаскивании:
+   навели на верхнюю половину карточки — встанет над ней, на нижнюю —
+   под ней. Раньше место вычислялось по направлению, и увидеть его
+   заранее было нельзя.                                              */
+/* Перестановка шагов внутри дела. Порядок важен: следующим считается
+   первый незакрытый, значит перетаскивание меняет и то, что вы увидите
+   в списке.                                                          */
+function moveStep(id, from, to, after) {
+  const it = S.items.find(x => x.id === id);
+  if (!it || !it.steps || !it.steps[from] || from === to) return;
+  const target = it.steps[to];
+  const moved = it.steps.splice(from, 1)[0];
+  let idx = it.steps.indexOf(target);
+  if (idx < 0) idx = it.steps.length; else if (after) idx += 1;
+  it.steps.splice(idx, 0, moved);
+  save();
+}
+
+function reorderToday(dragId, overId, after) {
+  if (!S.todayOrder) return;
+  const ids = S.todayOrder.ids;
+  const from = ids.indexOf(dragId);
+  if (from < 0 || dragId === overId) return;
+  ids.splice(from, 1);
+  let to = ids.indexOf(overId);
+  to = to < 0 ? ids.length : (after ? to + 1 : to);
+  ids.splice(to, 0, dragId);
+  save();
+}
+
+const addToToday   = it => { it.today = today(); it.notToday = null; };
+/* Лимит теперь общий, а не «сколько дольёт приложение». Перебор не
+   запрещаем — показываем цену и предлагаем обмен.                   */
+function tryAddToToday(id) {
+  const it = S.items.find(x => x.id === id);
+  if (!it || pickedToday(it)) return;
+  if (isAppt(it)) return;        // встреча живёт в своей дате, а не в выборе
+  /* Считаем только взятое вами: встречи лимит не расходуют, иначе из
+     дня с шестью приёмами нельзя было бы взять ни одного дела.       */
+  if (todayItems().chosenCount >= S.cfg.todayCap) return askSwap(id);
+  addToToday(it); save(); render();
+}
+/* Два разных жеста, и путать их нельзя:
+   «не сегодня» — отказ: дело уходит и из дня, и из предложений;
+   «вытеснить»  — просто освободить место: дело возвращается в предложения. */
+const dropFromToday = it => { it.today = null; it.notToday = today(); };
+const unpickToday   = it => { it.today = null; };
+const toggleToday  = it => { pickedToday(it) ? dropFromToday(it) : addToToday(it); };
+const inInbox = i => !i.spheres || !i.spheres.length;
+
+/* Доступно ли отсюда: дела без места видны всегда, дела с местом — только «здесь» */
+const reachable = it => !S.hereNow || !it.place || it.place === S.hereNow;
+
+/* ── Самопочинка данных ──────────────────────────────────────────────
+   Вызывается при загрузке и перед каждой отрисовкой: чинит то, что
+   могло остаться от старых версий или от смены суток в открытой вкладке.
+   Все действия идемпотентны — второй прогон ничего не меняет.       */
+function normalizeItems() {
+  let touched = false;
+  S.items.forEach(i => {
+    if (i.draft) return;
+    /* У идей и рутин срока нет — забытый дедлайн держал их в календаре
+       и в «срок прошёл», хотя они ничего не требуют.                */
+    if ((isIdea(i) || isRoutine(i)) && (i.due || i.time)) {
+      i.due = null; i.time = null; touched = true;
+    }
+    /* Встречу нельзя «сделать» — она либо состоялась, либо нет.
+       Наутро после даты она сама уходит в архив своим днём. Если не
+       состоялась — «вернуть» и поменять дату.                       */
+    if (!i.done && isAppt(i) && i.due && i.due < today() && i.autoDone !== i.due) {
+      i.done = true; i.doneAt = i.due; i.autoDone = i.due; touched = true;
+    }
+    /* Остаток убранной кнопки «завтра»: выбор на будущее число больше
+       не существует — список каждого дня собирается в этот день.    */
+    if (i.today && i.today > today()) { i.today = null; touched = true; }
+  });
+  if (touched) save();
+}
+normalizeItems();
+
+function nextStep(it) {
+  if (!it.multi || !it.steps.length) return null;
+  return it.steps.find(s => !s.done) || null;
+}
+
+function quadrant(it) {
+  return (isImportant(it) ? "i" : "n") + (urgency(it) ? "u" : "n");
+}
+
+/* ── поиск дубликатов ──────────────────────────────────────────────
+   Не блокирует ввод — просто показывает, что похожее уже есть.     */
+const norm = s => s.toLowerCase().replace(/[ё]/g, "е").replace(/[^a-zа-я0-9 ]/gi, " ")
+  .split(/\s+/).filter(w => w.length > 2);
+function findDupes(text, skipId) {
+  const a = norm(text);
+  if (a.length === 0) return [];
+  return S.items.filter(it => {
+    if (it.id === skipId || it.done || it.draft) return false;
+    const b = norm(it.title);
+    if (!b.length) return false;
+    const shared = a.filter(w => b.some(v => v.startsWith(w) || w.startsWith(v))).length;
+    return shared / Math.min(a.length, b.length) >= 0.6;
+  }).slice(0, 3);
+}

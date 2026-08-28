@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Организатор</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ══ Тема «Ясный синий» — токены из дизайн-пакета (tokens.css) ══
+   Светлая — на :root; тёмная включается только вручную, атрибутом
+   data-theme="dark" на корне. Системную тьму приложение не слушает —
+   так решила Елена: организатор выглядит одинаково в любое время.   */
+:root{
+  --bg:#f5f7fb; --panel:#ffffff; --ink:#10214a; --dim:#7b879e; --line:#e6eaf2;
+  --accent:#1f5cff; --accent-soft:#e8efff;
+  --warm:#b64478; --warm-soft:#fbe9f2;          /* розовый: «Разобрать», переполнение */
+  --good:#2f9e6f; --good-soft:#e6f5ee;
+  --r:14px;
+  --shadow:0 1px 2px rgba(16,33,74,.05),0 10px 30px rgba(16,33,74,.05);
+  --hover:#f5f7fb; --soft:#f0f2f8; --seg-track:#eef1f7; --seg-active:#ffffff;
+  --check:#cfd6e4; --dash:#d7dde9; --hairline:#f1f2f6; --faint:#a7aebd;
+  --chip-ink:#59647c; --dot-off:#dfe4ee; --pin:#b5605c; --hero-bg:#fbfcff;
+  --veil:rgba(16,33,74,.28);
+  --sph-1:#bf7a35; --sph-2:#4a6fb5; --sph-3:#8a72ab; --sph-4:#b1746f;
+  --sph-5:#7d9a6f; --sph-6:#7c8794; --sph-7:#a08a4a; --sph-8:#4f8fa0;
+  --kind-appt:#1f5cff; --kind-go:#4f8fa0; --kind-buy:#a08a4a;
+  --kind-idea:#8a72ab; --kind-routine:#7d9a6f; --kind-do:#7c8794;
+  --cal-timed-bg:var(--accent-soft); --cal-due-bg:#f0f2f8;
+}
+:root[data-theme="dark"]{
+  --bg:#0f1420; --panel:#171e2e; --ink:#e9edf6; --dim:#8b95ab; --line:#262f45;
+  --accent:#5b8aff; --accent-soft:rgba(91,138,255,.16);
+  --warm:#e58cb4; --warm-soft:rgba(229,140,180,.15);
+  --good:#58b98e; --good-soft:rgba(88,185,142,.15);
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+  --hover:#1d2537; --soft:#212a3e; --seg-track:#212a3e; --seg-active:#2f3b58;
+  --check:#3a4560; --dash:#3a4560; --hairline:#222b40; --faint:#5d6780;
+  --chip-ink:#aab4c8; --dot-off:#2c3650; --pin:#d98984; --hero-bg:#1a2338;
+  --veil:rgba(0,0,0,.55);
+  --sph-1:#d99a55; --sph-2:#7499d6; --sph-3:#a98fd0; --sph-4:#d09490;
+  --sph-5:#9cbb8e; --sph-6:#98a3b2; --sph-7:#c0a968; --sph-8:#74aebf;
+  --kind-appt:#5b8aff; --kind-go:#74aebf; --kind-buy:#c0a968;
+  --kind-idea:#a98fd0; --kind-routine:#9cbb8e; --kind-do:#98a3b2;
+  --cal-timed-bg:rgba(91,138,255,.18); --cal-due-bg:#212a3e;
+}
+*{box-sizing:border-box}
+/* Палец — на всём, что нажимается. Раньше у листьев карты и текстовых
+   элементов оставалась стрелка или «рука перетаскивания», и было не
+   понять, нажмётся оно или потащится.                               */
+button,[data-act],a,label,summary,.leaf,.branch,.card .title,.ddday,
+.chip,.tag.type,.tick,.qtick,.caltick{cursor:pointer}
+[draggable="true"],.leaf,.branch{cursor:pointer}
+[draggable="true"]:active,.leaf:active,.branch:active,#map.grabbing{cursor:grabbing}
+.ddday.off,button[disabled],.btn[disabled]{cursor:default}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.5 Manrope,-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;
+  -webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+input,select,textarea{font:inherit;color:inherit}
+svg.ic{width:15px;height:15px;flex:0 0 auto;display:inline-block;vertical-align:-2px}
+svg.ic.sm{width:12px;height:12px;vertical-align:-1.5px;margin-right:4px}
+
+/* ── шапка: все элементы управления 44px ─────────────── */
+header{position:sticky;top:0;z-index:30;background:var(--bg);
+  border-bottom:1px solid var(--line);padding:10px 20px;
+  display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.tabs{display:flex;gap:4px;background:transparent;padding:0;border:0}
+.tabs button{height:44px;padding:0 17px;border-radius:12px;color:var(--chip-ink);
+  font-weight:500;transition:.15s;white-space:nowrap}
+.tabs button:hover{color:var(--ink);background:var(--soft)}
+.tabs button.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.spacer{flex:1}
+.gear{width:44px;height:44px;border-radius:12px;border:0;
+  background:var(--panel);color:var(--dim);display:flex;
+  align-items:center;justify-content:center;box-shadow:var(--shadow)}
+.gear svg{width:20px;height:20px}
+.gear:hover{color:var(--accent)}
+.here{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--dim)}
+.here select{background:var(--soft);border:0;border-radius:999px;height:38px;
+  padding:0 14px;color:var(--ink);font-weight:600;font-size:13.5px}
+.capture-btn{background:var(--accent);color:#fff;height:44px;padding:0 20px;
+  border-radius:12px;font-weight:700;box-shadow:0 6px 16px rgba(31,92,255,.24)}
+.capture-btn:hover{filter:brightness(1.06)}
+.inbox-pill{background:var(--warm-soft);color:var(--warm);border:0;height:44px;
+  padding:0 16px;border-radius:10px;font-size:14px;font-weight:700}
+
+main{max-width:1180px;margin:0 auto;padding:24px 20px 90px}
+/* ── «Сегодня» — один экран, без прокрутки страницы ─────────────────
+   Левая колонка — белая панель «Дела»; правая — стопка панелей
+   «Рутина» и «Аппоинтменты». Переполнение крутится внутри колонок.  */
+main.fit{box-sizing:border-box;height:calc(100vh - 66px);min-height:430px;
+  padding-bottom:20px;display:flex;flex-direction:column;overflow:hidden}
+main.fit .todayhead{flex:none}
+.tgrid{flex:1;min-height:0;display:grid;gap:20px;align-items:stretch;
+  grid-template-columns:minmax(0,1fr) minmax(300px,34%)}
+.tcol{overflow-y:auto;min-height:0;scrollbar-width:thin;
+  background:var(--panel);border-radius:var(--r);box-shadow:var(--shadow);
+  padding:0 24px 22px}
+/* Заголовок «Дела» закреплён: колонка крутится, а шапка со счётчиком
+   остаётся на виду.                                                 */
+.tcol > .todayhead{position:sticky;top:0;z-index:5;background:var(--panel);
+  margin:0 -24px 8px;padding:20px 24px 12px;border-bottom:1px solid var(--hairline);
+  border-radius:var(--r) var(--r) 0 0}
+.tcol.side{background:transparent;box-shadow:none;padding:2px;border-left:0}
+.tcol > .lbl:first-child{margin-top:0}
+.sidepanel{background:var(--panel);border-radius:var(--r);box-shadow:var(--shadow);
+  padding:0 22px 20px;margin-bottom:20px}
+/* «Рутина» и «Аппоинтменты» тоже закреплены — каждый заголовок держится,
+   пока прокручивается его панель, потом уступает следующему.        */
+.sidepanel h3{position:sticky;top:0;z-index:4;background:var(--panel);
+  margin:0 -22px 12px;padding:18px 22px 10px;border-bottom:1px solid var(--hairline);
+  border-radius:var(--r) var(--r) 0 0;font-size:17px;font-weight:700}
+@media (max-width:940px){
+  main.fit{height:auto;overflow:visible;display:block;padding-bottom:90px}
+  .tgrid{display:block}
+  .tcol{overflow:visible;margin-bottom:20px}
+  .tcol.side{padding:0;margin-top:0}
+  /* В столбике колонки не крутятся сами — закрепление ни к чему,
+     иначе шапки липли бы к краю окна поверх друг друга.             */
+  .tcol > .todayhead,.sidepanel h3{position:static}
+}
+h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
+.todayhead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.todaydate{font-size:14px;color:var(--dim);white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.todaydate b{color:var(--ink);font-weight:600}
+.todaydate .num{font-size:17px;font-weight:700;color:var(--accent);margin-right:2px}
+@media(max-width:600px){.todaydate{margin-left:0;width:100%}}
+.sub{color:var(--dim);font-size:13px;margin:0 0 18px}
+
+/* ── карточки задач: строки внутри панели, без рамок ──── */
+.card{background:var(--panel);border:0;border-radius:12px;
+  padding:13px 12px;margin-bottom:6px;box-shadow:none;position:relative;
+  transition:background .15s}
+.card:hover{background:var(--hover)}
+.card.pinned{background:var(--good-soft)}
+.card.chosen{background:transparent}
+.card.chosen:hover{background:var(--hover)}
+.card-top .linkbtn{flex:0 0 auto;margin-top:1px}
+.chosenmark{font-size:12.5px;color:var(--accent);font-weight:600;padding-left:34px;margin-top:7px}
+.automark{font-size:12.5px;color:var(--warm);font-weight:600;padding-left:34px;margin-top:7px}
+.card.appt{background:var(--accent-soft)}
+.toomany{background:var(--warm-soft);color:var(--warm);border-radius:12px;padding:12px 15px;
+  font-size:13.5px;margin-bottom:12px;line-height:1.45}
+.card-top{display:flex;align-items:flex-start;gap:12px}
+.tick{width:22px;height:22px;border:1.5px solid var(--check);border-radius:50%;
+  flex:0 0 auto;margin-top:1px;transition:.15s;position:relative;
+  display:inline-flex;align-items:center;justify-content:center;padding:0}
+.tick:hover{border-color:var(--accent);background:var(--accent-soft)}
+.card.done .tick,.doneline .tick,.rline.done .tick{background:var(--accent);
+  border-color:var(--accent)}
+/* Галочка центрируется от середины кружка, а не жёсткими пикселями:
+   кружки бывают 19, 20 и 22px, и на мелких она съезжала. Сдвиг по
+   вертикали -58%: у «птички» визуальный центр выше геометрического. */
+.card.done .tick::after,.doneline .tick::after,.rline.done .tick::after{
+  content:"";position:absolute;left:50%;top:50%;width:5px;height:9px;
+  border:solid #fff;border-width:0 2px 2px 0;
+  transform:translate(-50%,-58%) rotate(45deg)}
+.title{font-weight:500;font-size:16px;flex:1;line-height:1.35}
+
+.card.done .title{text-decoration:line-through;color:var(--faint)}
+.meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:9px;padding-left:34px}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:12px;line-height:1;
+  padding:5px 10px;border-radius:999px;background:var(--accent-soft);
+  color:var(--accent);font-weight:600;white-space:nowrap}
+.tag svg.ic{width:14px;height:14px;margin:-2px 0}
+.tag.place{background:transparent;border:1px solid var(--line);color:var(--chip-ink)}
+.tag.type{background:transparent;border:1px solid var(--line);color:var(--chip-ink)}
+.tag.when{background:transparent;border:0;color:var(--dim);font-weight:400;
+  font-size:13px;line-height:1.3;padding:4px 0;margin-left:auto;
+  font-variant-numeric:tabular-nums}
+.tag.steptag{background:var(--accent-soft);color:var(--accent);font-weight:700}
+.stepmini{font-weight:700;opacity:.65;margin-left:5px;font-size:11px;
+  font-variant-numeric:tabular-nums}
+.nextstep{padding-left:34px;margin-top:7px;font-size:14px;color:var(--dim)}
+.nextstep b{color:var(--ink);font-weight:500}
+.stepno{display:inline-block;background:var(--accent-soft);color:var(--accent);
+  font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;margin-right:8px;
+  font-variant-numeric:tabular-nums}
+.step .stepnum{width:20px;flex:0 0 auto;font-size:12.5px;color:var(--dim);
+  font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.why{padding-left:34px;margin-top:8px;font-size:13px;color:var(--good);font-weight:600}
+.card.mini{padding:10px 12px;box-shadow:none;opacity:.8;margin-bottom:4px}
+.card.mini:hover{opacity:1}
+.card.mini .tick{width:20px;height:20px}
+.card.mini .title{font-weight:400;font-size:14.5px}
+.undo{font-size:13px;color:var(--accent);font-weight:600;padding:2px 8px;border-radius:8px}
+.undo:hover{background:var(--accent-soft)}
+.dayhead{font-size:13.5px;font-weight:700;margin:22px 0 8px;color:var(--dim)}
+.tally{background:var(--panel);border:0;border-radius:var(--r);
+  padding:15px 18px;margin-bottom:18px;box-shadow:var(--shadow);font-size:14.5px}
+.tally b{font-size:22px;color:var(--good);font-weight:700}
+.empty{text-align:center;color:var(--dim);padding:50px 20px;line-height:1.7}
+
+/* счётчик дня: сегменты + «N из 5» */
+.capseg{display:inline-flex;gap:4px;align-items:center;margin-left:auto}
+.capseg i{width:16px;height:4px;border-radius:999px;background:var(--dot-off)}
+.capseg i.on{background:color-mix(in srgb, var(--accent) 45%, transparent)}
+.capseg i.dn{background:var(--accent)}
+.capseg i.ov{background:var(--warm)}
+.mineno{font-weight:700;color:var(--ink);text-transform:none;letter-spacing:0;
+  margin-left:10px;font-size:13px;font-variant-numeric:tabular-nums}
+.mineno b{color:var(--ink)}
+.mineno.over{color:var(--warm);background:var(--warm-soft);border-radius:999px;
+  padding:3px 10px}
+.apptno{font-weight:500;color:var(--dim);text-transform:none;letter-spacing:0;
+  margin-left:8px;font-size:12.5px}
+
+/* ── карта ───────────────────────────────────────────── */
+/* Переключатель стоит в ряду с кнопками (карта, календарь) — свой
+   нижний отступ поднимал бы его вверх при выравнивании по центру.  */
+.axis{display:flex;gap:2px;background:var(--seg-track);border:0;
+  padding:3px;border-radius:10px;width:fit-content}
+.maprow .axis{margin-bottom:0}
+.axis button{height:32px;padding:0 14px;border-radius:8px;font-size:13.5px;
+  color:var(--dim);font-weight:500;display:flex;align-items:center}
+.axis button.on{background:var(--seg-active);color:var(--ink);font-weight:600;
+  box-shadow:0 1px 3px rgba(16,33,74,.10)}
+#map{width:100%;height:min(70vh,640px);display:block;background:var(--panel);
+  border:0;border-radius:var(--r);box-shadow:var(--shadow);
+  touch-action:none;cursor:grab}
+#map.grabbing{cursor:grabbing}
+.maptools{display:flex;gap:6px;align-items:center;margin-left:auto}
+.maptools button{width:38px;height:38px;border-radius:9px;border:0;
+  background:var(--panel);font-size:16px;line-height:1;color:var(--dim);
+  box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center}
+.maptools button.wide{width:auto;padding:0 14px;font-size:13px;font-weight:600}
+.maptools button:hover{color:var(--accent)}
+.maprow{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;
+  min-height:38px}
+.maphint{font-size:12.5px;color:var(--dim)}
+#map text{font-family:inherit;-webkit-user-select:none;user-select:none}
+.branch{cursor:pointer}
+.branch:hover rect{filter:brightness(1.05)}
+.branch:hover circle{filter:brightness(1.05)}
+
+/* ── список и календарь ───────────────────────────────── */
+.allbar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.allsearch{flex:1;min-width:200px;padding:12px 14px 12px 40px;border:1px solid var(--line);
+  border-radius:10px;background:var(--panel);font-size:14.5px;
+  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="%238b93a6" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>');
+  background-repeat:no-repeat;background-position:13px center;background-size:16px}
+.allselect{padding:12px 14px;border:1px solid var(--line);border-radius:10px;
+  background:var(--panel);color:var(--ink);font-size:14.5px;flex:0 0 auto;min-width:170px}
+.allselect:focus{outline:1.5px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.allsearch:focus{outline:1.5px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.allrow{display:flex;align-items:center;gap:9px;padding:11px 8px;border-radius:0;
+  border:0;border-bottom:1px solid var(--hairline);margin-bottom:0;background:transparent;
+  transition:background .15s}
+.allrow:hover{background:var(--hover);border-radius:10px}
+.allrow .tick{width:20px;height:20px;margin:0;flex:0 0 auto}
+.allrow .suggdate{margin-left:auto;min-width:150px;text-align:right}
+.calbar{display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap;
+  min-height:38px}
+/* Листалка: стрелки вплотную к заголовку периода, вся группа —
+   по центру панели; «сегодня» уходит к правому краю.               */
+.calnav{display:flex;gap:2px;align-items:center;margin:0 auto}
+.navarrow{width:34px;height:34px;border-radius:9px;border:0;background:transparent;
+  color:var(--dim);display:flex;align-items:center;justify-content:center;
+  transition:.15s}
+.navarrow svg{width:18px;height:18px}
+.navarrow:hover{background:var(--soft);color:var(--accent)}
+.caltitle{font-size:17px;font-weight:700;min-width:200px;text-align:center;
+  font-variant-numeric:tabular-nums;display:flex;align-items:center;
+  justify-content:center;line-height:1}
+.navtoday{height:34px;padding:0 16px;border-radius:999px;background:var(--soft);
+  color:var(--chip-ink);font-size:13px;font-weight:600;transition:.15s}
+.navtoday:hover{background:var(--accent-soft);color:var(--accent)}
+.navtoday.on{opacity:.45;pointer-events:none}
+.calhead{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:6px}
+.calhead div{font-size:12px;font-weight:600;color:var(--dim);text-align:center;
+  text-transform:uppercase;letter-spacing:.06em}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.calcell{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:8px;box-shadow:none;min-height:110px;display:flex;flex-direction:column}
+.calgrid.week .calcell{min-height:230px}
+.calcell.today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.calcell.dim{opacity:.45}
+.calcell.past{background:transparent}
+.calcell.past .caldate{opacity:.6}
+.caldate{font-size:12px;font-weight:600;color:var(--dim);margin-bottom:6px;
+  display:flex;justify-content:space-between;align-items:baseline;gap:6px;
+  font-variant-numeric:tabular-nums}
+.calcell.today .caldate{color:var(--accent);font-weight:700}
+.caldate .wd{font-weight:500;font-size:11px}
+.calitem{display:block;width:100%;text-align:left;font-size:12.5px;line-height:1.3;
+  padding:5px 7px;border-radius:7px;margin-bottom:4px;border-left:3px solid transparent;
+  transition:filter .15s}
+.calitem:hover{filter:brightness(.97)}
+.calitem.appt{background:var(--cal-timed-bg);color:var(--ink)}
+.calitem.dl{background:var(--cal-due-bg);color:var(--ink)}
+.calitem .t{font-weight:700;margin-right:4px;color:var(--accent);
+  font-variant-numeric:tabular-nums}
+.calmore{font-size:11.5px;color:var(--dim);padding-left:2px}
+.daybox{background:var(--panel);border:0;border-radius:var(--r);
+  padding:14px 16px;box-shadow:var(--shadow)}
+.dayrow{display:flex;align-items:center;gap:10px;padding:12px 4px 10px;
+  border-bottom:1px solid var(--hairline)}
+.dayrow:last-of-type{border-bottom:0}
+.dayrow.rout{opacity:.75}
+.dayrow .tick{width:20px;height:20px;margin:0;flex:0 0 auto}
+.daytime{font-size:13px;font-weight:700;color:var(--accent);width:52px;flex:0 0 auto;
+  background:var(--accent-soft);border-radius:6px;text-align:center;padding:3px 0;
+  font-variant-numeric:tabular-nums}
+/* Плашка красит только настоящее время. Без времени колонка схлопывается
+   совсем — название встаёт вплотную к галочке, а не через пустоту.  */
+.daytime.none,.atime.none{background:transparent;color:var(--faint);font-weight:500;
+  font-size:11.5px}
+.daytime.none{width:0;padding:0;margin-right:-10px}
+.dayrow.rout .daytime{color:var(--dim);font-weight:500;background:transparent}
+.dayhd{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.dayhd .addhere{margin-left:auto}
+/* Заметка — продолжение своего дела: воздух сверху, выравнивание под
+   названием, и линия строки уходит под неё, а не режет их пополам.  */
+.daynote{font-size:13px;color:var(--dim);padding:0 4px 14px 62px;
+  border-bottom:1px solid var(--hairline);margin-top:8px;
+  white-space:pre-wrap;line-height:1.45}
+.dayrow:has(+ .daynote){border-bottom:0;padding-bottom:0}
+.daynote:last-child{border-bottom:0;padding-bottom:4px}
+.callegend{display:flex;gap:14px;font-size:12.5px;color:var(--dim);margin-top:14px;
+  flex-wrap:wrap}
+.callegend span{display:flex;align-items:center;gap:6px}
+.callegend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+@media(max-width:780px){
+  .calhead{display:none}
+  .calgrid,.calgrid.week{grid-template-columns:1fr}
+  .calcell,.calgrid.week .calcell{min-height:0}
+  .calcell.dim{display:none}
+}
+
+/* ── создать здесь / отметить в любом виде ───────────── */
+.addhere{width:26px;height:26px;border-radius:8px;border:1.5px dashed var(--dash);
+  color:var(--dim);font-size:15px;line-height:1;display:flex;align-items:center;
+  justify-content:center;flex:0 0 auto;opacity:.6;transition:.15s}
+.addhere:hover{opacity:1;border-color:var(--accent);color:var(--accent);
+  background:var(--accent-soft);border-style:solid}
+.addhere.wide{width:auto;padding:0 12px;height:30px;font-size:13px;font-weight:600;gap:5px}
+.calrow{display:flex;align-items:flex-start;gap:5px;margin-bottom:4px}
+.calrow .calitem{margin-bottom:0}
+.caltick{width:15px;height:15px;border:1.5px solid var(--check);border-radius:50%;
+  flex:0 0 auto;margin-top:5px;transition:.15s}
+.caltick:hover{border-color:var(--accent);background:var(--accent-soft)}
+.quad h3 .addhere{display:inline-flex;vertical-align:middle;
+  width:22px;height:22px;font-size:13px}
+.quad li{display:flex;align-items:flex-start;gap:9px}
+.quad li .qtick{width:16px;height:16px;border:1.5px solid var(--check);border-radius:50%;
+  flex:0 0 auto;margin-top:4px;transition:.15s}
+.quad li .qtick:hover{border-color:var(--accent);background:var(--accent-soft)}
+.quad li .qname{flex:1;cursor:pointer}
+.quad li .qdue{font-size:12.5px;color:var(--dim);white-space:nowrap;flex:0 0 auto;
+  padding-left:10px;padding-top:2px;font-variant-numeric:tabular-nums}
+.branchhead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:26px}
+.branchhead h2{margin:0;font-size:17px}
+
+/* ── перетаскивание ──────────────────────────────────── */
+.dragging{opacity:.5;box-shadow:0 10px 24px rgba(16,33,74,.22);
+  transform:rotate(-2deg) scale(1.04);border-radius:12px}
+.dropok{outline:1.5px dashed var(--accent);outline-offset:-2px;background:var(--accent-soft)}
+.dropbefore,.dropafter{position:relative}
+.dropbefore::before,.dropafter::after{
+  content:"";position:absolute;left:0;right:0;height:3px;border-radius:2px;
+  background:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.dropbefore::before{top:-5px}
+.dropafter::after{bottom:-5px}
+.rline,.doneline{position:relative}
+.draghint{font-size:12.5px;color:var(--dim);margin:-12px 0 14px}
+
+/* ── матрица ─────────────────────────────────────────── */
+/* Шапка столбцов отступает от подсказки над таблицей — иначе слова
+   «важное / неважное» читаются как её продолжение.                 */
+.matrix{display:grid;grid-template-columns:92px 1fr 1fr;gap:12px;align-items:stretch;
+  margin-top:22px}
+.mhead{font-size:12px;font-weight:600;color:var(--dim);text-align:center;
+  align-self:end;padding-bottom:6px;text-transform:uppercase;letter-spacing:.08em}
+.mside{display:flex;align-items:center;justify-content:flex-end;text-align:right;
+  font-size:12px;font-weight:600;color:var(--dim);line-height:1.25;
+  text-transform:uppercase;letter-spacing:.08em}
+@media(max-width:760px){
+  .matrix{grid-template-columns:1fr}
+  .mhead{display:none}
+  .mside{justify-content:flex-start;text-align:left;margin-top:8px}
+}
+.quad{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:16px;min-height:180px;box-shadow:none}
+/* Главная клетка выделяется только подписью в описании — обводка
+   спорила с рамками соседних клеток.                               */
+.quad.hero{background:var(--hero-bg)}
+.quad h3{margin:0 0 3px;font-size:15px;font-weight:700}
+.quad.hero h3{color:var(--accent)}
+.heromark{color:var(--accent);font-weight:700}
+.quad .qs{font-size:12.5px;color:var(--dim);margin:0 0 13px}
+.quad ul{margin:0;padding:0;list-style:none}
+.quad li{padding:8px 10px;border-top:0;border-radius:9px;background:var(--bg);
+  font-size:14px;margin-bottom:5px}
+.quad li:first-child{border-top:0}
+/* Плюс — у правого края клетки, счётчик — перед ним: сначала «сколько
+   тут», потом действие.                                             */
+.quad h3{display:flex;align-items:center;gap:8px}
+.qcount{margin-left:auto;color:var(--dim);font-weight:500;
+  font-variant-numeric:tabular-nums}
+.quad h3 .addhere{margin-left:0}
+
+/* ── модалка ─────────────────────────────────────────── */
+.veil{position:fixed;inset:0;background:var(--veil);backdrop-filter:blur(3px);
+  cursor:default;
+  z-index:50;display:flex;align-items:flex-start;justify-content:center;padding-top:11vh}
+.modal{background:var(--panel);border-radius:var(--r);padding:24px;width:min(560px,92vw);
+  box-shadow:0 12px 36px rgba(16,33,74,.18);max-height:78vh;
+  overflow-y:auto;overflow-x:hidden}
+/* Ничто внутри окна не имеет права раздвинуть его вбок — кроме
+   выпадающих панелей: они плавают поверх и окно не растягивают. */
+.modal *{max-width:100%}
+.modal .dd{max-width:none}
+.modal h3{margin:0 0 16px;font-size:17px;font-weight:700;padding-right:42px}
+.modalbar{position:sticky;top:0;height:0;display:flex;justify-content:flex-end;z-index:3}
+.modalx{width:30px;height:30px;margin:-6px -6px 0 0;border-radius:8px;background:var(--soft);
+  border:0;font-size:17px;line-height:1;color:var(--dim);
+  display:flex;align-items:center;justify-content:center;transition:.15s}
+.modalx:hover{background:var(--warm-soft);color:var(--warm)}
+.modal input[type=text],.modal textarea,.modal select{width:100%;padding:12px 14px;
+  border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-bottom:12px}
+.modal input[type=text]:focus,.modal textarea:focus{outline:1.5px solid var(--accent);
+  outline-offset:-1px;border-color:transparent}
+.dupe{background:var(--warm-soft);border-radius:10px;padding:11px 14px;margin-bottom:12px;
+  font-size:13.5px;color:var(--warm);line-height:1.45}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.chip{padding:7px 13px;border-radius:999px;border:1px solid var(--line);font-size:13px;
+  color:var(--chip-ink);transition:.15s;font-weight:500}
+.chip:hover{border-color:var(--accent)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.lbl{font-size:12px;color:var(--dim);margin:0 0 6px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.1em}
+/* Единый вертикальный ритм форм: каждый ярлык дышит сверху одинаково,
+   кроме самого первого в окне.                                      */
+.modal .lbl{margin-top:18px}
+.modal h3 + .lbl,.modal .modalbar + h3 + .lbl{margin-top:0}
+/* Кнопки в ряду не тянутся по высоте соседнего поля — иначе «Добавить»
+   вырастает вдвое выше нормальной кнопки.                           */
+.row{display:flex;gap:10px;justify-content:flex-end;margin-top:6px;align-items:center}
+.btn{padding:0 18px;height:40px;border-radius:10px;font-weight:600;
+  display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+.btn.primary{background:var(--accent);color:#fff;
+  box-shadow:0 6px 16px rgba(31,92,255,.24)}
+.btn.ghost{color:var(--dim)}
+/* Три голоса действий: primary — зовёт (синяя заливка), link — предлагает
+   (голубой текст), outline — редкое и требует прицела (контур).
+   У опасного контур тёплый на наведении, а не синий.                */
+/* Текстовая кнопка не должна «висеть» с отступом кнопки-заливки:
+   в ряду с краями её оптический край — сам текст.                   */
+.btn.link{color:var(--accent);font-weight:600;padding-left:0;padding-right:0}
+.btn.link:hover{background:transparent;text-decoration:underline;text-underline-offset:3px}
+.row > .btn.link:first-child{margin-right:auto}
+.row > .btn.link:last-child{margin-left:auto}
+.btn.outline{border:1px solid var(--line);color:var(--chip-ink)}
+.btn.outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn.outline.danger:hover{border-color:var(--warm);color:var(--warm);
+  background:var(--warm-soft)}
+.btn[disabled]{opacity:.45;cursor:default}
+.btn.ghost:hover{color:var(--ink)}
+
+/* рутина: буквы недели один раз сверху, под каждой — точки дней */
+/* Буквы недели стоят ровно над колонками точек: тот же шаг (9px + 7px)
+   и тот же левый отступ, что у .rdots внутри строки (4px + 32px).   */
+.rdays{display:flex;gap:7px;margin:2px 0 8px;padding-left:36px}
+.rdays i{width:9px;text-align:center;font-style:normal;font-size:9px;
+  color:var(--faint);font-weight:600;text-transform:uppercase}
+.rbox{display:flex;flex-direction:column;gap:4px;margin-top:0}
+.rline{display:flex;align-items:center;gap:10px;padding:8px 4px;border-radius:10px;
+  border:0;background:transparent;flex-wrap:wrap;transition:background .15s}
+.rline:hover{background:var(--hover)}
+.rline.done{opacity:.6}
+.rline.done .rname{text-decoration:line-through;color:var(--faint)}
+.rline .tick{width:20px;height:20px;margin:0}
+.rname{flex:1;min-width:0;text-align:left;font-size:15px;font-weight:500}
+.rname:hover{color:var(--accent)}
+.rscore{font-size:12.5px;color:var(--dim);white-space:nowrap;flex:0 0 auto;
+  font-variant-numeric:tabular-nums}
+.rdots{display:flex;gap:7px;width:100%;padding:5px 0 2px 32px}
+.modal .rdots{padding-left:2px}   /* в попапе точки прижаты к левому краю */
+.rdots i{width:9px;height:9px;border-radius:50%;background:var(--dot-off)}
+.rdots i.on{background:var(--accent)}
+.rdots i.offday{opacity:.3}
+.doneline{display:flex;align-items:center;gap:10px;padding:7px 4px;border-radius:10px;
+  opacity:.75;transition:.15s}
+.doneline:hover{opacity:1;background:var(--hover)}
+.doneline .tick{width:19px;height:19px;margin:0;flex:0 0 auto}
+.donename{flex:1;min-width:0;text-align:left;font-size:14px;
+  text-decoration:line-through;color:var(--faint)}
+.donename:hover{color:var(--ink)}
+.donebox{margin-top:2px;display:flex;flex-direction:column;gap:2px;
+  border-bottom:1px solid var(--hairline);padding-bottom:10px}
+.apptbox{display:flex;flex-direction:column;gap:4px;margin-top:0}
+.aline{display:flex;align-items:flex-start;gap:10px;padding:8px 4px;border-radius:10px;
+  background:transparent;border:0;transition:background .15s}
+.amain{flex:1;min-width:0}
+.atop{display:flex;align-items:center;gap:10px;min-width:0}
+.ameta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;padding-left:62px}
+.aline .rname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.aline:hover{background:var(--hover)}
+.aline .tick{width:20px;height:20px;margin:0}
+.atime{font-weight:700;font-size:13px;color:var(--accent);min-width:52px;
+  background:var(--accent-soft);border-radius:6px;text-align:center;padding:3px 0;
+  font-variant-numeric:tabular-nums}
+
+/* предложения: строки на фоне подложки */
+.suggbox{margin-top:24px;border:0;border-radius:0;
+  padding:0;background:transparent;box-shadow:none}
+.suggtop{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.suggfold{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--dim);padding:4px 6px;
+  margin-left:-6px;border-radius:8px;transition:.15s}
+.suggfold:hover{color:var(--accent);background:var(--accent-soft)}
+.suggfold svg.ic{width:16px;height:16px}
+.suggtop .btn{margin-left:auto;padding:0 15px;height:34px;font-size:13px;
+  border:0;border-radius:10px;background:var(--accent-soft);color:var(--accent);
+  font-weight:700}
+.suggtop .btn:hover{filter:brightness(.97)}
+.suggrow{display:flex;align-items:center;gap:9px;padding:12px 14px;border-radius:12px;
+  border:0;margin-bottom:8px;background:var(--bg);flex-wrap:wrap;transition:background .15s}
+.suggrow:hover{background:var(--hover)}
+.suggrow .pickmark{width:14px;color:var(--good)}
+.suggname{flex:1;min-width:0;text-align:left;font-size:15px;font-weight:500;padding:2px 0}
+.suggname:hover{color:var(--accent)}
+.btn.take{padding:0 15px;height:32px;font-size:12.5px;border:0;background:var(--accent-soft);
+  color:var(--accent);border-radius:10px;flex:0 0 auto;font-weight:700}
+.btn.take:hover{background:var(--accent);color:#fff}
+.suggwhy{font-size:12.5px;color:var(--good);font-weight:600;white-space:nowrap;
+  margin-left:auto;padding-left:10px;flex:0 0 auto}
+.suggdate{font-size:12.5px;color:var(--dim);white-space:nowrap;padding-left:10px;
+  flex:0 0 auto;font-variant-numeric:tabular-nums}
+.suggwhy.quiet{color:var(--faint);font-weight:500}
+.suggwhy + .suggdate{margin-left:0}
+.suggrow > .suggdate:not(.suggwhy + *){margin-left:auto}
+.swaprow{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;
+  border:1px solid var(--line);margin-bottom:7px;width:100%;text-align:left}
+.swaprow:hover{border-color:var(--warm);background:var(--warm-soft)}
+.addtoday{width:100%;padding:15px;border:1.5px dashed var(--dash);border-radius:12px;
+  color:var(--dim);font-weight:600;margin-top:14px;transition:.15s}
+/* Две пунктирные кнопки в ряд — сеткой, а не отступами: так они ровно
+   делят ширину и не сползают друг под друга.                        */
+.caprow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.caprow .addtoday{margin-top:0;padding:13px;font-size:14px}
+.btn.soft{background:var(--accent-soft);color:var(--accent)}
+.btn.soft:hover{filter:brightness(.97)}
+.addtoday:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.readnote{background:var(--bg);border:0;border-radius:10px;
+  padding:12px 14px;white-space:pre-wrap;line-height:1.45;margin-bottom:14px}
+.readmeta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
+.readsteps{margin-bottom:4px}
+.readstep{display:flex;align-items:baseline;gap:10px;padding:6px 0;font-size:14.5px;
+  border-top:1px solid var(--hairline)}
+.readstep:first-child{border-top:0}
+.readstep .m{width:18px;text-align:center;flex:0 0 auto}
+.readstep .stepnum{width:20px;flex:0 0 auto;font-size:12.5px;color:var(--dim);
+  font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.readstep.done .stepnum{color:var(--accent)}
+.readstep .tx{flex:1;min-width:0}
+.readstep.done span.tx{text-decoration:line-through;color:var(--faint)}
+.notebox{width:100%;min-height:66px;padding:11px 13px;border:1px solid var(--line);
+  border-radius:10px;background:var(--panel);margin-bottom:12px;resize:vertical;
+  font-family:inherit;font-size:14.5px;line-height:1.45;color:var(--ink)}
+.notebox:focus{outline:1.5px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.cardnote{padding-left:34px;margin-top:7px;font-size:13px;color:var(--dim);
+  white-space:pre-wrap;line-height:1.4}
+.steps{margin-bottom:12px}
+.step{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:14.5px;
+  position:relative}
+.step[draggable="true"]{cursor:grab}
+.step[draggable="true"]:active{cursor:grabbing}
+.step .steptext{flex:1;min-width:0;cursor:text;padding:2px 6px;margin:-2px -6px;
+  border-radius:7px}
+.step .steptext:hover{background:var(--accent-soft)}
+.step .stepedit{flex:1;min-width:0;font:inherit;padding:5px 9px;border-radius:8px;
+  border:1px solid var(--accent);background:var(--panel);color:var(--ink)}
+.step .stepedit:focus{outline:1.5px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.step.done .steptext{text-decoration:line-through;color:var(--faint)}
+.step .linkbtn{opacity:0;transition:.15s}
+.step:hover .linkbtn{opacity:1}
+.step .tick{width:19px;height:19px}
+.opt{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:14.5px;
+  border-top:1px solid var(--hairline)}
+.rt{display:flex;gap:5px;margin-bottom:12px}
+.rt div{flex:1;text-align:center;padding:8px 0;border-radius:9px;font-size:13px;
+  background:var(--seg-track);border:0;color:var(--dim)}
+.rt div.hit{background:var(--accent-soft);color:var(--accent);font-weight:700}
+/* ── справочники в настройках ─────────────────────── */
+.setdiv{height:1px;background:var(--hairline);margin:22px 0 18px}
+/* Тонкая линия делит окно на смысловые зоны: метки / содержимое /
+   действия. Между отдельными полями линий нет — окно не полосатое. */
+.sep{height:1px;background:var(--hairline);margin:18px 0}
+/* Узкие настройки живут парами в строку: сверху те, что меняют счёт
+   и сроки, ниже — те, что меняют вид. На узком окне складываются.  */
+.cfggrid{display:grid;grid-template-columns:1fr 1fr;gap:18px 24px;margin-bottom:18px}
+.cfgitem{min-width:0}
+.cfgitem .lbl{margin-top:0}
+.cfgitem .qs{margin-top:6px}
+@media(max-width:520px){.cfggrid{grid-template-columns:1fr}}
+.dirhead{display:flex;align-items:center;gap:10px}
+.dirhead .btn.link{padding:0;font-size:14px}
+/* Строки, ряд добавления и пояснение живут на одной вертикали: общий
+   горизонтальный отступ, иначе поле и кнопка выпирают за край списка. */
+.dirrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  padding:14px 4px;border-bottom:1px solid var(--hairline);transition:background .15s}
+.dirrow:last-of-type{border-bottom:0}
+.dirrow:hover{background:var(--hover)}
+.dirrow .nm{min-width:0;font-size:15px;font-weight:500;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Счёт стоит сразу за названием, а действия ждут у правого края и
+   проявляются под курсором. На касании (айпад) они видны всегда.   */
+.dirrow .qs{flex:0 0 auto}
+.dirrow .cnt{margin-right:auto}
+.dirrow .acts{display:flex;gap:4px;flex:0 0 auto;transition:opacity .15s}
+@media (hover:hover){
+  .dirrow .acts{opacity:0}
+  .dirrow:hover .acts{opacity:1}
+}
+.dirrow .ic{color:var(--faint);margin-left:auto}
+.dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto}
+.dirlist{margin-top:4px}
+.direditbox{background:var(--bg);border-radius:12px;padding:14px;margin:6px 0 6px 0}
+.direditrow{display:flex;align-items:center;gap:12px}
+.modal .direditrow input{flex:1;min-width:0;height:40px;padding:0 13px;margin:0;
+  border:1.5px solid var(--accent);border-radius:10px;background:var(--panel);color:var(--ink)}
+.modal .direditrow input:focus{outline:none}
+.direditbtns{display:flex;align-items:center;gap:6px;margin-top:12px}
+.direditbtns .btn{padding:0 14px;height:36px;font-size:13.5px}
+.btn.link.danger{color:var(--warm)}
+.btn.link.danger:hover{color:var(--warm)}
+/* Поле и кнопка одной высоты и на одной линии. Селектор с .modal —
+   чтобы перебить общий стиль полей окна: у него margin-bottom 12px,
+   из-за которого поле приподнималось над кнопкой.                  */
+.diraddrow{display:flex;gap:8px;margin-top:16px;align-items:center;padding:0 4px}
+.modal .diraddrow input{flex:1;min-width:0;height:40px;padding:0 14px;margin:0;
+  border:1.5px dashed var(--dash);border-radius:10px;background:transparent;color:var(--ink)}
+.modal .diraddrow input:focus{outline:none;border-color:var(--accent);border-style:solid}
+.diraddrow .btn{flex:0 0 auto;height:40px;box-shadow:none}
+/* Правило голоса: всё нажимаемое имеет форму (пилюля, фон), а голый
+   текст — всегда только информация. Тихая кнопка «не сегодня» и дата
+   рядом больше не близнецы.                                         */
+.linkbtn{font-size:12.5px;color:var(--chip-ink);font-weight:600;padding:6px 11px;
+  border-radius:999px;background:var(--soft);white-space:nowrap;transition:.15s}
+.linkbtn:hover{background:var(--accent-soft);color:var(--accent)}
+.linkbtn.danger:hover{background:var(--warm-soft);color:var(--warm)}
+.linkbtn.soft{color:var(--chip-ink)}
+.linkbtn.soft:hover{background:var(--accent-soft);color:var(--accent)}
+/* Подложка обнимает только кнопки, а не тянется на всю ширину окна. */
+.seg{display:inline-flex;gap:2px;background:var(--seg-track);border:0;
+  padding:3px;border-radius:10px;width:fit-content}
+.seg button{height:32px;padding:0 13px;border-radius:8px;font-size:13px;color:var(--dim);
+  font-weight:500;display:flex;align-items:center;justify-content:center;
+  white-space:nowrap}
+.seg button.on{background:var(--seg-active);color:var(--ink);font-weight:600;
+  box-shadow:0 1px 3px rgba(16,33,74,.10)}
+.qs{font-size:13px;color:var(--dim);font-variant-numeric:tabular-nums;line-height:1.5}
+
+/* ── празднование ────────────────────────────────────── */
+#cheerHost{position:fixed;left:0;right:0;bottom:34px;z-index:80;display:flex;
+  justify-content:center;pointer-events:none}
+.cheer{display:flex;align-items:center;gap:11px;background:var(--panel);
+  border-radius:999px;padding:12px 22px 12px 18px;box-shadow:0 12px 36px rgba(16,33,74,.18);
+  pointer-events:auto;cursor:pointer;animation:cheerIn .18s ease-out}
+.cheer svg{width:20px;height:20px;color:var(--good);flex:0 0 auto}
+.cheer b{font-size:14.5px;font-weight:700}
+.cheer span{font-size:12.5px;color:var(--dim);font-variant-numeric:tabular-nums}
+@keyframes cheerIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.cheer{animation:none}}
+
+/* ── выпадающие списки (эталон 09) ───────────────────── */
+/* По умолчанию обёртка по содержимому — иначе в панелях «Списка» и
+   шапки каждая выпадашка занимала бы всю строку. Полную ширину даём
+   только полям формы (.cfgitem ниже).                               */
+.ddwrap{position:relative;display:inline-block;max-width:100%}
+.ddbtn{display:flex;align-items:center;gap:8px;border:1px solid var(--line);
+  border-radius:10px;height:44px;padding:0 14px;background:var(--panel);font-size:14px;
+  min-width:170px;text-align:left;transition:border-color .15s}
+/* В форме поле занимает всю ширину своей колонки, а не висит слева.
+   Раскрытая панель плавает поверх: в узкой колонке она иначе сжимала
+   сетку календаря.                                                  */
+.cfgitem .ddwrap{display:block;width:100%;position:relative}
+.cfgitem .ddbtn{width:100%;min-width:0}
+/* У правой колонки панель прижимается к правому краю, чтобы не уезжать
+   за границу окна.                                                  */
+.cfgitem:last-child .dd.inline{left:auto;right:0}
+.ddbtn.wide{min-width:190px}
+.ddbtn:hover{border-color:var(--accent)}
+.ddbtn.dim>span{color:var(--dim)}
+.ddbtn span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ddbtn .caret{font-style:normal;color:var(--faint);font-size:11px}
+.dd{position:absolute;top:calc(100% + 6px);left:0;z-index:70;background:var(--panel);
+  border-radius:12px;padding:6px;box-shadow:0 12px 36px rgba(16,33,74,.18);min-width:230px}
+.dd.right{left:auto;right:0}
+/* Раскрытая панель плавает над формой, а не встаёт в поток: иначе все
+   поля ниже прыгали вниз на её высоту.                              */
+.dd.inline{position:absolute;top:calc(100% + 6px);left:0;z-index:70;margin-top:0;
+  box-shadow:0 12px 36px rgba(16,33,74,.18);border:1px solid var(--line)}
+.ddrow{display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+  padding:10px 12px;border-radius:8px;font-size:14px;transition:background .15s}
+.ddrow:hover{background:var(--bg)}
+.ddrow.on{background:var(--accent-soft);font-weight:600}
+.ddrow.dim>span{color:var(--dim)}
+.ddrow span{flex:1;min-width:0}
+.ddrow em{font-style:normal;font-size:12px;color:var(--dim);white-space:nowrap}
+.ddrow .ic.ck{margin-left:auto;flex:0 0 auto}
+.ddrow span + .ic.ck{margin-left:0}
+.dddiv{height:1px;background:var(--hairline);margin:6px 4px}
+.ddrow.ddadd{color:var(--accent);font-weight:600}
+.ddaddrow{display:flex;gap:8px;padding:6px;align-items:center}
+.modal .ddaddrow input{flex:1;min-width:0;height:36px;padding:0 12px;margin:0;
+  border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.modal .ddaddrow input:focus{outline:1.5px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.ddaddrow .btn{padding:0 14px;height:36px;font-size:13px}
+/* Панель срока держит ширину календаря: чипы переносятся по строкам,
+   а сетка дней стоит по центру, а не жмётся к левому краю.         */
+.dd.duedd{width:268px;min-width:0}
+.ddquick{display:flex;gap:6px;flex-wrap:wrap;padding:6px 6px 2px;justify-content:center}
+.ddcal{padding:4px 0;width:fit-content;margin:0 auto}
+.ddnavrow{display:flex;align-items:center;justify-content:space-between;padding:8px 2px 6px}
+.ddnavrow b{font-size:13.5px}
+.ddnavrow button{width:28px;height:28px;border-radius:8px;color:var(--dim);
+  display:flex;align-items:center;justify-content:center}
+.ddnavrow button:hover{background:var(--bg);color:var(--accent)}
+.ddwdrow{display:grid;grid-template-columns:repeat(7,32px);gap:2px;padding:0}
+.ddwdrow i{font-style:normal;font-size:9.5px;font-weight:600;color:var(--faint);
+  text-transform:uppercase;text-align:center}
+.ddgrid{display:grid;grid-template-columns:repeat(7,32px);gap:2px;padding:2px 0}
+.ddday{width:32px;height:32px;padding:0;border-radius:9px;font-size:12.5px;
+  display:flex;align-items:center;justify-content:center;
+  font-variant-numeric:tabular-nums}
+button.ddday:hover{background:var(--bg)}
+.ddday.today{box-shadow:inset 0 0 0 1.5px var(--accent);color:var(--accent);font-weight:700}
+.ddday.sel{background:var(--accent);color:#fff;font-weight:700;box-shadow:none}
+.ddday.out{opacity:.4}
+.ddday.off{opacity:.3;cursor:default}
+.hereBtn{display:inline-flex;align-items:center;gap:6px;background:var(--soft);border:0;
+  border-radius:999px;height:38px;padding:0 14px;color:var(--ink);font-weight:600;
+  font-size:13.5px}
+.hereBtn .caret{font-style:normal;color:var(--faint);font-size:10px}
+.headdate{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--dim);
+  white-space:nowrap}
+.headdate .todaydate{margin-left:0}
+@media(max-width:900px){.headdate{display:none}}
+.kicon{display:inline-flex;align-items:center;justify-content:center;width:16px;
+  flex:0 0 auto;margin-right:8px;vertical-align:-3px}
+.kicon svg.ic{width:16px;height:16px}
+.suggtitle .kicon,.allrow .kicon,.dayrow .kicon{margin-right:0}
+.modal h3 .kicon{margin-right:9px}
+.suggmain{flex:1;min-width:0}
+.suggtitle{display:flex;align-items:center;gap:8px}
+.suggmeta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px;
+  padding-left:24px}
+.suggmeta .suggwhy,.suggmeta .suggdate{margin-left:0;padding-left:2px}
+.apptempty{text-align:center;color:var(--dim);font-size:13px;padding:16px 8px;line-height:1.6}
+.apptempty b{display:block;font-size:14px;font-weight:600;color:var(--ink)}
+</style>
+</head>

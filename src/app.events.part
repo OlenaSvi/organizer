@@ -1,0 +1,454 @@
+
+/* ══════════════════════════════════════════════════════════════════
+   СОБЫТИЯ
+   ══════════════════════════════════════════════════════════════════ */
+/* ── Празднование ─────────────────────────────────────────────────────
+   Отметили дело — короткая радость. Не окно: не требует закрытия и не
+   прерывает, если закрываете несколько дел подряд. Появляется, живёт
+   пару секунд и уходит; клик убирает сразу.                         */
+const CHEERS = [
+  { ic: 'M8 1.6l1.7 3.9 4.3.4-3.2 2.8.9 4.2L8 10.7 4.3 12.9l.9-4.2L2 5.9l4.3-.4z', t: "Сделано!" },
+  { ic: 'M2.6 13.4l3.2-8 5 5-8 3.2z M9.8 5.2l1-2.6 M12.2 7.6l2.6-1 M11.4 3.4l1.6 1.6', t: "Одним меньше" },
+  { ic: 'M8 14.5s-5.5-3.4-5.5-7A2.9 2.9 0 018 5.4a2.9 2.9 0 015.5 2.1c0 3.6-5.5 7-5.5 7z', t: "Хорошо пошло" },
+  { ic: 'M3 8.5l3.2 3.2L13 5 M1.8 12.6l1.2-1.2 M13.6 12.4l-1.2-1.2', t: "Это было в списке — и вот его нет" },
+  { ic: 'M8 2.2c2.4 1.6 3.6 3.7 3.6 6.2 0 1-.3 1.9-.8 2.7H5.2a5 5 0 01-.8-2.7c0-2.5 1.2-4.6 3.6-6.2z M6.4 13.6h3.2 M8 6.4v1.4', t: "Полетело" },
+];
+let cheerTimer = null;
+function celebrate(it) {
+  const host = document.getElementById("cheerHost");
+  if (!host) return;
+  const c = CHEERS[Math.floor(Math.random() * CHEERS.length)];
+  const n = S.items.filter(i => !i.draft && !isRoutine(i) && i.done && i.doneAt === today()).length
+    + S.items.filter(i => !i.draft && isRoutine(i) && i.routine
+        && i.routine.history.indexOf(today()) >= 0).length;
+  host.innerHTML = `<div class="cheer" data-act="cheerhide">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+      stroke-linecap="round" stroke-linejoin="round"><path d="${c.ic}"/></svg>
+    <b>${c.t}</b>
+    <span>${n === 1 ? "первое за сегодня" : n + " " + plural(n, "дело", "дела", "дел") + " за сегодня"}</span>
+  </div>`;
+  if (cheerTimer) clearTimeout(cheerTimer);
+  cheerTimer = setTimeout(() => { const h = document.getElementById("cheerHost");
+    if (h) h.innerHTML = ""; }, 4500);
+}
+
+function toggleDone(id) {
+  const it = S.items.find(x => x.id === id); if (!it) return;
+  const was = isRoutine(it)
+    ? it.routine.history.indexOf(today()) >= 0 : !!it.done;
+  if (isRoutine(it)) {
+    const h = it.routine.history, i = h.indexOf(today());
+    if (i >= 0) h.splice(i, 1); else h.push(today());
+  } else if (nextStep(it)) {
+    nextStep(it).done = true;
+    if (!nextStep(it)) { it.done = true; it.doneAt = today(); }
+  } else {
+    it.done = !it.done;
+    it.doneAt = it.done ? today() : null;
+    /* Вернули встречу с прошедшей датой — значит, она не состоялась.
+       Помечаем дату разобранной, иначе самопочинка утащит встречу
+       обратно в архив раньше, чем вы смените дату.                  */
+    if (!it.done && isAppt(it) && it.due && it.due < today()) it.autoDone = it.due;
+    if (!it.done && it.multi) it.steps.forEach(s => s.done = false);
+  }
+  /* Радуемся только переходу «не сделано → сделано». Отмена и закрытие
+     промежуточного шага проходят тихо.                              */
+  const now = isRoutine(it)
+    ? it.routine.history.indexOf(today()) >= 0 : !!it.done;
+  save(); render();
+  if (!was && now) celebrate(it);
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target && e.target.id === "ddAddInp")
+    ddAddCommit(e.target.dataset.f, e.target.dataset.id);
+});
+
+document.addEventListener("click", e => {
+  /* Открытая выпадашка закрывается кликом мимо неё. Если клик попал в
+     другое действие — состояние просто сбрасываем, перерисует само.  */
+  if (DD && !(e.target && e.target.closest && e.target.closest("[data-ddwrap]"))) {
+    const hitAct = e.target && e.target.closest ? e.target.closest("[data-act]") : null;
+    ddClose(!hitAct);
+  }
+  /* Клик по фону намеренно ничего не делает: окно закрывается только
+     явными кнопками, чтобы случайный промах не терял правки.        */
+  const el = e.target.closest ? e.target.closest("[data-act]") : null;
+  if (!el) return;
+  const a = el.dataset.act, id = el.dataset.id, v = el.dataset.v;
+  const it = id ? S.items.find(x => x.id === id) : null;
+
+  switch (a) {
+    case "tab":     TAB = el.dataset.t;
+                    render(); break;
+    case "cap":     openCapture(); break;
+    case "settings": openSettings(); break;
+    case "cfg":     { const k = el.dataset.k, raw = el.dataset.v;
+                      cfgDraft[k] = raw === "true" ? true : raw === "false" ? false
+                        : (isNaN(+raw) ? raw : +raw);
+                      openSettings(); } break;   // в силу вступит по кнопке
+    case "cfgapply":   applyCfg(); break;
+    case "diropen":   DIRPAGE = el.dataset.p; DIREDIT = null; openSettings(); break;
+    case "dirback":   DIRPAGE = null; DIREDIT = null; openSettings(); break;
+    case "diredit":   DIREDIT = v; openSettings(); break;
+    case "dircancel": DIREDIT = null; openSettings(); break;
+    case "exportdata": exportData(); break;
+    case "importdata": { const fi = document.getElementById("importFile");
+                         if (fi && fi.click) fi.click(); } break;
+    case "cfgcancel":  DIRPAGE = null; DIREDIT = null; cancelCfg(); break;
+    case "newhere": { const p = {}, d = el.dataset;
+                      if (d.due) p.due = d.due;
+                      if (d.sphere) p.spheres = [d.sphere];
+                      if (d.place) p.place = d.place;
+                      if (d.person) p.person = d.person;
+                      if (d.type) { p.type = d.type;
+                        if ((S.types.find(t => t.key === d.type) || {}).kind === "routine")
+                          p.routine = { days: [0,1,2,3,4,5,6], history: [] }; }
+                      if (d.quad) p.forceImp = d.quad[0] === "i";   // ракурс даёт только важность
+                      openCapture(p); } break;
+    case "inbox":   openInbox(); break;
+    case "close":   closeModal(); break;
+    case "cheerhide": { const h = document.getElementById("cheerHost");
+                        if (h) h.innerHTML = ""; } break;
+    case "toggle":  toggleDone(id); break;
+    case "open":    openItem(id); break;
+    case "edit":    if (it) openEdit(id); break;
+    case "axis":    AXIS = el.dataset.a; render(); break;
+    case "branch":  { const w = el.dataset.val, i = S.open.indexOf(w);
+                      if (i >= 0) S.open.splice(i, 1); else S.open.push(w);
+                      save(); render(); } break;
+    case "openall": S.open = el.dataset.v === "all"
+                      ? axisValues(AXIS).filter(v => itemsIn(v).length) : [];
+                    save(); PAN = { x: 0, y: 0 }; ZOOM = 1; render(); break;
+    case "zoom":    if (el.dataset.d === "fit") { ZOOM = 1; PAN = { x: 0, y: 0 }; }
+                    else ZOOM = clamp(ZOOM * (el.dataset.d === "in" ? 1.25 : .8), 0.35, 4);
+                    applyMapTransform(); break;
+    case "calmode": CALMODE = el.dataset.m; render(); break;
+    case "calnav":  { const d = el.dataset.d, back = d === "prev" ? -1 : 1;
+                      if (d === "today") CALANCHOR = null;
+                      else if (CALMODE === "month") {
+                        /* Месяцы листаем МЕСЯЦАМИ. Раньше считалось ±30 дней
+                           со сдвигом на 15-е — и с 31-го числа «назад» давало
+                           1-е того же месяца, то есть нажатие уходило впустую. */
+                        const x = new Date(anchor() + "T12:00:00");
+                        CALANCHOR = isoDay(new Date(x.getFullYear(), x.getMonth() + back, 15));
+                      } else {
+                        CALANCHOR = addDays(anchor(), back * (CALMODE === "day" ? 1 : 7));
+                      }
+                      render(); } break;
+    case "calday":  CALANCHOR = el.dataset.d; CALMODE = "day"; render(); break;
+
+    case "capsave":   saveCapture(); break;
+    case "capsavetake": saveCaptureTake(); break;
+    case "capopen":   capOpen[el.dataset.k] = true; drawCapture(); break;
+    case "capcancel": cancelCapture(); break;
+
+    case "assign":  if (it && it.spheres.indexOf(v) < 0) {
+                      it.spheres.push(v); save(); openInbox(); renderChrome(); } break;
+    case "dd":      ddToggle(el.dataset.k); break;
+    case "ddset":   if (it) { const f = el.dataset.f, v2 = el.dataset.v || null;
+                      if (f === "type") { it.type = v2;
+                        if (isRoutine(it) && !it.routine) it.routine = { days:[0,1,2,3,4,5,6], history:[] };
+                        if (isIdea(it) || isRoutine(it)) { it.due = null; it.time = null; }
+                      } else it[f] = v2;
+                      DD = null; DDM = null; DDADD = false;
+                      save(); refreshEdit(id); } break;
+    case "ddaddshow": DDADD = true; if (ddId()) refreshEdit(ddId()); break;
+    case "ddaddgo":   ddAddCommit(el.dataset.f, el.dataset.id); break;
+    case "duequick": if (it) { const v3 = el.dataset.v;
+                      it.due = v3 === "none" ? null : v3 === "today" ? today()
+                        : v3 === "tomorrow" ? addDays(today(), 1) : addDays(today(), 7);
+                      if (!it.due && !isAppt(it)) it.time = null;
+                      DD = null; DDM = null; save(); refreshEdit(id); } break;
+    case "duepick": if (it && el.dataset.d >= today()) { it.due = el.dataset.d;
+                      DD = null; DDM = null; save(); refreshEdit(id); } break;
+    case "ddnav":   { const base = DDM || (it && it.due) || today();
+                      const x = new Date(base + "T12:00:00");
+                      DDM = isoDay(new Date(x.getFullYear(),
+                        x.getMonth() + (el.dataset.d === "prev" ? -1 : 1), 15));
+                      refreshEdit(el.dataset.id); } break;
+    case "hereset": S.hereNow = el.dataset.v || null; DD = null; save(); render(); break;
+    case "allfilterset": ALLFILTER = el.dataset.v; ALLQUERY = ""; DD = null; render(); break;
+    case "allsortset":   ALLSORT = el.dataset.v; DD = null; render(); break;
+    case "etype":   if (it) { it.type = el.dataset.k;
+                      if (isRoutine(it) && !it.routine) it.routine = { days:[0,1,2,3,4,5,6], history:[] };
+                      /* У идеи и рутины нет срока: старый дедлайн не должен
+                         молча висеть в календаре и «срок прошёл».   */
+                      if (isIdea(it) || isRoutine(it)) { it.due = null; it.time = null; }
+                      save(); refreshEdit(id); } break;
+    case "esphere": if (it) { const j = it.spheres.indexOf(v);
+                      if (j >= 0) it.spheres.splice(j, 1); else it.spheres.push(v);
+                      save(); refreshEdit(id); } break;
+    case "eplace":  if (it) { it.place = (v === "—" ? null : v); save(); refreshEdit(id); } break;
+    case "eperson": if (it) { it.person = (v === "—" ? null : v); save(); refreshEdit(id); } break;
+    case "step":    if (it) { const s = it.steps[+el.dataset.i]; s.done = !s.done;
+                      save(); refreshEdit(id); } break;
+    case "equad":   if (it) { it.forceImp = el.dataset.q === "imp";
+                      save(); refreshEdit(id); } break;
+    case "emulti":  if (it) { it.multi = !it.multi; save(); refreshEdit(id); } break;
+    case "editstep": EDITSTEP = id + ":" + el.dataset.i; refreshEdit(id); break;
+    case "delstep": if (it) { it.steps.splice(+el.dataset.i, 1);
+                      EDITSTEP = null; save(); refreshEdit(id); } break;
+    case "rday":    if (it) { const d = it.routine.days, i = d.indexOf(+el.dataset.i);
+                      if (i >= 0) d.splice(i, 1); else d.push(+el.dataset.i);
+                      save(); refreshEdit(id); } break;
+    case "placeadd": addPlace(el); break;
+    case "placedel": removePlace(v); break;
+    case "placeren": renamePlace(v); break;
+    case "sphadd": addSphere(el); break;
+    case "sphdel":   removeSphere(v); break;
+    case "sphren":   renameSphere(v); break;
+    case "peradd": addPerson(el); break;
+    case "perdel":   removePerson(v); break;
+    case "perren":   renamePerson(v); break;
+    case "typadd": addType(el); break;
+    case "typdel":   removeType(v); break;
+    case "typren":   renameType(v); break;
+    case "pin":     if (it) { if (pickedToday(it)) { dropFromToday(it); save(); render(); }
+                      else tryAddToToday(id);
+                      /* Нажали из правки — остаёмся в правке, из просмотра — в просмотре. */
+                      if (host.innerHTML) (editBackup && editBackup.id === id ? openEdit : openItem)(id); } break;
+    case "takeone": tryAddToToday(id); break;
+    case "suggfold": S.suggCollapsed = !S.suggCollapsed; save(); render(); break;
+    case "takeall": { const p = todayItems();
+                      /* Лимит — про взятое; встречи в него не входят нигде,
+                         значит и здесь место не занимают.           */
+                      let room = S.cfg.todayCap - p.chosenCount;
+                      p.proposals.forEach(s => { if (room > 0) { addToToday(s.it); room--; } });
+                      save(); render(); } break;
+    case "swap":    { const out = S.items.find(x => x.id === el.dataset.out);
+                      if (out) unpickToday(out);      // вытеснено, а не отвергнуто
+                      if (it) addToToday(it);
+                      save(); closeModal(); render(); } break;
+    case "swapskip": if (it) { addToToday(it); save(); } closeModal(); render(); break;
+    case "skip":    if (it) { dropFromToday(it); save(); render(); } break;
+    case "unpick":  if (it) { unpickToday(it); save(); render(); } break;
+    case "esave":   saveItem(id); break;
+    case "ecancel": cancelItem(id); break;
+    case "opendone": openDone(id, el.dataset.when || null); break;
+    case "undo":    toggleDone(id); if (host.innerHTML) closeModal(); break;
+    case "del":     if (it && confirm("Удалить «" + it.title + "»?")) {
+                      S.items = S.items.filter(x => x.id !== id); save(); closeModal(); render(); } break;
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   ПЕРЕТАСКИВАНИЕ
+   Каждый вид правит свою ось: календарь — время, матрица — приоритет.
+   Данные под это уже есть: due у дедлайнов, forceImp у важности.
+   ══════════════════════════════════════════════════════════════════ */
+let DRAGID = null, STEPDRAG = null;
+const dropTarget = e => e.target && e.target.closest
+  ? e.target.closest("[data-drop-due],[data-drop-quad],[data-drop-order]") : null;
+
+document.addEventListener("dragstart", e => {
+  const st = e.target && e.target.closest ? e.target.closest("[data-stepdrag]") : null;
+  if (st) {                                   // тащим шаг внутри дела
+    STEPDRAG = st.dataset.stepdrag;
+    if (st.classList) st.classList.add("dragging");
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = "move";
+      try { e.dataTransfer.setData("text/plain", STEPDRAG); } catch (_) {}
+    }
+    return;
+  }
+  const el = e.target && e.target.closest ? e.target.closest("[data-drag]") : null;
+  if (!el) return;
+  DRAGID = el.dataset.drag;
+  if (el.classList) el.classList.add("dragging");
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = "move";
+    try { e.dataTransfer.setData("text/plain", DRAGID); } catch (_) {}
+  }
+});
+
+document.addEventListener("dragend", () => {
+  if (STEPDRAG) { const id = STEPDRAG.split(":")[0]; STEPDRAG = null;
+    clearDropMarks(); refreshEdit(id); return; }
+  DRAGID = null; clearDropMarks(); render();
+});
+
+/* Убрать все следы перетаскивания со всех элементов сразу. */
+function clearDropMarks() {
+  if (!document.querySelectorAll) return;
+  document.querySelectorAll(".dropok, .dropbefore, .dropafter").forEach(el => {
+    el.classList.remove("dropok");
+    el.classList.remove("dropbefore");
+    el.classList.remove("dropafter");
+  });
+}
+
+document.addEventListener("dragover", e => {
+  if (STEPDRAG) {
+    const t = e.target && e.target.closest ? e.target.closest("[data-stepdrop]") : null;
+    if (!t) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+    clearDropMarks();
+    if (t.classList) t.classList.add(dropAfter(e, t) ? "dropafter" : "dropbefore");
+    return;
+  }
+  if (!DRAGID) return;
+  const t = dropTarget(e);
+  if (!t) return;
+  e.preventDefault();                       // без этого браузер не даст бросить
+  if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+  clearDropMarks();
+  if (!t.classList) return;
+  if (t.dataset.dropOrder) {
+    /* Для перестановки показываем ЛИНИЮ МЕСТА, а не подсветку самой
+       карточки: подсветка читается как «положить внутрь неё».        */
+    t.classList.add(dropAfter(e, t) ? "dropafter" : "dropbefore");
+  } else {
+    t.classList.add("dropok");              // день или клетка — контейнер
+  }
+});
+
+/* Верхняя половина — встать над, нижняя — под. */
+function dropAfter(e, t) {
+  if (!t.getBoundingClientRect) return false;
+  const r = t.getBoundingClientRect();
+  if (!r.height) return false;
+  return (e.clientY - r.top) > r.height / 2;
+}
+
+document.addEventListener("dragleave", () => clearDropMarks());
+
+document.addEventListener("drop", e => {
+  if (STEPDRAG) {
+    const t = e.target && e.target.closest ? e.target.closest("[data-stepdrop]") : null;
+    const [sid, si] = STEPDRAG.split(":");
+    if (t) {
+      e.preventDefault();
+      const [tid, ti] = t.dataset.stepdrop.split(":");
+      if (sid === tid) moveStep(sid, +si, +ti, dropAfter(e, t));
+    }
+    STEPDRAG = null;
+    clearDropMarks();
+    refreshEdit(sid);
+    return;
+  }
+  const t = dropTarget(e);
+  if (!t || !DRAGID) return;
+  e.preventDefault();
+  const it = S.items.find(x => x.id === DRAGID);
+  if (it) {
+    /* Календарь правит время. В прошлое не назначаем — прошедшие дни
+       и целями броска не помечены, но проверим и здесь.            */
+    if (t.dataset.dropDue && t.dataset.dropDue >= today()) it.due = t.dataset.dropDue;
+    if (t.dataset.dropQuad) {
+      /* Матрица правит только важность — столбец. Строка (срочность)
+         считается из дедлайна, поэтому бросок её не трогает.
+         Бросок в тот же столбец ничего не меняет.                   */
+      const want = t.dataset.dropQuad[0] === "i";
+      if (isImportant(it) !== want) it.forceImp = want;   // в свой же столбец — ничего
+    }
+    if (t.dataset.dropOrder) {                                   // «Сегодня» правит порядок
+      const dst = S.items.find(x => x.id === t.dataset.dropOrder);
+      /* Рутины и дела — два разных списка. Перетаскивание из одного
+         в другой ничего не значит, поэтому просто игнорируем.       */
+      if (dst && isRoutine(it) === isRoutine(dst)) {
+        const t0 = todayItems();
+        ensureTodayOrder(t0.routines.map(x => x.id).concat(t0.mine.map(x => x.id))
+          .concat(t0.routDone.map(x => x.id)).concat(t0.doneTasks.map(x => x.id)));
+        reorderToday(DRAGID, t.dataset.dropOrder, dropAfter(e, t));
+      }
+    }
+    save();
+  }
+  DRAGID = null;
+  clearDropMarks();
+  render();
+});
+
+document.addEventListener("keydown", e => {
+  /* Escape тоже ничего не делает — по той же причине. */
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if (typing || host.innerHTML) return;
+  if (e.key === "n" || e.key === "т" || ((e.metaKey || e.ctrlKey) && e.key === "k")) {
+    e.preventDefault(); openCapture();
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   ЗАПУСК
+   ══════════════════════════════════════════════════════════════════ */
+const TABS = { today: "Сегодня", calendar: "Календарь", map: "Карта",
+               matrix: "Матрица", all: "Список" };
+
+function renderChrome() {
+  document.getElementById("tabs").innerHTML = Object.keys(TABS).map(k =>
+    `<button data-act="tab" data-t="${k}" class="${TAB === k ? "on" : ""}">${TABS[k]}</button>`).join("");
+  const hb = document.getElementById("hereBox");
+  const cnt = p => live().filter(i => i.place === p).length;
+  hb.innerHTML = `<span class="ddwrap" data-ddwrap>
+    <button class="hereBtn" data-act="dd" data-k="here">${iconSVG("pin", "var(--pin)")}${
+      esc(S.hereNow || "везде")}<i class="caret">▾</i></button>
+    ${DD === "here" ? `<div class="dd right">
+      ${S.places.map(p => `<button class="ddrow ${S.hereNow === p ? "on" : ""}"
+          data-act="hereset" data-v="${esc(p)}">${iconSVG("pin", "var(--pin)")}<span>${esc(p)}</span>
+          <em>${cnt(p)} ${plural(cnt(p), "дело", "дела", "дел")} здесь</em>${
+          S.hereNow === p ? ddCheck : ""}</button>`).join("")}
+      <div class="dddiv"></div>
+      <button class="ddrow ${S.hereNow ? "" : "on"}" data-act="hereset" data-v="">
+        <span>Везде · без учёта места</span>${S.hereNow ? "" : ddCheck}</button>
+    </div>` : ""}</span>`;
+  /* Дата живёт в шапке — она общая для всех экранов, а не свойство
+     одной панели. Обновляется на каждой отрисовке: приложение часто
+     остаётся открытым за полночь.                                   */
+  const hd = document.getElementById("headDate");
+  if (hd) hd.innerHTML = todayWidget();
+  const n = live().filter(inInbox).length;
+  const ib = document.getElementById("inboxBtn");
+  ib.hidden = !n; ib.textContent = "Разобрать · " + n;
+}
+
+/* Вкладка, ось карты, режим календаря и срез списка запоминаются.
+   Дата в календаре — нет: открывать вчерашнюю неделю бессмысленно.  */
+function saveView() {
+  try {
+    localStorage.setItem(VIEWKEY, JSON.stringify({
+      tab: TAB, axis: AXIS, calMode: CALMODE, allFilter: ALLFILTER, allSort: ALLSORT,
+    }));
+  } catch (e) {}
+}
+
+function render() {
+  normalizeItems();
+  saveView();
+  /* Экран перерисовывается целиком, и страница прыгала: списки меняют
+     высоту, когда дело переезжает из «Предлагаю» в «Мой день».
+     Запоминаем прокрутку и возвращаем — кроме случаев, когда мы сами
+     ставим курсор в поле (тогда браузер должен к нему подвести).    */
+  const wantFocus = ALLFOCUS;
+  const y = (typeof window !== "undefined" && window.scrollY) || 0;
+  /* Колонки «Сегодня» крутятся внутри себя — их прокрутку тоже
+     возвращаем после перерисовки, иначе список прыгал бы вверх.     */
+  const colY = view.querySelectorAll
+    ? Array.from(view.querySelectorAll(".tcol")).map(c => c.scrollTop || 0) : [];
+  if (view) view.className = TAB === "today" ? "fit" : "";
+  renderChrome();
+  ({ today: renderToday, calendar: renderCalendar, map: renderMap,
+     matrix: renderMatrix, all: renderAll }[TAB])();
+  if (!wantFocus && y && typeof window !== "undefined" && window.scrollTo) window.scrollTo(0, y);
+  if (!wantFocus && colY.length && view.querySelectorAll)
+    Array.from(view.querySelectorAll(".tcol")).forEach((c, k) => { if (colY[k]) c.scrollTop = colY[k]; });
+}
+
+document.getElementById("capBtn").dataset.act = "cap";
+document.getElementById("gearBtn").dataset.act = "settings";
+document.getElementById("inboxBtn").dataset.act = "inbox";
+render();
+
+/* Приложение часто остаётся открытым сутками. Раз в минуту проверяем,
+   не наступил ли новый день: иначе «сегодня», рутины и дата в шапке
+   остались бы вчерашними.                                           */
+let LASTDAY = today();
+setInterval(() => {
+  if (today() === LASTDAY) return;
+  LASTDAY = today();
+  render();
+}, 60000);
+</script>
+</body>
+</html>

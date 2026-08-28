@@ -1,0 +1,770 @@
+
+/* ══════════════════════════════════════════════════════════════════
+   МОДАЛКИ
+   ══════════════════════════════════════════════════════════════════ */
+const host = document.getElementById("modalHost");
+/* Снимок дела на момент открытия — чтобы «Отмена» вернула всё как было.
+   Правки применяются сразу (иначе список сфер не перерисовать), поэтому
+   откат возможен только через сохранённую копию.                     */
+/* ── Выпадающие списки (дизайн-пакет, эталон 09) ─────────────────────
+   Открыт максимум один; DD хранит ключ вида "поле:идДела" или "here"/
+   "allfilter". DDM — месяц мини-календаря, DDADD — раскрыт ли ввод
+   нового места/человека. Клик мимо закрывает (см. обработчик клика). */
+let DD = null, DDM = null, DDADD = false;
+const ddId = () => DD && DD.indexOf(":") > 0 ? DD.slice(DD.indexOf(":") + 1) : null;
+function ddClose(rerender) {
+  const id = ddId(); DD = null; DDM = null; DDADD = false;
+  if (!rerender) return;
+  if (id) refreshEdit(id); else render();
+}
+function ddToggle(key) {
+  const oldId = ddId();
+  DD = DD === key ? null : key; DDM = null; DDADD = false;
+  const id = ddId() || oldId;
+  if (id) refreshEdit(id); else render();
+}
+const ddCheck = `<svg class="ic ck" viewBox="0 0 16 16" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3.2L13 5"/></svg>`;
+
+function ddTypeHTML(it) {
+  const open = DD === "type:" + it.id;
+  const def = typeDef(it.type);
+  return `<div class="ddwrap" data-ddwrap>
+    <button class="ddbtn" data-act="dd" data-k="type:${it.id}">${iconSVG(kindToken(def),
+      kindColor(it))}<span>${esc(def.name)}</span><i class="caret">▾</i></button>
+    ${open ? `<div class="dd inline">${S.types.map(t => `
+      <button class="ddrow ${t.key === it.type ? "on" : ""}" data-act="ddset" data-f="type"
+        data-id="${it.id}" data-v="${esc(t.key)}">${iconSVG(kindToken(t),
+        "var(--kind-" + kindToken(t) + ")")}<span>${esc(t.name)}${
+        t.kind === "appt" ? " — со временем" : ""}</span>${t.key === it.type ? ddCheck : ""}</button>`).join("")}
+    </div>` : ""}</div>`;
+}
+
+function ddPickHTML(it, field) {
+  const isPlace = field === "place";
+  const list = isPlace ? S.places : S.people;
+  const cur = it[field] || null;
+  const key = field + ":" + it.id, open = DD === key;
+  const icon = v => isPlace ? iconSVG("pin", "var(--pin)") : iconSVG("person", "currentColor");
+  return `<div class="ddwrap" data-ddwrap>
+    <button class="ddbtn ${cur ? "" : "dim"}" data-act="dd" data-k="${key}">${icon()}<span>${
+      cur ? esc(cur) : (isPlace ? "без места" : "без человека")}</span><i class="caret">▾</i></button>
+    ${open ? `<div class="dd inline">
+      ${list.map(v => `<button class="ddrow ${v === cur ? "on" : ""}" data-act="ddset"
+          data-f="${field}" data-id="${it.id}" data-v="${esc(v)}">${icon(v)}<span>${esc(v)}</span>${
+          v === cur ? ddCheck : ""}</button>`).join("")}
+      <button class="ddrow dim ${cur ? "" : "on"}" data-act="ddset" data-f="${field}"
+        data-id="${it.id}" data-v=""><span>${isPlace ? "без места" : "без человека"}</span>${cur ? "" : ddCheck}</button>
+      <div class="dddiv"></div>
+      ${DDADD ? `<div class="ddaddrow"><input type="text" id="ddAddInp" autocomplete="off"
+          data-f="${field}" data-id="${it.id}" placeholder="${isPlace ? "Новое место" : "Имя"}">
+          <button class="btn primary" data-act="ddaddgo" data-f="${field}" data-id="${it.id}">Добавить</button></div>`
+        : `<button class="ddrow ddadd" data-act="ddaddshow">＋ добавить ${isPlace ? "место" : "человека"}</button>`}
+    </div>` : ""}</div>`;
+}
+
+/* Новое место/человек прямо из формы: то же правило, что в справочниках —
+   без дублей, и сразу назначается делу.                             */
+function ddAddCommit(field, id) {
+  const it = S.items.find(x => x.id === id); if (!it) return;
+  const inp = document.getElementById("ddAddInp");
+  const t = inp && inp.value ? String(inp.value).trim() : "";
+  if (!t) return;
+  const list = field === "place" ? S.places : S.people;
+  if (!list.some(x => String(x).toLowerCase() === t.toLowerCase())) list.push(t);
+  it[field] = list.find(x => String(x).toLowerCase() === t.toLowerCase());
+  DD = null; DDM = null; DDADD = false;
+  save(); refreshEdit(id);
+}
+
+function ddCalHTML(it) {
+  const anchor = DDM || it.due || today();
+  const d = new Date(anchor + "T12:00:00");
+  const y = d.getFullYear(), m = d.getMonth();
+  const first = y + "-" + pad2(m + 1) + "-01";
+  const start = startOfWeek(first);
+  const inMonth = new Date(y, m + 1, 0).getDate();
+  const lead = Math.round((new Date(first + "T12:00:00") - new Date(start + "T12:00:00")) / 864e5);
+  const cells = Math.ceil((lead + inMonth) / 7) * 7;
+  return `<div class="ddcal">
+    <div class="ddnavrow"><button data-act="ddnav" data-d="prev" data-id="${it.id}">‹</button>
+      <b>${MONTHS_NOM[m].toLowerCase()} ${y}</b>
+      <button data-act="ddnav" data-d="next" data-id="${it.id}">›</button></div>
+    <div class="ddwdrow">${wdOrder().map(w => `<i>${WD_BY_DAY[w]}</i>`).join("")}</div>
+    <div class="ddgrid">${Array.from({ length: cells }, (_, i) => {
+      const iso = addDays(start, i), dd2 = new Date(iso + "T12:00:00");
+      const cls = (iso === today() ? " today" : "") + (iso === it.due ? " sel" : "")
+        + (dd2.getMonth() !== m ? " out" : "");
+      return iso < today()
+        ? `<span class="ddday off${cls}">${dd2.getDate()}</span>`
+        : `<button class="ddday${cls}" data-act="duepick" data-id="${it.id}"
+             data-d="${iso}">${dd2.getDate()}</button>`;
+    }).join("")}</div></div>`;
+}
+
+function ddDueHTML(it) {
+  const key = "due:" + it.id, open = DD === key;
+  return `<div class="ddwrap" data-ddwrap>
+    <button class="ddbtn ${it.due ? "" : "dim"}" data-act="dd" data-k="${key}">${SAND}<span>${
+      it.due ? dateLabel(it) : "без срока"}</span><i class="caret">▾</i></button>
+    ${open ? `<div class="dd inline duedd">
+      <div class="ddquick">
+        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="today">сегодня</button>
+        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="tomorrow">завтра</button>
+        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="week">через неделю</button>
+        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="none">без срока</button>
+      </div>
+      ${ddCalHTML(it)}
+      <p class="qs" style="margin:6px 10px 6px">сегодня — в кольце · выбранное — залито</p>
+    </div>` : ""}</div>`;
+}
+
+let editBackup = null;
+let lastModalKey = null;
+/* Какой шаг сейчас правится: "идДела:номер". Хранится снаружи, потому что
+   окно перерисовывается на каждое действие.                          */
+let EDITSTEP = null;
+const closeModal = () => {
+  host.innerHTML = ""; editBackup = null; lastModalKey = null; EDITSTEP = null;
+};
+function openModal(html, key, close) {
+  /* Окно перерисовывается после каждого выбора — прокрутку сохраняем,
+     иначе после нажатия на кнопку внизу оно прыгает в начало.
+     Но только для ТОГО ЖЕ окна: новое всегда открывается сверху.     */
+  const prev = host.querySelector ? host.querySelector(".modal") : null;
+  const keep = (prev && key && key === lastModalKey) ? prev.scrollTop : 0;
+  host.innerHTML = `<div class="veil"><div class="modal">${close
+    ? `<div class="modalbar"><button class="modalx" data-act="${close.act}"${
+        close.id ? ` data-id="${close.id}"` : ""} title="${close.title || "Закрыть"}">×</button></div>`
+    : ""}${html}</div></div>`;
+  const now = host.querySelector ? host.querySelector(".modal") : null;
+  if (now) now.scrollTop = keep;
+  lastModalKey = key || null;
+}
+
+/* ── Просмотр сделанного ─────────────────────────────────────────────
+   В архиве править нечего: дело закрыто. Показываем, что в нём было —
+   шаги, заметку и когда именно оно сделано.                         */
+function openDone(id, when) {
+  const it = S.items.find(x => x.id === id);
+  if (!it) return;
+  const rout = isRoutine(it);
+  const hasSteps = it.multi && it.steps.length;
+  const D = ["вс","пн","вт","ср","чт","пт","сб"];
+  openModal(`<h3>${kindIcon(it)}${esc(it.title)}</h3>
+    <p class="qs" style="margin:-10px 0 16px">${rout ? "Отмечено"
+      : isAppt(it) ? "Состоялась" : "Сделано"}:
+      <b style="color:var(--good)">${formatDay(when)}</b>${when ? " · " + esc(when) : ""}</p>
+
+    <div class="readmeta">
+      ${sphereTags(it)}
+      ${it.place ? placeTag(it.place) : ""}
+      ${it.person && it.person !== "Я" ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(it.person)}</span>` : ""}
+      ${it.due && !rout ? `<span class="tag when">дедлайн был ${esc(it.due)}${
+        it.time ? " " + esc(it.time) : ""}</span>` : ""}
+    </div>
+
+    ${rout && it.routine ? `<p class="lbl">Расписание</p>
+      <div class="rt">${D.map((d, i) =>
+        `<div class="${it.routine.days.indexOf(i) >= 0 ? "hit" : ""}">${d}</div>`).join("")}</div>
+      <p class="qs" style="margin:-4px 0 16px">Сделано ${routineScore(it).hit}
+        из ${routineScore(it).of} за последнюю неделю.</p>` : ""}
+
+    ${hasSteps ? `<p class="lbl">Шаги</p>
+      <div style="margin-bottom:16px">${it.steps.map(s =>
+        `<div class="readstep ${s.done ? "done" : ""}">
+           <span class="m" style="color:${s.done ? "var(--good)" : "var(--dim)"}">${s.done ? "✓" : "○"}</span>
+           <span class="tx">${esc(s.text)}</span></div>`).join("")}</div>` : ""}
+
+    ${it.options && it.options.length ? `<p class="lbl">Варианты</p>
+      <div style="margin-bottom:16px">${it.options.map(o =>
+        `<div class="readstep"><span class="m">·</span><span class="tx">${esc(o.text)}</span></div>`).join("")}</div>` : ""}
+
+    ${it.notes ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
+      <div class="readnote">${esc(it.notes)}</div>` : ""}
+
+    ${!it.notes && !hasSteps && !rout && !(it.options || []).length
+      ? `<p class="qs" style="margin-bottom:16px">Ни шагов, ни заметок — просто сделано.</p>` : ""}
+
+    <p class="qs" style="margin:0 0 14px">Здесь только просмотр. Чтобы снова править — верните дело.</p>
+    <div class="row">
+      <button class="btn ghost" data-act="undo" data-id="${it.id}">Вернуть в дела</button>
+    </div>`, "done:" + id, { act: "close" });
+}
+
+/* ── Что уберём ──────────────────────────────────────────────────────
+   Когда день уже полон, приложение не запрещает — оно показывает
+   цену и предлагает обменять.                                        */
+function askSwap(newId) {
+  const it = S.items.find(x => x.id === newId);
+  const mine = todayItems().mine;
+  if (!it) return;
+  /* Встречу убрать нельзя — она назначена, а не выбрана. */
+  const free = mine.filter(m => !isTodayAppt(m));
+  const appts = mine.length - free.length;
+  openModal(`<h3>На сегодня уже ${mine.length}</h3>
+    <p class="qs" style="margin:-10px 0 16px">Добавляем «<b>${esc(it.title)}</b>».
+      ${free.length ? "Что уберём, чтобы день остался реальным?"
+        : "Но день занят встречами — их не отложишь."}</p>
+    ${appts ? `<p class="qs" style="margin:-8px 0 12px">Встреч сегодня: ${appts}.
+      Они назначены, поэтому в обмен не идут.</p>` : ""}
+    ${free.map(m => `<button class="swaprow" data-act="swap" data-id="${newId}" data-out="${m.id}">
+      <span class="pickmark" style="color:var(--warm)">−</span>
+      <span class="picktitle">${esc(m.title)}</span>
+      ${sphereTags(m)}</button>`).join("")}
+    <p class="qs" style="margin:12px 0 0">Убранное не пропадёт — вернётся в «Предлагаю».</p>
+    <div class="row">
+      <button class="btn ghost" data-act="swapskip" data-id="${newId}">Всё равно добавить</button>
+    </div>`, "swap", { act: "close" });
+}
+
+/* ── Настройки ───────────────────────────────────────────────────────
+   Здесь только то, что настраивают один раз. Всё, к чему возвращаешься
+   каждую неделю, осталось в потоке.                                  */
+/* Настройки копятся в черновике и вступают в силу по кнопке «Применить».
+   Иначе каждое нажатие мгновенно перестраивало бы всё приложение
+   за спиной у окна.                                                 */
+let cfgDraft = null;
+const cfgDirty = () => cfgDraft && JSON.stringify(cfgDraft) !== JSON.stringify(S.cfg);
+
+/* Каждая настройка — самостоятельный блок: пары раскладываются рядом
+   сеткой, а на узком окне сами встают друг под друга.               */
+function cfgSeg(key, opts, label, hint) {
+  return `<div class="cfgitem"><p class="lbl">${label}</p>
+    <div class="seg" style="margin-bottom:4px">${opts.map(([v, L]) =>
+      `<button data-act="cfg" data-k="${key}" data-v="${v}"
+        class="${String(cfgDraft[key]) === String(v) ? "on" : ""}">${L}</button>`).join("")}</div>
+    ${hint ? `<p class="qs" style="margin:0">${hint}</p>` : ""}</div>`;
+}
+
+function applyCfg() {
+  if (cfgDraft) S.cfg = JSON.parse(JSON.stringify(cfgDraft));
+  cfgDraft = null; save(); applyTheme(); closeModal(); render();
+}
+function cancelCfg() { cfgDraft = null; closeModal(); render(); }
+
+/* ── Копия данных ────────────────────────────────────────────────────
+   Выгрузка отдаёт всё состояние одним файлом; загрузка кладёт файл в
+   хранилище и перезапускает страницу, чтобы миграции и самопочинка
+   прошли по загруженным данным как по своим.                        */
+const exportPayload = () => JSON.stringify(S, null, 2);
+
+function exportData() {
+  if (typeof Blob === "undefined" || typeof URL === "undefined") return;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([exportPayload()], { type: "application/json" }));
+  a.download = "организатор-данные-" + today() + ".json";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+
+function applyImport(text) {
+  let data;
+  try { data = JSON.parse(text); } catch (e) { data = null; }
+  if (!data || !Array.isArray(data.items))
+    return { error: "Это не файл с данными организатора." };
+  return { data, count: data.items.filter(i => i && !i.draft).length };
+}
+
+function importData(text) {
+  const r = applyImport(text);
+  if (r.error) return alert(r.error);
+  const here = S.items.filter(i => !i.draft).length;
+  if (!confirm("Заменить данные в приложении теми, что в файле?\n\nСейчас в приложении "
+      + here + " " + plural(here, "запись", "записи", "записей") + ", в файле "
+      + r.count + " " + plural(r.count, "запись", "записи", "записей") + ".")) return;
+  try { localStorage.setItem(KEY, JSON.stringify(r.data)); }
+  catch (e) { return alert("Не получилось сохранить — данные не тронуты."); }
+  if (typeof location !== "undefined" && location.reload) location.reload();
+}
+
+function openSettings() {
+  if (!cfgDraft) cfgDraft = JSON.parse(JSON.stringify(S.cfg));
+  /* Второй уровень — тот же попап: заголовок меняется на «‹ Настройки |
+     Сферы», содержимое — на список. Одно окно, две глубины.        */
+  if (DIRPAGE) {
+    const d = DIRS[DIRPAGE];
+    openModal(`<h3 class="dirhead"><button class="btn link" data-act="dirback">‹ Настройки</button>
+        <b>${d.title}</b></h3>
+      ${dirPageHTML()}`, "settings:" + DIRPAGE,
+      { act: "cfgcancel", title: "Закрыть" });
+    wireDirectories();
+    return;
+  }
+  openModal(`<h3>Настройки</h3>
+
+    <div class="cfggrid">
+      ${cfgSeg("todayCap", [[3,"3"],[5,"5"],[7,"7"]], "Дел в день",
+        "Больше семи в день не помещается ни у кого — экран короткий намеренно.")}
+      ${cfgSeg("urgentDays", [[1,"1 день"],[3,"3 дня"],[7,"неделя"]],
+        "Горит за",
+        "Сколько дней до дедлайна дело считается срочным. Пересчитывается каждый день.")}
+    </div>
+
+    <div class="cfggrid">
+      ${cfgSeg("theme", [["light","светлая"],["dark","тёмная"]], "Тема")}
+      ${cfgSeg("weekStart", [[1,"пн"],[0,"вс"]], "Начало недели")}
+    </div>
+
+    <div class="setdiv"></div>
+    ${dirRowsHTML()}
+
+    <div class="setdiv"></div>
+    <p class="lbl">Данные</p>
+    <div class="row" style="margin:0;justify-content:flex-start">
+      <button class="btn ghost outline" data-act="exportdata">Сохранить в файл</button>
+      <button class="btn ghost outline" data-act="importdata">Загрузить из файла</button>
+    </div>
+    <p class="qs" style="margin-top:10px">Всё хранится в этом браузере. Файл-копия —
+      способ перенести данные или подстраховаться.</p>
+    <input type="file" id="importFile" accept=".json,application/json" hidden>
+
+    <div class="setdiv"></div>
+    <div class="row">
+      <span class="qs" style="margin:0">${cfgDirty()
+        ? `<b style="color:var(--warm)">Есть неприменённые изменения</b>`
+        : "Всё применено"}</span>
+      <div class="spacer"></div>
+      <button class="btn ${cfgDirty() ? "primary" : "ghost"}" data-act="cfgapply"
+        ${cfgDirty() ? "" : "disabled"}>Применить изменения</button>
+    </div>`, "settings",
+    { act: "cfgcancel", title: "Закрыть, не применяя изменения" });
+  wireDirectories();
+  const fi = document.getElementById("importFile");
+  if (fi && fi.addEventListener) fi.addEventListener("change", () => {
+    const f = fi.files && fi.files[0];
+    if (!f || typeof FileReader === "undefined") return;
+    const rd = new FileReader();
+    rd.onload = () => importData(String(rd.result));
+    rd.readAsText(f);
+  });
+}
+
+/* ── Добавить дело ───────────────────────────────────────────────────
+   Быстро: написал название, Enter — готово. Но здесь же доступны все
+   те же параметры, что и при редактировании: вид, шаги, дедлайн, клетка
+   матрицы, сферы, место, человек. Заполнять — по желанию.           */
+let draftId = null, capFocus = false, stepFocus = false;
+/* Какие необязательные блоки формы раскрыты в этот раз. */
+let capOpen = { notes: false, steps: false };
+
+/* Перерисовка открытой формы после каждой правки: черновик — своей
+   отрисовкой, существующее дело — редактором. Функция была потеряна
+   при удалении панели поиска: без неё падал любой клик в формах.   */
+const refreshEdit = id => {
+  if (draftId && id === draftId) return drawCapture();
+  if (host.innerHTML) openEdit(id); else render();
+};
+
+function openCapture(preset) {
+  capFocus = true;
+  capOpen = { notes: false, steps: false };
+  const it = {
+    id: uid(), title: "", type: defaultType(), multi: false, spheres: [], place: null,
+    person: null, due: null, time: null, steps: [], options: [], routine: null,
+    done: false, created: today(), notes: "", forceImp: null,
+    today: null, notToday: null, draft: true,
+  };
+  /* Создание наследует ракурс: день в календаре даёт дедлайн, ветка на
+     карте — сферу, клетка матрицы — важность и срочность. Половину вы
+     уже сказали тем, откуда нажали.                                  */
+  Object.assign(it, preset || {});
+  S.items.push(it);
+  draftId = it.id;
+  drawCapture();
+}
+
+function drawCapture() {
+  const it = S.items.find(x => x.id === draftId);
+  if (!it) return closeModal();
+  const D = ["вс","пн","вт","ср","чт","пт","сб"];
+  const chips = (list, act, cur, lbl) => `<p class="lbl">${lbl}</p><div class="chips">${
+    list.map(v => `<button class="chip ${cur(v) ? "on" : ""}" data-act="${act}"
+      data-id="${it.id}" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div>`;
+
+  /* Форма короткая по умолчанию: заметка и шаги раскрываются кнопками —
+     нужны они редко, а окно от них вырастало вдвое. Важность здесь не
+     спрашиваем: по умолчанию дело важное, поменять можно в матрице. */
+  const openNotes = capOpen.notes || !!(it.notes || "").trim();
+  const openSteps = !isRoutine(it) && (capOpen.steps || (it.multi && it.steps.length));
+  /* Пока оба блока свёрнуты — они стоят парой в ряд. Как только один
+     раскрыт, он занимает всю ширину, а второй остаётся кнопкой ниже. */
+  const bNotes = `<button class="addtoday" data-act="capopen" data-k="notes">＋ заметка</button>`;
+  const bSteps = `<button class="addtoday" data-act="capopen" data-k="steps">＋ шаги</button>`;
+  const extraHTML = (!openNotes && !openSteps)
+    ? (isRoutine(it) ? bNotes : `<div class="caprow">${bNotes}${bSteps}</div>`)
+    : (openNotes ? notesBlockHTML(it, "capNotes") : bNotes)
+      + (isRoutine(it) ? "" : openSteps ? stepsBlockHTML(it) : bSteps);
+  openModal(`<h3>Новое дело</h3>
+    <input type="text" id="capText" placeholder="Что нужно сделать?"
+      autocomplete="off" value="${esc(it.title)}">
+    <div id="capDupe"></div>
+
+    <div class="cfggrid" style="margin-bottom:4px">
+      ${isRoutine(it) ? `<div class="cfgitem"><p class="lbl">В какие дни</p>
+        <div class="rt">${D.map((d, i) =>
+          `<div class="${it.routine ? (it.routine.days.indexOf(i) >= 0 ? "hit" : "") : ""}"
+            data-act="rday" data-id="${it.id}" data-i="${i}" style="cursor:pointer">${d}</div>`).join("")}</div></div>`
+        : `<div class="cfgitem">${whenFieldsHTML(it, "capDate", "capTime")}</div>`}
+      <div class="cfgitem"><p class="lbl">Вид дела</p>${ddTypeHTML(it)}</div>
+    </div>
+
+    <p class="lbl" style="margin-top:18px">Сфера
+      <span class="qs" style="text-transform:none;letter-spacing:0;margin-left:8px">можно несколько</span></p>
+    <div class="chips">${S.spheres.map(v =>
+      `<button class="chip ${it.spheres.indexOf(v) >= 0 ? "on" : ""}" data-act="esphere"
+        data-id="${it.id}" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div>
+
+    <div class="cfggrid">
+      <div class="cfgitem"><p class="lbl">Место</p>${ddPickHTML(it, "place")}</div>
+      <div class="cfgitem"><p class="lbl">Человек</p>${ddPickHTML(it, "person")}</div>
+    </div>
+
+    ${extraHTML}
+
+    <div class="row" style="justify-content:flex-start;margin-top:20px">
+      <button class="btn primary" data-act="capsave">Добавить</button>
+      ${isRoutine(it) || isAppt(it) || isIdea(it) ? ""
+        : `<button class="btn soft" data-act="capsavetake">добавить и взять</button>`}
+      <div class="spacer"></div>
+      <button class="btn link" data-act="capcancel">Отмена</button>
+    </div>`, "capture", { act: "capcancel", title: "Отменить и закрыть" });
+
+  const inp = document.getElementById("capText");
+  if (inp && inp.addEventListener) {
+    inp.addEventListener("input", () => {
+      it.title = inp.value;
+      const d = findDupes(inp.value, it.id);
+      const box = document.getElementById("capDupe");
+      if (box) box.innerHTML = d.length
+        ? `<div class="dupe"><b>Похоже, это уже есть:</b><br>${d.map(x =>
+            `«${esc(x.title)}»${(x.spheres || []).length ? " — " + esc(x.spheres.join(", ")) : ""}, записано ${esc(x.created)}`).join("<br>")}
+           <br><span style="opacity:.75">Если это другое дело — просто добавляйте.</span></div>`
+        : "";
+    });
+    inp.addEventListener("keydown", e => { if (e.key === "Enter") saveCapture(); });
+    /* Фокус ставим только когда окно открылось. Иначе после каждого выбора
+       браузер прокручивал бы окно обратно к полю названия.            */
+    if (capFocus) { inp.focus(); capFocus = false; }
+  }
+  wireStepsInput(it.id);
+  wireNotes(it.id, "capNotes");
+  wireWhen(it.id, "capDate", "capTime", drawCapture);
+}
+
+/* «добавить и взять» — то же сохранение, только дело сразу уходит
+   в сегодняшний список (с проверкой лимита).                        */
+function saveCaptureTake() {
+  const id = draftId;
+  saveCapture();
+  const it = S.items.find(x => x.id === id);
+  if (it && !it.draft) tryAddToToday(id);
+}
+
+function saveCapture() {
+  const it = S.items.find(x => x.id === draftId);
+  if (!it) return closeModal();
+  /* Название берём из самого дела: поле ввода пишет туда на каждой
+     клавише, а окно между делом перерисовывается — читать из DOM хрупко. */
+  if (!String(it.title).trim()) return cancelCapture();   // без названия дела нет
+  it.title = it.title.trim();
+  delete it.draft;
+  draftId = null;
+  save(); closeModal(); render();
+}
+
+function cancelCapture() {
+  S.items = S.items.filter(x => x.id !== draftId);
+  draftId = null;
+  save(); closeModal(); render();
+}
+
+/* ── Разобрать: всё, что записано без ветки ──────────────────────── */
+function openInbox() {
+  const inb = live().filter(inInbox);
+  openModal(`<h3>Разобрать · ${inb.length}</h3>
+    <p class="sub">Записать сразу, разложить потом — так мысли не теряются.</p>
+    ${inb.map(i => `<div class="card" style="box-shadow:none">
+      <div class="title">${esc(i.title)}</div>
+      <div class="chips" style="margin-top:10px">${S.spheres.map(sp =>
+        `<button class="chip" data-act="assign" data-id="${i.id}" data-v="${esc(sp)}">${esc(sp)}</button>`).join("")}</div>
+    </div>`).join("") || `<div class="empty">Пусто — всё разобрано.</div>`}
+    `, "inbox", { act: "close" });
+}
+
+/* ── Добавить дело в сегодня ─────────────────────────────────────────
+   Одно поле на оба случая: найти уже записанное или записать новое.
+   Список совпадений заодно работает защитой от дубликатов.          */
+
+
+/* ── Куда в матрице ──────────────────────────────────────────────────
+   По умолчанию клетка считается сама. Но дело бывает важным независимо
+   от ветки и срочным независимо от даты — тогда ставим руками.      */
+function quadPickHTML(it) {
+  const cur = isImportant(it) ? "imp" : "not";
+  const opt = (k, label) => `<button class="chip ${cur === k ? "on" : ""}" data-act="equad"
+    data-id="${it.id}" data-q="${k}">${label}</button>`;
+  return `<p class="lbl">Важность</p>
+    <div class="chips">${opt("imp", "важное")}${opt("not", "неважное")}</div>
+    <p class="qs" style="margin:-8px 0 12px">Это ваше решение и ничьё больше.
+      Срочность сюда не входит — она считается из дедлайна.</p>`;
+}
+
+/* ── Когда: дедлайн, дата выбора или точные дата и время ────────────
+   У встреч и приёмов есть час, а не только день — поэтому рядом с датой
+   появляется поле времени.                                          */
+const DATEBOX = `padding:12px 14px;border:1px solid var(--line);
+  border-radius:11px;background:var(--bg);margin-bottom:12px`;
+
+/* Назначать дело в прошлое нельзя. Но если у дела уже стоит прошедшая
+   дата, её оставляем допустимой — иначе такое дело нельзя было бы
+   открыть и поправить.                                              */
+const minDate = it => (it.due && it.due < today()) ? it.due : today();
+
+function whenFieldsHTML(it, dateId, timeId) {
+  if (isRoutine(it)) return "";
+  if (isIdea(it)) return `<p class="qs" style="margin:4px 0 14px">У идеи нет срока —
+    она ничего не требует и сама в «Сегодня» не просится.
+    Захотите взяться — добавьте её туда вручную или смените вид.</p>`;
+  if (isAppt(it)) return `<p class="lbl">Дата и время</p>
+    <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start">
+      <div style="flex:1;min-width:0">${ddDueHTML(it)}</div>
+      <input type="time" id="${timeId}" value="${it.time || ""}" style="${DATEBOX};width:130px;margin-bottom:0">
+    </div>
+    <p class="qs" style="margin:-4px 0 12px">${it.due === today()
+      ? "Встреча сегодня — поэтому она стоит в дне и убрать её оттуда нельзя. Смените дату, и она уйдёт сама."
+      : "Время видно в списках: «завтра в 14:30»."}</p>`;
+  return `<p class="lbl">Дедлайн</p><div style="margin-bottom:12px">${ddDueHTML(it)}</div>`;
+}
+
+function wireWhen(id, dateId, timeId, after) {
+  const it = S.items.find(x => x.id === id); if (!it) return;
+  /* Дата теперь выбирается выпадашкой (мини-календарь) — слушаем
+     только время.                                                   */
+  const t = document.getElementById(timeId);
+  if (t && t.addEventListener) t.addEventListener("change", () => {
+    it.time = t.value || null; save(); after();
+  });
+}
+
+/* ── Заметки ─────────────────────────────────────────────────────────
+   Поле одно на все виды: иначе, сменив вид, дело унесло бы заметку
+   в невидимое. У аппоинтмента подпись другая — там это адрес и телефон.
+   Пишется сразу, без перерисовки, чтобы не терялся курсор.          */
+function notesBlockHTML(it, id) {
+  return `<p class="lbl">${isAppt(it)
+    ? "Адрес, телефон, что взять с собой"
+    : "Заметки"}</p>
+    <textarea class="notebox" id="${id}" placeholder="${isAppt(it)
+      ? "Кайзерсграхт 12, 2 этаж · +31 20 123 45 67 · взять страховку"
+      : "Что угодно, что пригодится"}">${esc(it.notes || "")}</textarea>`;
+}
+
+function wireNotes(itemId, fieldId) {
+  const el = document.getElementById(fieldId);
+  if (!el || !el.addEventListener) return;
+  el.addEventListener("input", () => {
+    const it = S.items.find(x => x.id === itemId);
+    if (it) { it.notes = el.value; save(); }     // без перерисовки: курсор на месте
+  });
+}
+
+/* ── Шаги: свойство любого дела, а не отдельный вид ──────────────────
+   Один и тот же блок используется и в карточке дела, и в панели
+   «Сегодня» при записи нового.                                       */
+function stepsBlockHTML(it) {
+  if (isRoutine(it)) return "";
+  const on = !!it.multi;
+  const doneN = it.steps.filter(s => s.done).length;
+  return `<p class="lbl">Шаги${on && it.steps.length
+    ? ` · закрыто ${doneN} из ${it.steps.length}` : ""}</p>
+    <div class="chips">
+      <button class="chip ${on ? "on" : ""}" data-act="emulti" data-id="${it.id}">${
+        on ? "✓ в несколько шагов" : "разбить на шаги"}</button>
+    </div>
+    ${on ? `<div class="steps">${it.steps.map((s, i) => {
+      const editing = EDITSTEP === it.id + ":" + i;
+      return `<div class="step ${s.done ? "done" : ""} ${editing ? "editing" : ""}"${
+        !editing && it.steps.length > 1 ? ` draggable="true" data-stepdrag="${it.id}:${i}"
+          data-stepdrop="${it.id}:${i}"` : ""}>
+        <button class="tick" data-act="step" data-id="${it.id}" data-i="${i}"></button>
+        <span class="stepnum">${i + 1}</span>
+        ${editing
+          ? `<input type="text" class="stepedit" id="stepEdit" value="${esc(s.text)}"
+               autocomplete="off">`
+          : `<span class="steptext" data-act="editstep" data-id="${it.id}" data-i="${i}"
+               title="Нажмите, чтобы поправить">${esc(s.text)}</span>`}
+        ${editing ? "" : `<button class="linkbtn danger" data-act="delstep"
+          data-id="${it.id}" data-i="${i}">убрать</button>`}
+      </div>`; }).join("")}</div>
+      <input type="text" id="newStep" placeholder="Добавить шаг и нажать Enter">
+      <p class="qs" style="margin:-4px 0 12px">В списках виден только следующий незакрытый шаг —
+        остальные не смотрят на вас.${it.steps.length > 1
+          ? " Порядок меняется перетаскиванием." : ""}</p>` : ""}`;
+}
+
+/* Записать поправленный шаг. Пустой текст не принимаем — для удаления
+   у строки есть отдельная кнопка «убрать».                          */
+function commitStepEdit(value) {
+  if (!EDITSTEP) return;
+  const parts = EDITSTEP.split(":");
+  const it = S.items.find(x => x.id === parts[0]);
+  const t = String(value == null ? "" : value).trim();
+  if (it && it.steps[+parts[1]] && t) it.steps[+parts[1]].text = t;
+  EDITSTEP = null;
+  save();
+  refreshEdit(parts[0]);
+}
+
+function wireStepsInput(id) {
+  const se = document.getElementById("stepEdit");
+  if (se && se.addEventListener) {
+    se.addEventListener("keydown", e => {
+      if (e.key === "Enter") commitStepEdit(se.value);
+      else if (e.key === "Escape") { EDITSTEP = null; refreshEdit(id); }
+    });
+    se.addEventListener("blur", () => { if (EDITSTEP) commitStepEdit(se.value); });
+    if (se.focus) se.focus();
+  }
+  const ns = document.getElementById("newStep");
+  if (!ns || !ns.addEventListener) return;
+  ns.addEventListener("keydown", e => {
+    if (e.key !== "Enter" || !ns.value.trim()) return;
+    const it = S.items.find(x => x.id === id); if (!it) return;
+    it.steps.push({ text: ns.value.trim(), done: false });
+    it.multi = true; stepFocus = true;      // чтобы сразу писать следующий шаг
+    save(); refreshEdit(id);
+  });
+  if (stepFocus) { ns.focus(); stepFocus = false; }
+}
+
+/* ── Карточка дела ───────────────────────────────────────────────── */
+/* ── Просмотр дела ────────────────────────────────────────────────────
+   Нажатие на дело где угодно открывает сначала ТИХОЕ окно: всё видно,
+   ничего нельзя случайно изменить. Правка — отдельным решением.     */
+function openItem(id) {
+  const it = S.items.find(x => x.id === id); if (!it) return;
+  if (it.draft) return drawCapture();
+  if (it.done) return openDone(id, it.doneAt);
+  const D = ["вс","пн","вт","ср","чт","пт","сб"];
+  const doneSteps = (it.steps || []).filter(s => s.done).length;
+  openModal(`<h3>${kindIcon(it)}${esc(it.title)}</h3>
+    <div class="readmeta" style="margin-top:-4px">
+      ${sphereTags(it)}
+      ${inInbox(it) && !isIdea(it) ? `<span class="tag place">без категории</span>` : ""}
+      ${it.place ? placeTag(it.place) : ""}
+      ${it.person && it.person !== "Я" ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(it.person)}</span>` : ""}
+      ${dateLabel(it) && !isRoutine(it) ? `<span class="tag when">${sandFor(it)}${dateLabel(it)}</span>` : ""}
+      ${!isRoutine(it) && !isIdea(it) && !isImportant(it)
+        ? `<span class="tag place">неважное — молчит до срока</span>` : ""}
+    </div>
+    <div class="sep"></div>
+
+    ${it.multi && (it.steps || []).length ? `<p class="lbl">Шаги · сделано ${doneSteps} из ${it.steps.length}</p>
+      <div class="readsteps">${it.steps.map((st, k) => `<div class="readstep ${
+        st.done ? "done" : ""}"><span class="stepnum">${k + 1}</span><span class="tx">${
+        esc(st.text)}</span></div>`).join("")}</div>` : ""}
+
+    ${(isChoice(it) || isIdea(it)) && (it.options || []).length ? `<p class="lbl">Варианты</p>
+      <div>${it.options.map(o => `<div class="opt">· ${esc(o.text)}</div>`).join("")}</div>` : ""}
+
+    ${isRoutine(it) && it.routine ? (() => { const wi = weekInfo(it);
+      return `<p class="lbl">В какие дни</p>
+      <div class="rt">${D.map((d, k) => `<div class="${it.routine.days.indexOf(k) >= 0 ? "hit" : ""}">${d}</div>`).join("")}</div>
+      <p class="qs" style="margin:12px 0 4px">На этой неделе: <b style="color:var(--good)">${
+        wi.hit} из ${wi.of}</b> уже сделано</p>
+      ${weekDotsHTML(it)}`; })() : ""}
+
+    ${it.notes ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
+      <div class="opt" style="white-space:pre-wrap">${esc(it.notes)}</div>` : ""}
+
+    <div class="sep"></div>
+    <div class="row" style="margin-top:0">
+      <button class="btn link" data-act="edit" data-id="${it.id}">Редактировать</button>
+      <div class="spacer"></div>
+      ${isRoutine(it) || isAppt(it) || isIdea(it) ? "" : `<button class="btn ${
+        pickedToday(it) ? "link" : "primary"}" data-act="pin" data-id="${it.id}">${
+        pickedToday(it) ? "Убрать из сегодня" : "Сделать сегодня"}</button>`}
+    </div>`, "view:" + it.id, { act: "close", title: "Закрыть" });
+}
+
+function openEdit(id) {
+  const it = S.items.find(x => x.id === id); if (!it) return;
+  /* openEdit вызывается заново после каждой правки, чтобы перерисовать
+     окно, — снимок делаем только при первом открытии этого дела.     */
+  if (!editBackup || editBackup.id !== id) editBackup = JSON.parse(JSON.stringify(it));
+  const D = ["вс","пн","вт","ср","чт","пт","сб"];
+  openModal(`<h3>${esc(it.title)}</h3>
+    <input type="text" id="edTitle" value="${esc(it.title)}">
+    <p class="lbl">Вид дела</p>
+    ${ddTypeHTML(it)}
+    <p class="qs" style="margin:6px 0 12px">${esc(typeDef(it.type).hint || "")}</p>
+
+    ${stepsBlockHTML(it)}
+
+    ${isChoice(it) || isIdea(it) ? `<p class="lbl">Варианты</p>
+      <div>${it.options.map(o => `<div class="opt">· ${esc(o.text)}</div>`).join("")
+        || `<div class="opt" style="color:var(--dim)">пока пусто</div>`}</div>
+      <input type="text" id="newOpt" placeholder="Добавить вариант и нажать Enter" style="margin-top:10px">
+      ${isIdea(it) ? "" : `<div class="dupe">Решение без дедлайна превращается в бесконечное
+        сравнение. К дедлайну берём лучшее из найденного — и закрываем вопрос.</div>`}` : ""}
+
+    ${isRoutine(it) ? `<p class="lbl">В какие дни</p>
+      <div class="rt">${D.map((d, i) => `<div class="${it.routine.days.includes(i) ? "hit" : ""}"
+        data-act="rday" data-id="${it.id}" data-i="${i}" style="cursor:pointer">${d}</div>`).join("")}</div>
+      <div class="dupe">Пропуск ничего не обнуляет. Считаем «сделано X из последних», а не серию,
+        которая рушится от одного дня.</div>` : ""}
+
+    ${whenFieldsHTML(it, "edDate", "edTime")}
+    ${notesBlockHTML(it, "edNotes")}
+
+    ${isRoutine(it) || isIdea(it) ? "" : quadPickHTML(it)}
+    <p class="lbl">Сферы — можно выбрать несколько</p>
+    <div class="chips">${S.spheres.map(sp =>
+      `<button class="chip ${(it.spheres || []).indexOf(sp) >= 0 ? "on" : ""}" data-act="esphere" data-id="${it.id}" data-v="${esc(sp)}">${esc(sp)}</button>`).join("")}</div>
+    ${(it.spheres || []).length > 1 ? `<div class="dupe">Это по-прежнему <b>одна запись</b>.
+      Она видна во всех выбранных ветках, а отметите сделанной — исчезнет сразу отовсюду.
+      Дублировать дело руками не нужно.</div>` : ""}
+    <p class="lbl">Место</p>${ddPickHTML(it, "place")}
+    <p class="lbl" style="margin-top:12px">Кого касается</p>${ddPickHTML(it, "person")}
+
+    <div class="row">
+      <button class="btn outline danger" data-act="del" data-id="${it.id}">Удалить</button>
+      <div class="spacer"></div>
+      ${isRoutine(it) || isAppt(it) ? "" : `<button class="btn ghost" data-act="pin" data-id="${it.id}">${
+        pickedToday(it) ? "Убрать из сегодня" : "Сделать сегодня"}</button>`}
+      <button class="btn primary" data-act="esave" data-id="${it.id}">Готово</button>
+    </div>`, "item:" + it.id, { act: "ecancel", id: it.id, title: "Отменить правки и закрыть" });
+
+  wireStepsInput(id);
+  wireNotes(id, "edNotes");
+  wireWhen(id, "edDate", "edTime", () => openItem(id));
+  const no = document.getElementById("newOpt");
+  if (no) no.addEventListener("keydown", e => {
+    if (e.key === "Enter" && no.value.trim()) {
+      it.options.push({ text: no.value.trim() }); save(); openItem(id);
+    }
+  });
+}
+/* Возвращает дело к снимку. Само дело остаётся — откатываются только правки. */
+function cancelItem(id) {
+  const cur = S.items.find(x => x.id === id);
+  if (editBackup && editBackup.id === id && cur) {
+    /* Возвращаем содержимое В ТОТ ЖЕ объект, а не подменяем его в списке:
+       иначе ссылки на дело, взятые где-то ещё, остались бы на старой копии. */
+    Object.keys(cur).forEach(k => { delete cur[k]; });
+    Object.assign(cur, JSON.parse(JSON.stringify(editBackup)));
+    save();
+  }
+  /* Правку отменили — возвращаемся в просмотр, а не захлопываем всё:
+     дело открывали, чтобы посмотреть, и оно всё ещё интересно.      */
+  editBackup = null;
+  openItem(id); render();
+}
+
+function saveItem(id) {
+  const it = S.items.find(x => x.id === id); if (!it) return;
+  const t = document.getElementById("edTitle");
+  if (t && t.value.trim()) it.title = t.value.trim();
+  save(); closeModal(); render();   // дата и время пишутся сразу при выборе
+}

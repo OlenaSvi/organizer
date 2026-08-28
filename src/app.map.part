@@ -1,0 +1,628 @@
+
+/* ── КАРТА ───────────────────────────────────────────────────────────
+   Одни и те же задачи, три разных центра. Ничего не копируется —
+   карта просто перерисовывается. Поэтому «правильные категории»
+   больше не нужно угадать с первого раза.                           */
+const AXES = { sphere: "по сферам", place: "по местам", person: "по людям",
+               type: "по «что это»" };
+const NOPLACE = "без места";
+
+const axisValues = a => a === "place" ? S.places.concat([NOPLACE])
+  : a === "person" ? S.people
+  : a === "type" ? S.types.map(t => t.key) : S.spheres;
+/* Ветка вида хранится ключом, а показывается именем — имена в «Что это»
+   переименовываются, и подписи на карте следуют за ними сами.        */
+const axisLabel = v => AXIS === "type"
+  ? (S.types.find(t => t.key === v) || { name: v }).name : v;
+const inAxis = (it, v) => AXIS === "place" ? (it.place || NOPLACE) === v
+  : AXIS === "person" ? (it.person || "Я") === v   // без пометки — значит моё
+  : AXIS === "type" ? typeDef(it.type).key === v   // с запасом: битый вид падает на первый
+  : (it.spheres || []).indexOf(v) >= 0;      // на оси сфер дело бывает в нескольких
+/* Дело без сферы на осях мест и людей видно как любое другое: место и
+   человек у него есть. Прячет его только ось сфер — прятать больше нечего. */
+const itemsIn = v => live().filter(i => inAxis(i, v));
+
+function wrapLabel(t, max) {
+  const w = String(t).split(" "), out = []; let cur = "";
+  w.forEach(x => {
+    if ((cur + " " + x).trim().length > max && cur) { out.push(cur); cur = x; }
+    else cur = (cur + " " + x).trim();
+  });
+  if (cur) out.push(cur);
+  return out.slice(0, 3);
+}
+
+/* Масштаб и сдвиг. Карта рисуется вокруг точки (0,0), поэтому
+   scale() увеличивает ровно от центра — как и ожидаешь.            */
+let ZOOM = 1, PAN = { x: 0, y: 0 };
+/* Где сейчас нарисованы ветки — нужно, чтобы понять, куда бросили. */
+let MAPNODES = [];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function renderMap() {
+  /* Пустые ветки тоже видны — чтобы было куда положить первое дело.
+     Прячется только пустое «без места»: это не ветка, а остаток.    */
+  const vals = axisValues(AXIS).filter(v => v !== NOPLACE || itemsIn(v).length);
+  const n = Math.max(vals.length, 1);
+  const R = 155 + Math.min(n, 12) * 9;          // больше веток — шире круг
+  MAPNODES = [];
+
+  /* Считаем реальные границы всего нарисованного, включая подписи.
+     Раньше поле было фиксированным, и длинные названия уезжали за край. */
+  const bb = { x0: -70, y0: -70, x1: 70, y1: 70 };
+  const grow = (x0, y0, x1, y1) => {
+    bb.x0 = Math.min(bb.x0, x0); bb.y0 = Math.min(bb.y0, y0);
+    bb.x1 = Math.max(bb.x1, x1); bb.y1 = Math.max(bb.y1, y1);
+  };
+  const growText = (x, y, txt, fs, anchor) => {
+    const w = String(txt).length * fs * 0.58;
+    const x0 = anchor === "end" ? x - w : anchor === "middle" ? x - w / 2 : x;
+    grow(x0, y - fs, x0 + w, y + fs * 0.45);
+  };
+
+  /* Связи собираем отдельно и выводим ПЕРВЫМИ: узлы полупрозрачные,
+     и линия, дорисованная поверх, просвечивала бы сквозь пилюлю.   */
+  let links = "", svg = "";
+  /* Где луч под углом `a` покидает прямоугольник (полуразмеры hw, hh) —
+     чтобы линия упиралась в край пилюли, а не шла в её центр.       */
+  /* Где луч под углом `a` покидает прямоугольник (полуразмеры hw, hh) —
+     чтобы линия упиралась в край пилюли, а не шла в её центр.       */
+  const edge = (cx, cy, a, hw, hh) => {
+    const ca = Math.abs(Math.cos(a)), sa = Math.abs(Math.sin(a));
+    const t = Math.min(ca > 1e-6 ? hw / ca : 1e9, sa > 1e-6 ? hh / sa : 1e9);
+    return { x: cx - Math.cos(a) * t, y: cy - Math.sin(a) * t };
+  };
+  vals.forEach((v, k) => {
+    const ang = (k / n) * Math.PI * 2 - Math.PI / 2;
+    const x = Math.cos(ang) * R, y = Math.sin(ang) * R;
+    const items = itemsIn(v);
+    /* Все оси цветные: ветка залита своим цветом целиком, её дела —
+       тем же цветом, но бледным. Цвета кладём в style: var() в
+       SVG-атрибутах не работает.                                    */
+    const col = colorOf(AXIS, v);
+    const sel = isOpen(v);
+    const bLabel = axisLabel(v) + " · " + items.length;
+    const pw = Math.max(bLabel.length * 7.6 + 28, 58), ph = 34;
+
+    /* От края центрального «Я» до края пилюли ветки. */
+    const cOut = edge(0, 0, ang + Math.PI, 26, 22);
+    const bIn = edge(x, y, ang, pw / 2, ph / 2);
+    links += `<path d="M${cOut.x} ${cOut.y} Q${Math.cos(ang) * R * .55} ${
+      Math.sin(ang) * R * .55} ${bIn.x} ${bIn.y}"
+      style="fill:none;stroke:var(--dash);stroke-width:1.5" opacity=".9"/>`;
+
+    if (sel) {
+      /* Все листья, без потолка. Раскладываем дугами внутри сектора
+         своей ветки: сколько помещается на ближней дуге — столько на
+         ней, остальные на следующей, дальше от центра. Дуги сдвинуты
+         на полшага — подписи стоят в шахматном порядке. Карта от
+         этого растёт, но колесо и «уместить» это переваривают.      */
+      const sector = (Math.PI * 2) / n;
+      const arc = sector * 0.78;
+      /* Шаг считаем по реальному габариту пилюли, спроецированному на
+         направление луча и на перпендикуляр к нему. Иначе у ветки,
+         смотрящей вверх, широкие подписи расходятся вбок и налезают
+         друг на друга — фиксированного шага им мало.                 */
+      const maxLw = items.reduce((w, it) => Math.max(w,
+        Math.min(it.title.length, 24) * 7 + 22), 60);
+      const ca = Math.abs(Math.cos(ang)), sa = Math.abs(Math.sin(ang));
+      const along  = maxLw * ca + 22 * sa + 18;   // вдоль луча: шаг между дугами
+      const across = maxLw * sa + 22 * ca + 14;   // поперёк: шаг между соседями
+      let done = 0, ringNo = 0, ringR = R + pw / 2 + 60;
+      while (done < items.length) {
+        /* Отступ листьев считаем от КРАЯ пилюли ветки, а не от её центра:
+           у длинного названия пилюля широкая, и листья налезали на неё. */
+        const LR = ringR;
+        const step = across / LR;                  // угловой шаг одной подписи
+        const cap = Math.max(1, Math.floor(arc / step));
+        const take = items.slice(done, done + cap);
+        const spread = Math.min(step * take.length, arc);
+        const stag = (ringNo % 2) ? spread / Math.max(take.length, 1) / 2 : 0;
+        take.forEach((it, j) => {
+          const a2 = ang + stag + (j - (take.length - 1) / 2) * (spread / Math.max(take.length - 1, 1));
+          const lx = Math.cos(a2) * LR, ly = Math.sin(a2) * LR;
+          const left = lx < 0;
+          const label = it.title.length > 24 ? it.title.slice(0, 23) + "…" : it.title;
+          /* Лист — мини-пилюля на 10% фоне своего цвета, к ветке идёт
+             пунктирная нить. Нажатие в любом месте пилюли — просмотр. */
+          /* Ширина с запасом: кириллица в Manrope шире латиницы, и при
+             скупой оценке короткие подписи сидели в пилюле криво.   */
+          const lw = label.length * 7 + 22;
+          const px0 = left ? lx - lw : lx;
+          /* Нить — от края пилюли ветки до края пилюли листа. Пилюля листа
+             растёт от точки в сторону подписи, поэтому её центр смещён
+             на пол-ширины — иначе нить обрывалась, не долетев.       */
+          const lcx = px0 + lw / 2;
+          const bOut = edge(x, y, a2 + Math.PI, pw / 2, ph / 2);
+          const dx = lcx - x, dy = ly - y;
+          const aIn = Math.atan2(dy, dx);
+          const lIn = edge(lcx, ly, aIn, lw / 2, 11);
+          links += `<path d="M${bOut.x} ${bOut.y} Q${(x + lcx) / 2} ${(y + ly) / 2} ${lIn.x} ${lIn.y}"
+              style="fill:none;stroke:var(--dash);stroke-width:1.2;stroke-dasharray:3 4"/>`;
+          svg += `<g class="leaf" data-drag-map="${it.id}" data-from="${esc(v)}">
+              <rect x="${px0}" y="${ly - 11}" width="${lw}" height="22" rx="11"
+                style="fill:color-mix(in srgb, ${col} 22%, transparent)"
+                data-act="open" data-id="${it.id}"></rect>
+              <text x="${px0 + lw / 2}" y="${ly + 4}" font-size="12"
+                text-anchor="middle" style="fill:${col}" font-weight="600"
+                data-act="open" data-id="${it.id}">${esc(label)}</text>
+            </g>`;
+          grow(px0 - 4, ly - 15, px0 + lw + 4, ly + 15);
+        });
+        done += take.length; ringNo++; ringR += along;
+      }
+    }
+
+    /* Ветка всегда залита своим цветом целиком — она главная. Раскрытая
+       чуть плотнее по тени, закрытая просто спокойнее.              */
+    const bFill = `fill:${col}`;
+    const bText = "fill:#fff";
+    svg += `<g class="branch" data-act="branch" data-val="${esc(v)}">
+      <rect x="${x - pw / 2}" y="${y - ph / 2}" width="${pw}" height="${ph}" rx="${ph / 2}"
+        style="${bFill};opacity:${sel ? 1 : .82}"></rect>
+      <text x="${x}" y="${y + 4.5}" font-size="13.5" font-weight="600" text-anchor="middle"
+        style="${bText}" pointer-events="none">${esc(bLabel)}</text>
+    </g>`;
+    MAPNODES.push({ val: v, x: x, y: y, r: Math.max(pw / 2, 22) });
+    grow(x - pw / 2 - 4, y - ph / 2 - 4, x + pw / 2 + 4, y + ph / 2 + 4);
+  });
+
+  svg = links + svg;
+  svg += `<rect x="-26" y="-22" width="52" height="44" rx="14" style="fill:var(--accent)"></rect>
+    <text x="0" y="6" font-size="17" font-weight="700" text-anchor="middle"
+      style="fill:#fff">Я</text>`;
+
+  /* Симметричное поле вокруг центра — чтобы увеличение шло от середины */
+  const halfW = Math.max(Math.abs(bb.x0), Math.abs(bb.x1)) + 26;
+  const halfH = Math.max(Math.abs(bb.y0), Math.abs(bb.y1)) + 26;
+
+  const openVals = vals.filter(isOpen);
+  view.innerHTML = `<h2>Карта</h2>
+    <p class="sub">Здесь ничего не теряется. Раскрытые ветки такими и остаются —
+      можно раскрыть все сразу и увидеть картину целиком.</p>
+    <p class="draghint">Дело можно перетащить с ветки на ветку — метка переедет вместе с ним.</p>
+    <div class="maprow">
+      <div class="axis">${Object.keys(AXES).map(a =>
+        `<button data-act="axis" data-a="${a}" class="${AXIS === a ? "on" : ""}">${AXES[a]}</button>`).join("")}</div>
+      <div class="maptools">
+        <button data-act="openall" data-v="all" class="wide">раскрыть все</button>
+        <button data-act="openall" data-v="none" class="wide">свернуть все</button>
+        <button data-act="zoom" data-d="out" title="Отдалить">−</button>
+        <button data-act="zoom" data-d="in" title="Приблизить">+</button>
+        <button data-act="zoom" data-d="fit" class="wide" title="Показать всё">уместить</button>
+      </div>
+    </div>
+    <svg id="map" viewBox="${-halfW} ${-halfH} ${halfW * 2} ${halfH * 2}"
+         preserveAspectRatio="xMidYMid meet"><g id="mapG">${svg}</g></svg>
+    ${openVals.map(v => {
+      const list = itemsIn(v);
+      const attr = AXIS === "place" ? `data-place="${esc(v)}"`
+                 : AXIS === "person" ? `data-person="${esc(v)}"`
+                 : AXIS === "type" ? `data-type="${esc(v)}"` : `data-sphere="${esc(v)}"`;
+      return `<div class="branchhead">
+          <h2><span style="display:inline-block;width:11px;height:11px;border-radius:50%;
+            background:${colorOf(AXIS, v)};margin-right:9px"></span>Ветка «${esc(axisLabel(v))}»</h2>
+          <button class="addhere" data-act="newhere" ${v === NOPLACE ? "" : attr}
+            title="Создать дело в этой ветке">＋</button>
+        </div>
+        <p class="sub">${list.length} ${list.length === 1 ? "дело" : "дел"}</p>
+        ${list.map(mapRowHTML).join("") || `<div class="empty">Здесь пока пусто.</div>`}`;
+    }).join("")}`;
+
+  wireMap(halfW * 2, halfH * 2);
+}
+
+const applyMapTransform = () => {
+  const g = document.getElementById("mapG");
+  if (g) g.setAttribute("transform", `translate(${PAN.x} ${PAN.y}) scale(${ZOOM})`);
+};
+
+let mapUnwire = null;
+
+/* Перенос дела на другую ветку. Карта правит принадлежность так же,
+   как календарь правит время, а матрица — приоритет.                */
+/* Под картой — по строке на дело, как в «Списке»: карта про структуру,
+   подробности — по нажатию, в окне просмотра.                       */
+function mapRowHTML(i) {
+  const takeable = !isRoutine(i) && !isAppt(i) && !isIdea(i);
+  return `<div class="allrow">
+    ${isRoutine(i) ? `<span class="tick" style="opacity:.35"></span>`
+      : `<button class="tick" data-act="toggle" data-id="${i.id}" title="Отметить сделанным"></button>`}
+    ${kindIcon(i)}
+    <button class="suggname" data-act="open" data-id="${i.id}">${esc(i.title)}</button>
+    ${stepBadge(i)}
+    ${(i.spheres || []).length > 1 ? `<span class="tag place"
+        title="Одна запись, видна в каждой своей ветке">в ${i.spheres.length} ветках</span>` : ""}
+    ${dateLabel(i) ? `<span class="suggdate">${sandFor(i)}${dateLabel(i)}</span>` : ""}
+    ${takeable ? (pickedToday(i) ? `<span class="tag">в дне</span>`
+      : `<button class="linkbtn" data-act="pin" data-id="${i.id}">＋ в сегодня</button>`) : ""}
+  </div>`;
+}
+
+function moveToBranch(id, target, from) {
+  const it = S.items.find(x => x.id === id);
+  if (!it || target === from) return false;
+  if (AXIS === "place")       it.place = (target === NOPLACE ? null : target);
+  else if (AXIS === "person") it.person = target;
+  else if (AXIS === "type") {
+    /* Перенос между видами — та же смена «что это», что и в редакторе,
+       с теми же последствиями: рутине — расписание, у идеи и рутины
+       срок стирается, чтобы не висеть в календаре.                  */
+    it.type = target;
+    if (isRoutine(it) && !it.routine) it.routine = { days: [0,1,2,3,4,5,6], history: [] };
+    if (isIdea(it) || isRoutine(it)) { it.due = null; it.time = null; }
+  }
+  else {
+    it.spheres = (it.spheres || []).filter(s => s !== from);
+    if (it.spheres.indexOf(target) < 0) it.spheres.push(target);
+  }
+  save();
+  return true;
+}
+
+function wireMap(vbWidth, vbHeight) {
+  const el = document.getElementById("map");
+  if (!el || !el.addEventListener) return;
+  applyMapTransform();
+  if (mapUnwire) mapUnwire();          // карта перерисовывается — старые слушатели убираем
+
+  el.addEventListener("wheel", e => {
+    e.preventDefault();
+    ZOOM = clamp(ZOOM * (e.deltaY < 0 ? 1.12 : 1 / 1.12), 0.35, 4);
+    applyMapTransform();
+  }, { passive: false });
+
+  /* Тащим карту слушателями на окне.
+     НЕ через setPointerCapture: захват указателя переносит цель
+     последующего клика на саму карту, и нажатия по веткам перестают
+     доходить до обработчика.                                        */
+  /* Экранная точка -> координаты карты. Поле симметрично относительно
+     нуля, поэтому центр элемента и есть начало координат.            */
+  const toLocal = (cx, cy) => {
+    const r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+    if (!r || !r.width) return null;
+    const k = Math.min(r.width / vbWidth, r.height / vbHeight);
+    const lx = (cx - (r.left + r.width / 2)) / k;
+    const ly = (cy - (r.top + r.height / 2)) / k;
+    return { x: (lx - PAN.x) / ZOOM, y: (ly - PAN.y) / ZOOM };
+  };
+  const branchAt = p => p && MAPNODES.find(nd =>
+    Math.hypot(nd.x - p.x, nd.y - p.y) <= nd.r + 14);
+  const paintTarget = val => {
+    if (!el.querySelectorAll) return;
+    el.querySelectorAll(".branch circle").forEach(c => {
+      c.setAttribute("stroke", "none"); c.setAttribute("stroke-width", "0");
+    });
+    if (!val) return;
+    const g = el.querySelector('.branch[data-val="' + String(val).replace(/"/g, '\\"') + '"] circle');
+    if (g) { g.setAttribute("stroke", "var(--ink)"); g.setAttribute("stroke-width", "3"); }
+  };
+
+  let drag = null, moved = 0, item = null;
+  const onDown = e => {
+    const leaf = e.target && e.target.closest ? e.target.closest("[data-drag-map]") : null;
+    if (leaf) {                       // тащим дело, а не карту
+      item = { id: leaf.dataset.dragMap, from: leaf.dataset.from, node: leaf,
+               x: e.clientX, y: e.clientY };
+      moved = 0;
+      if (leaf.classList) leaf.classList.add("dragging");
+      return;
+    }
+    drag = { x: e.clientX, y: e.clientY, px: PAN.x, py: PAN.y };
+    moved = 0; el.classList.add("grabbing");
+  };
+  const onMove = e => {
+    if (item) {
+      const dx = e.clientX - item.x, dy = e.clientY - item.y;
+      moved = Math.max(moved, Math.abs(dx) + Math.abs(dy));
+      const r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+      if (r && r.width) {
+        const k = Math.min(r.width / vbWidth, r.height / vbHeight) * ZOOM;
+        if (item.node.setAttribute)
+          item.node.setAttribute("transform", `translate(${dx / k} ${dy / k})`);
+      }
+      const hit = branchAt(toLocal(e.clientX, e.clientY));
+      paintTarget(hit && hit.val !== item.from ? hit.val : null);
+      return;
+    }
+    if (!drag) return;
+    const ratio = vbWidth / (el.clientWidth || vbWidth);   // пиксели → единицы карты
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    moved = Math.max(moved, Math.abs(dx) + Math.abs(dy));
+    PAN.x = drag.px + dx * ratio; PAN.y = drag.py + dy * ratio;
+    applyMapTransform();
+  };
+  const onUp = e => {
+    if (item) {
+      const node = item.node;
+      if (node.classList) node.classList.remove("dragging");
+      paintTarget(null);
+      /* Нажали и отпустили, не двигая, — это клик по делу, а не перенос.
+         Карту НЕ перерисовываем: click прилетает после pointerup, и
+         после render() он попал бы в выброшенный элемент — просмотр
+         не открывался бы никогда.                                   */
+      if (moved <= 5) {
+        /* Нажали и отпустили, не двигая, — открываем дело САМИ, не
+           надеясь на всплытие click: на некоторых осях оно до делегата
+           не доходило, и карта выглядела «только для перетаскивания». */
+        if (node.removeAttribute) node.removeAttribute("transform");
+        const openId = item.id;
+        item = null;
+        if (openId) openItem(openId);
+        return;
+      }
+      const hit = e ? branchAt(toLocal(e.clientX, e.clientY)) : null;
+      if (hit) moveToBranch(item.id, hit.val, item.from);
+      item = null;
+      render();          // и при переносе, и при броске мимо — лист встаёт на место
+      return;
+    }
+    if (drag) { drag = null; el.classList.remove("grabbing"); }
+  };
+  /* если карту тащили — отпускание не считается нажатием на ветку */
+  const onClick = e => { if (moved > 5) { e.stopPropagation(); e.preventDefault(); moved = 0; } };
+
+  el.addEventListener("pointerdown", onDown);
+  el.addEventListener("click", onClick, true);
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
+  window.addEventListener("pointercancel", onUp);
+  mapUnwire = () => {
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onUp);
+  };
+}
+
+/* ── СПРАВОЧНИКИ: сферы, места, люди, виды дел ───────────────────────
+   Всё, что раньше было зашито в код, теперь правится руками.
+   Общее правило: удаление метки НЕ удаляет дела — они только теряют
+   эту метку. Переименование переносит её на все дела разом.         */
+/* Поле ищем внутри той же строки, где нажали кнопку, и только потом
+   по id — так добавление не зависит от того, что ещё есть на странице. */
+function fieldOf(el, id) {
+  let inp = null;
+  if (el && el.closest) { const box = el.closest(".addrow"); if (box && box.querySelector) inp = box.querySelector("input"); }
+  if (!inp && el && el.tagName === "INPUT") inp = el;
+  if (!inp) inp = document.getElementById(id);
+  return inp;
+}
+/* Пустое поле больше не молчит: подсвечиваем и ставим курсор. */
+function nudge(inp) {
+  if (!inp) return;
+  if (inp.classList) inp.classList.add("needfill");
+  inp.placeholder = "Сначала впишите название";
+  if (inp.focus) inp.focus();
+}
+const dup = (list, t, self) => list.some(x => x !== self && String(x).toLowerCase() === t.toLowerCase());
+
+function listSectionHTML(c) {
+  return `<h2 style="margin-top:36px">${c.title}</h2>
+    <p class="sub">${c.hint}</p>
+    <div class="branchlist">
+      ${c.rows.map(r => `<div class="brow ${r.dim ? "paused" : ""}">
+        ${r.color ? `<div class="dot" style="background:${r.color}"></div>` : ""}
+        <div class="nm">${esc(r.label)}<span style="color:var(--dim);font-weight:400"> · ${r.count}</span></div>
+        ${r.note || ""}
+        ${r.extra || ""}
+        <button class="linkbtn" data-act="${c.act}ren" data-v="${esc(r.id)}">переименовать</button>
+        <button class="linkbtn danger" data-act="${c.act}del" data-v="${esc(r.id)}">убрать</button>
+      </div>`).join("")}
+      <div class="brow addrow">
+        <input type="text" id="${c.input}" placeholder="${c.ph}">
+        <button class="btn primary" data-act="${c.act}add">Добавить</button>
+      </div>
+    </div>`;
+}
+
+/* ── сферы ─────────────────────────────────────────────────────── */
+function addSphere(el) {
+  const inp = fieldOf(el, "dirNew");
+  const t = (inp && inp.value ? inp.value : "").trim();
+  if (!t) return nudge(inp);
+  if (dup(S.spheres, t)) return alert("Такая сфера уже есть.");
+  S.spheres.push(t); inp.value = ""; save(); render(); if (host.innerHTML) openSettings();
+}
+function renameSphere(old) {
+  const inp = document.getElementById("dirName");
+  const t = (inp && inp.value ? inp.value : "").trim();
+  if (!t || t === old) return;
+  if (dup(S.spheres, t, old)) return alert("Такая сфера уже есть.");
+  S.items.forEach(i => { i.spheres = (i.spheres || []).map(x => x === old ? t : x); });
+  S.spheres = S.spheres.map(x => x === old ? t : x);
+  S.open = S.open.map(x => x === old ? t : x);
+  save(); render(); if (host.innerHTML) openSettings();
+}
+function removeSphere(name) {
+  const used = S.items.filter(i => (i.spheres || []).indexOf(name) >= 0).length;
+  const alone = S.items.filter(i => !i.done && (i.spheres || []).length === 1
+    && i.spheres[0] === name).length;
+  if (!confirm("Убрать сферу «" + name + "»?" + (used
+    ? "\n\n" + used + " дел останутся на месте, но потеряют эту метку."
+      + (alone ? "\nИз них " + alone + " попадут в «Разобрать» — других сфер у них нет." : "")
+    : ""))) return;
+  S.items.forEach(i => { i.spheres = (i.spheres || []).filter(x => x !== name); });
+  S.spheres = S.spheres.filter(x => x !== name);
+  S.open = S.open.filter(x => x !== name);
+  save(); render(); if (host.innerHTML) openSettings();
+}
+
+/* ── места ─────────────────────────────────────────────────────── */
+function addPlace(el) {
+  const inp = fieldOf(el, "dirNew");
+  const t = (inp && inp.value ? inp.value : "").trim();
+  if (!t) return nudge(inp);
+  if (t.toLowerCase() === NOPLACE) return alert("Так называется пустая ветка на карте. Выберите другое название.");
+  if (dup(S.places, t)) return alert("Такое место уже есть.");
+  S.places.push(t); inp.value = ""; save(); render(); if (host.innerHTML) openSettings();
+}
+function renamePlace(p) {
+  const inp = document.getElementById("dirName");
+  const t = (inp && inp.value ? inp.value : "").trim();
+  if (!t || t === p) return;
+  if (t.toLowerCase() === NOPLACE) return alert("Так называется пустая ветка на карте. Выберите другое название.");
+  if (dup(S.places, t, p)) return alert("Такое место уже есть.");
+  S.items.forEach(i => { if (i.place === p) i.place = t; });
+  S.places = S.places.map(x => x === p ? t : x);
+  if (S.hereNow === p) S.hereNow = t;
+  S.open = S.open.map(x => x === p ? t : x);
+  save(); render(); if (host.innerHTML) openSettings();
+}
+function removePlace(p) {
+  const used = S.items.filter(i => i.place === p).length;
+  if (!confirm("Убрать место «" + p + "»?" + (used
+    ? "\n\n" + used + " дел останутся на месте, но потеряют привязку и снова будут видны отовсюду." : ""))) return;
+  S.items.forEach(i => { if (i.place === p) i.place = null; });
+  S.places = S.places.filter(x => x !== p);
+  if (S.hereNow === p) S.hereNow = null;
+  S.open = S.open.filter(x => x !== p);
+  save(); render(); if (host.innerHTML) openSettings();
+}
+
+/* ── люди ──────────────────────────────────────────────────────── */
+function addPerson(el) {
+  const inp = fieldOf(el, "dirNew");
+  const t = (inp && inp.value ? inp.value : "").trim();
+  if (!t) return nudge(inp);
+  if (dup(S.people, t)) return alert("Такой человек уже есть.");
+  S.people.push(t); inp.value = ""; save(); render(); if (host.innerHTML) openSettings();
+}
+function renamePerson(p) {
+  const inp = document.getElementById("dirName");
+  const t = (inp && inp.value ? inp.value : "").trim();
+  if (!t || t === p) return;
+  if (dup(S.people, t, p)) return alert("Такой человек уже есть.");
+  S.items.forEach(i => { if (i.person === p) i.person = t; });
+  S.people = S.people.map(x => x === p ? t : x);
+  S.open = S.open.map(x => x === p ? t : x);
+  save(); render(); if (host.innerHTML) openSettings();
+}
+function removePerson(p) {
+  const used = S.items.filter(i => i.person === p).length;
+  if (!confirm("Убрать «" + p + "» из списка людей?" + (used
+    ? "\n\n" + used + " дел останутся, но перестанут быть привязаны к человеку." : ""))) return;
+  S.items.forEach(i => { if (i.person === p) i.person = null; });
+  S.people = S.people.filter(x => x !== p);
+  S.open = S.open.filter(x => x !== p);
+  save(); render(); if (host.innerHTML) openSettings();
+}
+
+/* ── виды дел ──────────────────────────────────────────────────── */
+const KINDNOTE = { choice: "со списком вариантов", routine: "по дням недели",
+                   appt: "с датой и временем", idea: "без срока, не просится в «Сегодня»" };
+function addType(el) {
+  const inp = fieldOf(el, "dirNew");
+  const t = (inp && inp.value ? inp.value : "").trim();
+  if (!t) return nudge(inp);
+  if (dup(S.types.map(x => x.name), t)) return alert("Такой вид уже есть.");
+  S.types.push({ key: uid(), name: t, hint: "", kind: "plain" });
+  inp.value = ""; save(); render(); if (host.innerHTML) openSettings();
+}
+function renameType(key) {
+  const d = typeDef(key);
+  const t = (prompt("Новое название вида:", d.name) || "").trim();
+  if (!t || t === d.name) return;
+  if (dup(S.types.map(x => x.name), t, d.name)) return alert("Такой вид уже есть.");
+  d.name = t; save(); render(); if (host.innerHTML) openSettings();                 // ключ не меняется — дела не трогаем
+}
+function removeType(key) {
+  if (S.types.length <= 1) return alert("Должен остаться хотя бы один вид дела.");
+  const d = typeDef(key);
+  const back = S.types.find(t => t.key !== key);
+  const used = S.items.filter(i => i.type === key).length;
+  const warn = d.kind === "routine" ? "\n\nУ этого вида дни недели — дела перестанут повторяться."
+             : d.kind === "choice"  ? "\n\nУ этого вида есть список вариантов — дела его потеряют."
+             : d.kind === "appt"    ? "\n\nУ этого вида есть точное время — дела его потеряют."
+             : d.kind === "idea"    ? "\n\nИдеи станут обычными делами и начнут просить внимания." : "";
+  if (!confirm("Убрать вид «" + d.name + "»?"
+    + (used ? "\n\n" + used + " дел станут «" + back.name + "»." : "") + warn)) return;
+  S.items.forEach(i => { if (i.type === key) i.type = back.key; });
+  S.types = S.types.filter(t => t.key !== key);
+  save(); render(); if (host.innerHTML) openSettings();
+}
+
+/* ── СПРАВОЧНИКИ ─────────────────────────────────────────────────────
+   Живут в настройках: это то, что настраивают один раз и забывают.  */
+/* ── Справочники: второй уровень настроек ────────────────────────────
+   Один список за раз, строкой на запись; переименование раскрывается
+   прямо в строке. Раньше всё лежало вповалку одной страницей, строки
+   не помещались по ширине и окно ездило вбок.                       */
+const DIRS = {
+  sphere: { title: "Сферы", act: "sph", one: "сферу", colored: true,
+    note: "«Убрать сферу» не удаляет дела — они попадают в «Разобрать».",
+    list: () => S.spheres,
+    count: sp => live().filter(i => (i.spheres || []).indexOf(sp) >= 0).length },
+  place: { title: "Места", act: "place", one: "место",
+    note: "Дела не пропадут — просто останутся без привязки к месту.",
+    list: () => S.places,
+    count: p => live().filter(i => i.place === p).length },
+  person: { title: "Люди", act: "per", one: "человека",
+    note: "Кого касается дело. Дела при убирании остаются на месте.",
+    list: () => S.people,
+    count: p => live().filter(i => i.person === p).length },
+  type: { title: "Виды дел", act: "typ", one: "вид",
+    note: "Это «что это» у дела. Переименование не трогает сами дела.",
+    list: () => S.types.map(t => t.key), label: k => typeDef(k).name,
+    count: k => live().filter(i => i.type === k).length },
+};
+let DIRPAGE = null, DIREDIT = null;
+
+const CHEV = `<svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+  stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg>`;
+
+function dirRowsHTML() {
+  return Object.keys(DIRS).map(k => {
+    const d = DIRS[k];
+    return `<button class="dirrow" data-act="diropen" data-p="${k}">
+      <span class="nm">${d.title}</span>
+      <span class="qs">${d.list().length}</span>${CHEV}</button>`;
+  }).join("");
+}
+
+function dirPageHTML() {
+  const d = DIRS[DIRPAGE];
+  const label = v => d.label ? d.label(v) : v;
+  return `<div class="dirlist">${d.list().map(v => DIREDIT === v
+    ? `<div class="direditbox">
+         <div class="direditrow">
+           ${d.colored ? `<span class="dot" style="background:${colorOf(DIRPAGE, v)}"></span>` : ""}
+           <input type="text" id="dirName" value="${esc(label(v))}" autocomplete="off">
+         </div>
+         <div class="direditbtns">
+           <button class="btn primary" data-act="${d.act}ren" data-v="${esc(v)}">Готово</button>
+           <button class="btn link" data-act="dircancel">Отмена</button>
+           <div class="spacer"></div>
+           <button class="btn link danger" data-act="${d.act}del" data-v="${esc(v)}">убрать ${d.one}</button>
+         </div>
+       </div>`
+    : `<div class="dirrow">
+         ${d.colored ? `<span class="dot" style="background:${colorOf(DIRPAGE, v)}"></span>` : ""}
+         <span class="nm">${esc(label(v))}</span>
+         <span class="qs cnt">${d.count(v)} ${plural(d.count(v), "дело", "дела", "дел")}</span>
+         <span class="acts">
+           <button class="linkbtn" data-act="diredit" data-v="${esc(v)}">переименовать</button>
+           <button class="linkbtn danger" data-act="${d.act}del" data-v="${esc(v)}">убрать</button>
+         </span>
+       </div>`).join("")}
+    <div class="diraddrow">
+      <input type="text" id="dirNew" placeholder="Добавить ${d.one}" autocomplete="off">
+      <button class="btn primary" data-act="${d.act}add">Добавить</button>
+    </div>
+  </div>
+  <p class="qs" style="margin:14px 4px 0">${d.note}</p>`;
+}
+function wireDirectories() {
+  const nm = document.getElementById("dirName");
+  if (nm && nm.addEventListener) {
+    nm.addEventListener("keydown", e => { if (e.key === "Enter") {
+      const d = DIRS[DIRPAGE];
+      ({ sph: renameSphere, place: renamePlace, per: renamePerson, typ: renameType })[d.act](DIREDIT);
+    } });
+    if (nm.focus) nm.focus();
+  }
+  const nw = document.getElementById("dirNew");
+  if (nw && nw.addEventListener) nw.addEventListener("keydown", e => { if (e.key === "Enter") {
+    const d = DIRS[DIRPAGE];
+    ({ sph: addSphere, place: addPlace, per: addPerson, typ: addType })[d.act](nw);
+  } });
+}

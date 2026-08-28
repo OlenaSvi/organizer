@@ -1,0 +1,84 @@
+/* «Организатор» — тема «Ясный синий». Значения подставляются в существующие переменные приложения. */
+:root {
+  --bg: #f5f7fb;
+  --panel: #ffffff;
+  --ink: #10214a;
+  --dim: #7b879e;
+  --line: #e6eaf2;
+  --accent: #1f5cff;
+  --accent-soft: #e8efff;
+  --warm: #b64478;        /* розовый: «Разобрать», переполнение дня */
+  --warm-soft: #fbe9f2;
+  --good: #2f9e6f;
+  --good-soft: #e6f5ee;
+  --r: 14px;
+  --shadow: 0 1px 2px rgba(16,33,74,.05), 0 10px 30px rgba(16,33,74,.05);
+
+  /* дополнительные нейтральные */
+  --hover: #f5f7fb;         /* ховер строк = --bg */
+  --soft: #f0f2f8;          /* мягкий фон чипов-меток, крестиков */
+  --seg-track: #eef1f7;     /* трек сегментного переключателя */
+  --seg-active: #ffffff;    /* активный сегмент */
+  --check: #cfd6e4;         /* контур чекбокса */
+  --dash: #d7dde9;          /* пунктирные кнопки */
+  --hairline: #f1f2f6;      /* тонкие делители строк */
+  --faint: #a7aebd;         /* третичный текст, зачёркнутое */
+  --chip-ink: #59647c;      /* текст чипов-меток */
+  --dot-off: #dfe4ee;       /* пустые точки рутины, выкл. тумблер */
+  --pin: #b5605c;           /* иконка-пин места */
+
+  /* сферы (8 слотов) */
+  --sph-1: #bf7a35; --sph-2: #4a6fb5; --sph-3: #8a72ab; --sph-4: #b1746f;
+  --sph-5: #7d9a6f; --sph-6: #7c8794; --sph-7: #a08a4a; --sph-8: #4f8fa0;
+  /* фон чипа сферы: color-mix(in srgb, var(--sph-N) 13%, transparent) */
+
+  /* виды дел */
+  --kind-appt: #1f5cff;   /* аппоинтмент · часы */
+  --kind-go: #4f8fa0;     /* сходить/съездить · ноги */
+  --kind-buy: #a08a4a;    /* выбрать-купить · кошелёк */
+  --kind-idea: #8a72ab;   /* идея · лампочка */
+  --kind-routine: #7d9a6f;/* рутина · таблетка */
+  --kind-do: #7c8794;     /* сделать · ключ */
+  --cal-timed-bg: var(--accent-soft); /* фон «со временем» */
+  --cal-due-bg: #f0f2f8;              /* фон «к сроку» */
+}
+
+[data-theme="dark"] {
+  --bg: #0f1420;
+  --panel: #171e2e;
+  --ink: #e9edf6;
+  --dim: #8b95ab;
+  --line: #262f45;
+  --accent: #5b8aff;
+  --accent-soft: rgba(91,138,255,.16);
+  --warm: #e58cb4;
+  --warm-soft: rgba(229,140,180,.15);
+  --good: #58b98e;
+  --good-soft: rgba(88,185,142,.15);
+  --r: 14px;
+  --shadow: 0 10px 30px rgba(0,0,0,.35);
+
+  --hover: #1d2537;
+  --soft: #212a3e;
+  --seg-track: #212a3e;
+  --seg-active: #2f3b58;
+  --check: #3a4560;
+  --dash: #3a4560;
+  --hairline: #222b40;
+  --faint: #5d6780;
+  --chip-ink: #aab4c8;
+  --dot-off: #2c3650;
+  --pin: #d98984;
+
+  --sph-1: #d99a55; --sph-2: #7499d6; --sph-3: #a98fd0; --sph-4: #d09490;
+  --sph-5: #9cbb8e; --sph-6: #98a3b2; --sph-7: #c0a968; --sph-8: #74aebf;
+  /* фон чипа сферы в тёмной: 16–20% */
+
+  --kind-appt: #5b8aff; --kind-go: #74aebf; --kind-buy: #c0a968;
+  --kind-idea: #a98fd0; --kind-routine: #9cbb8e; --kind-do: #98a3b2;
+  --cal-timed-bg: rgba(91,138,255,.18);
+  --cal-due-bg: #212a3e;
+}
+
+/* Шрифт: подключить Manrope (400/500/600/700) с системным запасным — файл должен работать офлайн */
+/* font-family: Manrope, -apple-system, "SF Pro Text", sans-serif; */
