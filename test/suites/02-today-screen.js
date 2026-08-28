@@ -62,8 +62,11 @@ var CSS2 = (function () {
 T.ok("правая колонка — вертикальная стопка без своей прокрутки",
   /\.tcol\.side\{[^}]*flex-direction:column/.test(CSS2)
   && /\.tcol\.side\{[^}]*overflow:hidden/.test(CSS2));
-T.ok("список рутин прокручивается внутри себя",
-  /\.sidepanel\.routines \.rbox\{[^}]*overflow-y:auto/.test(CSS2));
+T.ok("панель рутин прокручивается сама — как колонка «Дела»",
+  /\.sidepanel\.routines\{[^}]*overflow-y:auto/.test(CSS2)
+  && /\.tcol\{[^}]*overflow-y:auto/.test(CSS2));
+T.ok("заголовок «Рутина» закреплён над прокруткой",
+  /\.sidepanel h3\{[^}]*position:sticky/.test(CSS2));
 T.ok("панель рутин тянется, встречи — нет",
   /\.sidepanel\.routines\{[^}]*flex:1/.test(CSS2)
   && /\.sidepanel\.appts\{[^}]*flex:0 0 auto/.test(CSS2));

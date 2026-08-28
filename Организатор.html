@@ -107,10 +107,10 @@ main.fit .todayhead{flex:none}
    а панель встреч держит свою высоту и остаётся на виду.           */
 .tcol.side{background:transparent;box-shadow:none;padding:2px;border-left:0;
   display:flex;flex-direction:column;overflow:hidden}
-.sidepanel.routines{flex:1 1 auto;min-height:120px;display:flex;flex-direction:column;
-  overflow:hidden}
-.sidepanel.routines .rbox{overflow-y:auto;min-height:0;scrollbar-width:thin;
-  margin-right:-6px;padding-right:6px}
+/* Прокручивается сама панель — как колонка «Дела» слева: полоса идёт
+   по краю панели, а закреплённый заголовок остаётся на месте.      */
+.sidepanel.routines{flex:1 1 auto;min-height:120px;overflow-y:auto;
+  scrollbar-width:thin}
 .sidepanel.appts{flex:0 0 auto}
 .tcol > .lbl:first-child{margin-top:0}
 .sidepanel{background:var(--panel);border-radius:var(--r);box-shadow:var(--shadow);
@@ -126,8 +126,7 @@ main.fit .todayhead{flex:none}
   .tcol{overflow:visible;margin-bottom:20px}
   /* На узком окне колонки складываются — прокрутка снова страничная. */
   .tcol.side{padding:0;margin-top:0;display:block;overflow:visible}
-  .sidepanel.routines{display:block;overflow:visible}
-  .sidepanel.routines .rbox{overflow:visible;margin-right:0;padding-right:0}
+  .sidepanel.routines{overflow:visible}
   /* В столбике колонки не крутятся сами — закрепление ни к чему,
      иначе шапки липли бы к краю окна поверх друг друга.             */
   .tcol > .todayhead,.sidepanel h3{position:static}
