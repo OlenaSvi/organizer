@@ -49,6 +49,21 @@ T.ok("крупно — текст шага", title === esc(nextStep(m).text), "�
 T.ok("под ним «Шаг N из M» и название дела",
   card.indexOf("class=\"stepno\">Шаг 2 из") >= 0 && card.indexOf("в «" + esc(m.title) + "»") >= 0);
 
+T.head("РУТИНА: СТРОКА НЕ РАССЫПАЕТСЯ");
+T.reset();
+var rr = T.routine();
+rr.title = "Стакан тёплой воды натощак";
+rr.spheres = ["здоровье физическое", "развитие"];
+render();
+var line = /<div class="rline[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/.exec(view.innerHTML)[0];
+T.ok("название и счёт — верхней строкой",
+  /class="rtop">[\s\S]*?rname[\s\S]*?rscore/.test(line));
+T.ok("чипы сфер — отдельной строкой",
+  line.indexOf('class="rmeta"') > line.indexOf('class="rtop"'));
+T.ok("точки недели — ниже чипов",
+  line.indexOf('class="rdots"') > line.indexOf('class="rmeta"'));
+T.ok("название не обрезано", T.visible(line).indexOf("Стакан тёплой воды натощак") >= 0);
+
 T.head("РУТИНА: ТОЧКИ НЕДЕЛИ");
 T.reset();
 var r = T.routine();

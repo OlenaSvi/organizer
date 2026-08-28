@@ -295,14 +295,21 @@ function routineRowHTML(i, sortable) {
   const wi = weekInfo(i);
   const done = i.routine && i.routine.history.indexOf(today()) >= 0;
 
+  /* Три строки вместо одной: в узкой колонке название, чипы и счёт
+     не помещались рядом и название рассыпалось по словам.          */
+  const tags = sphereTags(i);
   return `<div class="rline ${done ? "done" : ""}"${sortable
       ? ` draggable="true" data-drag="${i.id}" data-drop-order="${i.id}"` : ""}>
     <button class="tick" data-act="toggle" data-id="${i.id}"></button>
-    <button class="rname" data-act="open" data-id="${i.id}">${esc(i.title)}</button>
-    ${sphereTags(i)}
-    <span class="rscore" title="${sc.fresh ? "Рутина заведена сегодня"
-      : "Сделано на этой неделе"}">${sc.fresh ? "новая" : wi.hit + " из " + wi.of}</span>
-    ${weekDotsHTML(i)}
+    <div class="rmain">
+      <div class="rtop">
+        <button class="rname" data-act="open" data-id="${i.id}">${esc(i.title)}</button>
+        <span class="rscore" title="${sc.fresh ? "Рутина заведена сегодня"
+          : "Сделано на этой неделе"}">${sc.fresh ? "новая" : wi.hit + " из " + wi.of}</span>
+      </div>
+      ${tags ? `<div class="rmeta">${tags}</div>` : ""}
+      ${weekDotsHTML(i)}
+    </div>
   </div>`;
 }
 
