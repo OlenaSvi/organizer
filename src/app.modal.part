@@ -663,7 +663,7 @@ function openItem(id) {
       ${it.person && it.person !== "Я" ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(it.person)}</span>` : ""}
       ${dateLabel(it) && !isRoutine(it) ? `<span class="tag when">${sandFor(it)}${dateLabel(it)}</span>` : ""}
       ${!isRoutine(it) && !isIdea(it)
-        ? `<span class="tag quad" title="Клетка матрицы: срочность из дедлайна, важность — ваша">${
+        ? `<span class="tag quadtag" title="Клетка матрицы: срочность из дедлайна, важность — ваша">${
           esc(QUADS[quadrant(it)])}</span>` : ""}
     </div>
     <div class="sep"></div>

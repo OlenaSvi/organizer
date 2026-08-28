@@ -173,8 +173,9 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
   font-variant-numeric:tabular-nums}
 .tag.steptag{background:var(--accent-soft);color:var(--accent);font-weight:700}
 /* Клетка матрицы в окне дела: спокойная контурная метка — это
-   положение дела, а не тревога.                                    */
-.tag.quad{background:transparent;border:1px solid var(--line);color:var(--chip-ink);
+   положение дела, а не тревога. Класс НЕ .quad: так называются сами
+   клетки матрицы, и метка наследовала их размеры.                  */
+.tag.quadtag{background:transparent;border:1px solid var(--line);color:var(--chip-ink);
   font-weight:600}
 .stepmini{font-weight:700;opacity:.65;margin-left:5px;font-size:11px;
   font-variant-numeric:tabular-nums}

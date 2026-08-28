@@ -34,6 +34,11 @@ openItem(saved.id);
 T.ok("«Несрочное неважное»", T.visible(host.innerHTML).indexOf("Несрочное неважное") >= 0);
 T.ok("старой метки «молчит до срока» больше нет",
   host.innerHTML.indexOf("молчит до срока") < 0);
+/* Класс .quad занят клетками матрицы (min-height 180px): если метка
+   его наследует, она раздувается в прямоугольник. */
+T.ok("метка не использует класс клетки матрицы",
+  host.innerHTML.indexOf('class="tag quad"') < 0 &&
+  host.innerHTML.indexOf("quadtag") >= 0);
 closeModal();
 S.items = S.items.filter(function (i) { return i.title !== "Проверка важности"; });
 
