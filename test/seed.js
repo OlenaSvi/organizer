@@ -37,6 +37,43 @@ globalThis.T = {
     if (typeof closeModal === "function") closeModal();
   },
 
+  /* Набор дел для проверок. Тесты не должны зависеть от того, что
+     приложение поставляет с собой: заводим своё и предсказуемое. */
+  seed: function () {
+    var mk = function (o) {
+      return Object.assign({
+        id: "f" + Math.random().toString(36).slice(2, 8), title: "", type: defaultType(),
+        multi: false, spheres: ["Быт"], place: null, person: null, due: null, time: null,
+        steps: [], options: [], routine: null, done: false, created: today(),
+        notes: "", forceImp: null, today: null, notToday: null,
+      }, o);
+    };
+    var kind = function (k) {
+      var t = S.types.find(function (x) { return x.kind === k; });
+      return t ? t.key : defaultType();
+    };
+    S.items = [
+      mk({ title: "Оплатить счёт", spheres: ["бюрократия"] }),
+      mk({ title: "Купить лампочки", type: kind("choice"), spheres: ["Быт"], place: "Кипр" }),
+      mk({ title: "Съездить на почту", type: "errand", spheres: ["другое"], place: "Кипр",
+           multi: true, steps: [{ text: "найти номер", done: false },
+                                { text: "доехать", done: false }] }),
+      mk({ title: "Записаться к врачу", spheres: ["здоровье физическое"], person: "Мама" }),
+      mk({ title: "Разобрать шкаф", spheres: ["Быт"] }),
+      mk({ title: "Найти курсы", spheres: ["развитие"] }),
+      mk({ title: "Зарядка", type: kind("routine"), spheres: ["здоровье физическое"],
+           routine: { days: [1, 2, 3, 4, 5], history: [] } }),
+      mk({ title: "Чтение", type: kind("routine"), spheres: ["развитие"],
+           routine: { days: [0, 1, 2, 3, 4, 5, 6], history: [] } }),
+      mk({ title: "Приём у врача", type: kind("appt"), spheres: ["здоровье физическое"],
+           place: "Амстердам", due: addDays(today(), 3), time: "10:30",
+           notes: "взять страховку" }),
+      mk({ title: "Подумать про курсы", type: kind("idea"), spheres: ["развитие"] }),
+    ];
+    S.todayOrder = null;
+    this.reset();
+  },
+
   /* Живые дела без рутин, идей и встреч. */
   tasks: function () {
     return live().filter(function (i) {

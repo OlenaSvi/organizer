@@ -1,5 +1,5 @@
 /* Экран «Сегодня»: три области, счётчик, шаги, празднование. */
-T.reset();
+T.seed();
 var t = T.tasks(), ap = T.appt();
 ap.due = today(); ap.time = "16:00";
 addToToday(t[0]); addToToday(t[1]);

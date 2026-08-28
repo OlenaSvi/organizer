@@ -1,5 +1,5 @@
 /* Остальные экраны: календарь, карта, матрица, список. */
-T.reset();
+T.seed();
 var t = T.tasks();
 t.forEach(function (i, k) { i.due = addDays(today(), k); });
 
