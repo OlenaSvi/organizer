@@ -206,7 +206,7 @@ function renderMap() {
             title="Создать дело в этой ветке">＋</button>
         </div>
         <p class="sub">${list.length} ${list.length === 1 ? "дело" : "дел"}</p>
-        ${list.map(mapRowHTML).join("") || `<div class="empty">Здесь пока пусто.</div>`}`;
+        ${list.map(mapRowHTML).join("") || `<div class="empty">Пока ничего нет</div>`}`;
     }).join("")}`;
 
   wireMap(halfW * 2, halfH * 2);

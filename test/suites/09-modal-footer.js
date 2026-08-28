@@ -70,6 +70,22 @@ T.ok("выравнивание держит только распорка, бе�
   BUILD_CSS.indexOf(".modal .row.modalfoot .btn.link{margin:0}") >= 0);
 closeModal();
 
+T.head("ФУТЕР ВО ВСЮ ШИРИНУ ОКНА");
+T.ok("правилу max-width:100% сделано исключение",
+  /\.modal \.row\.modalfoot\{[^}]*max-width:none/.test(BUILD_CSS),
+  "иначе футер уже содержимого и кнопка не доходит до края");
+
+T.head("ЗАМЕТКА БЕЗ ЛИШНИХ ЛИНИЙ");
+var n = T.tasks()[0];
+n.notes = "проверочная заметка";
+openItem(n.id);
+T.ok("заметка не использует класс вариантов",
+  host.innerHTML.indexOf('class="opt" style="white-space:pre-wrap"') < 0,
+  "у .opt есть верхняя граница — она рисовала линию под заголовком");
+T.ok("заметка на месте", host.innerHTML.indexOf("проверочная заметка") >= 0);
+closeModal();
+n.notes = "";
+
 T.head("ДЕЙСТВИЯ ИЗ ФУТЕРА РАБОТАЮТ");
 clickOn({ act: "cap" });
 var d2 = S.items.find(function (i) { return i.draft; });

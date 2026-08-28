@@ -402,7 +402,7 @@ function itemFormHTML(it, ids) {
 
     ${(isChoice(it) || isIdea(it)) ? `<p class="lbl">Варианты</p>
       <div>${(it.options || []).map(o => `<div class="opt">· ${esc(o.text)}</div>`).join("")
-        || `<div class="opt" style="color:var(--dim)">пока пусто</div>`}</div>
+        || `<div class="readnote" style="color:var(--dim)">Пока ничего нет</div>`}</div>
       <input type="text" id="newOpt" placeholder="Добавить вариант и нажать Enter" style="margin-top:10px">` : ""}
 
     ${extra}`;
@@ -683,8 +683,10 @@ function openItem(id) {
       <p class="qs" style="margin:12px 0 4px">На этой неделе: <b style="color:var(--good)">${
         wi.hit} из ${wi.of}</b> уже сделано</p>
       ${weekDotsHTML(it)}`; })() : "")
+    /* Класс .readnote, а не .opt: у вариантов есть верхняя граница,
+       и она рисовала лишнюю линию под заголовком «Заметка».        */
     + (it.notes ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
-      <div class="opt" style="white-space:pre-wrap">${esc(it.notes)}</div>` : "");
+      <div class="readnote">${esc(it.notes)}</div>` : "");
 
   openModal(`<h3>${kindIcon(it)}${esc(it.title)}</h3>
     <div class="readmeta" style="margin-top:-4px">
