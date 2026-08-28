@@ -270,6 +270,8 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
   background:var(--panel);color:var(--ink);font-size:14.5px;flex:0 0 auto;min-width:170px}
 .allselect:focus{outline:1.5px solid var(--accent);outline-offset:-1px;border-color:transparent}
 .allsearch:focus{outline:1.5px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.listcount{font-size:13px;color:var(--dim);margin:0 0 8px;padding-left:2px;
+  font-variant-numeric:tabular-nums}
 .allrow{display:flex;align-items:center;gap:9px;padding:11px 8px;border-radius:0;
   border:0;border-bottom:1px solid var(--hairline);margin-bottom:0;background:transparent;
   transition:background .15s}

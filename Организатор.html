@@ -270,6 +270,8 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
   background:var(--panel);color:var(--ink);font-size:14.5px;flex:0 0 auto;min-width:170px}
 .allselect:focus{outline:1.5px solid var(--accent);outline-offset:-1px;border-color:transparent}
 .allsearch:focus{outline:1.5px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.listcount{font-size:13px;color:var(--dim);margin:0 0 8px;padding-left:2px;
+  font-variant-numeric:tabular-nums}
 .allrow{display:flex;align-items:center;gap:9px;padding:11px 8px;border-radius:0;
   border:0;border-bottom:1px solid var(--hairline);margin-bottom:0;background:transparent;
   transition:background .15s}
@@ -1890,8 +1892,9 @@ function drawAllList() {
 }
 
 function renderAll() {
-  view.innerHTML = `<div class="todayhead"><h2>Список</h2>
-      <div class="todaydate"><span id="allCount"></span></div></div>
+  /* Счётчик стоит над списком, а не у заголовка: после фильтрации важно
+     видеть, сколько осталось, рядом с тем, что осталось.            */
+  view.innerHTML = `<div class="todayhead"><h2>Список</h2></div>
     <p class="sub">Плоский список: по умолчанию видно всё живое — дела, рутина,
       идеи и встречи. Срезом можно оставить что-то одно.</p>
     <div class="allbar">
@@ -1919,6 +1922,7 @@ function renderAll() {
              data-v="${k}"><span>${esc(L)}</span>${ALLSORT === k ? ddCheck : ""}</button>`).join("")}</div>` : ""}
       </span>`}
     </div>
+    <p class="listcount" id="allCount"></p>
     <div id="allList"></div>`;
   const inp = document.getElementById("allInput");
   if (inp && inp.addEventListener) {

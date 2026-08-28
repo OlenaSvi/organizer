@@ -83,6 +83,16 @@ T.ok("показано всё живое",
   (document.getElementById("allList").innerHTML.match(/class="allrow"/g) || []).length
     === live().length);
 T.ok("сортировка есть", h.indexOf('data-k="allsort"') >= 0);
+T.ok("счётчик стоит над списком, а не у заголовка",
+  h.indexOf('id="allCount"') > h.indexOf('class="allbar"')
+  && h.indexOf('id="allCount"') < h.indexOf('id="allList"'));
+T.ok("счётчик считает отфильтрованное", (function () {
+  var rk = "type:" + S.types.find(function (t2) { return t2.kind === "routine"; }).key;
+  ALLFILTER = rk; render();
+  var n2 = live().filter(isRoutine).length;
+  var txt = document.getElementById("allCount").textContent;
+  ALLFILTER = "all"; render();
+  return txt.indexOf(String(n2)) === 0; })());
 clickOn({ act: "dd", k: "allsort" });
 clickOn({ act: "allsortset", v: "alpha" });
 var names = [];
