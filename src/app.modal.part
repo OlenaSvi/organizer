@@ -420,6 +420,13 @@ function drawCapture() {
       <div class="cfgitem"><p class="lbl">Человек</p>${ddPickHTML(it, "person")}</div>
     </div>
 
+    ${isRoutine(it) || isIdea(it) ? "" : `<p class="lbl">Важность</p>
+      <div class="chips">${[["imp", "важное"], ["not", "неважное"]].map(([k, L]) =>
+        `<button class="chip ${(isImportant(it) ? "imp" : "not") === k ? "on" : ""}"
+          data-act="equad" data-id="${it.id}" data-q="${k}">${L}</button>`).join("")}</div>
+      <p class="qs" style="margin:-6px 0 4px">Срочность сюда не входит —
+        она считается из дедлайна.</p>`}
+
     ${extraHTML}
 
     <div class="row" style="justify-content:flex-start;margin-top:20px">
@@ -655,8 +662,9 @@ function openItem(id) {
       ${it.place ? placeTag(it.place) : ""}
       ${it.person && it.person !== "Я" ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(it.person)}</span>` : ""}
       ${dateLabel(it) && !isRoutine(it) ? `<span class="tag when">${sandFor(it)}${dateLabel(it)}</span>` : ""}
-      ${!isRoutine(it) && !isIdea(it) && !isImportant(it)
-        ? `<span class="tag place">неважное — молчит до срока</span>` : ""}
+      ${!isRoutine(it) && !isIdea(it)
+        ? `<span class="tag quad" title="Клетка матрицы: срочность из дедлайна, важность — ваша">${
+          esc(QUADS[quadrant(it)])}</span>` : ""}
     </div>
     <div class="sep"></div>
 

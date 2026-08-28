@@ -14,6 +14,8 @@ T.ok("полей ввода нет", h.indexOf("<input") < 0);
 T.ok("заметка видна", h.indexOf("проверочная заметка") >= 0);
 T.ok("вид дела не написан словами",
   T.visible(h).indexOf(typeName(x)) < 0);
+T.ok("клетка матрицы подписана",
+  /Срочное|Несрочное/.test(T.visible(h)));
 T.ok("«Сделать сегодня» — главная синяя",
   /btn primary" data-act="pin"/.test(h));
 T.ok("«Редактировать» — текстовая", /btn link" data-act="edit"/.test(h));
@@ -37,7 +39,7 @@ h = host.innerHTML;
 T.ok("заголовок «Новое дело»", h.indexOf("<h3>Новое дело</h3>") >= 0);
 T.ok("заметка и шаги свёрнуты",
   h.indexOf("＋ заметка") >= 0 && h.indexOf("＋ шаги") >= 0 && h.indexOf("capNotes") < 0);
-T.ok("важности в форме нет", h.indexOf("Важность") < 0);
+T.ok("важность в форме есть", h.indexOf("Важность") >= 0);
 d.title = "Проверочное дело";
 clickOn({ act: "dd", k: "due:" + d.id });
 clickOn({ act: "duequick", id: d.id, v: "tomorrow" });

@@ -172,6 +172,10 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
   font-size:13px;line-height:1.3;padding:4px 0;margin-left:auto;
   font-variant-numeric:tabular-nums}
 .tag.steptag{background:var(--accent-soft);color:var(--accent);font-weight:700}
+/* Клетка матрицы в окне дела: спокойная контурная метка — это
+   положение дела, а не тревога.                                    */
+.tag.quad{background:transparent;border:1px solid var(--line);color:var(--chip-ink);
+  font-weight:600}
 .stepmini{font-weight:700;opacity:.65;margin-left:5px;font-size:11px;
   font-variant-numeric:tabular-nums}
 .nextstep{padding-left:34px;margin-top:7px;font-size:14px;color:var(--dim)}
@@ -3152,6 +3156,13 @@ function drawCapture() {
       <div class="cfgitem"><p class="lbl">Человек</p>${ddPickHTML(it, "person")}</div>
     </div>
 
+    ${isRoutine(it) || isIdea(it) ? "" : `<p class="lbl">Важность</p>
+      <div class="chips">${[["imp", "важное"], ["not", "неважное"]].map(([k, L]) =>
+        `<button class="chip ${(isImportant(it) ? "imp" : "not") === k ? "on" : ""}"
+          data-act="equad" data-id="${it.id}" data-q="${k}">${L}</button>`).join("")}</div>
+      <p class="qs" style="margin:-6px 0 4px">Срочность сюда не входит —
+        она считается из дедлайна.</p>`}
+
     ${extraHTML}
 
     <div class="row" style="justify-content:flex-start;margin-top:20px">
@@ -3387,8 +3398,9 @@ function openItem(id) {
       ${it.place ? placeTag(it.place) : ""}
       ${it.person && it.person !== "Я" ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(it.person)}</span>` : ""}
       ${dateLabel(it) && !isRoutine(it) ? `<span class="tag when">${sandFor(it)}${dateLabel(it)}</span>` : ""}
-      ${!isRoutine(it) && !isIdea(it) && !isImportant(it)
-        ? `<span class="tag place">неважное — молчит до срока</span>` : ""}
+      ${!isRoutine(it) && !isIdea(it)
+        ? `<span class="tag quad" title="Клетка матрицы: срочность из дедлайна, важность — ваша">${
+          esc(QUADS[quadrant(it)])}</span>` : ""}
     </div>
     <div class="sep"></div>
 
