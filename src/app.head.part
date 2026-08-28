@@ -110,10 +110,12 @@ main.fit .todayhead{flex:none}
   display:flex;flex-direction:column;overflow:hidden}
 /* Прокручивается сама панель — как колонка «Дела» слева: полоса идёт
    по краю панели, а закреплённый заголовок остаётся на месте.      */
-/* Рутина забирает свободную высоту, встречи держат свою — но если
-   встреч много, крутится и их список.                              */
+/* Рутина забирает свободную высоту, встречи — фиксированную долю, даже
+   когда их нет: панель не должна прыгать в размере от одной встречи.
+   Нижняя панель без отступа снизу — её низ вровень с колонкой дел.  */
 .sidepanel.routines{flex:1 1 auto;min-height:140px}
-.sidepanel.appts{flex:0 1 auto;max-height:46%}
+.sidepanel.appts{flex:0 0 38%;min-height:170px}
+.tcol.side .sidepanel:last-child{margin-bottom:0}
 .tcol > .lbl:first-child{margin-top:0}
 .sidepanel{background:var(--panel);border-radius:var(--r);box-shadow:var(--shadow);
   padding:0;margin-bottom:20px;display:flex;flex-direction:column;
@@ -130,7 +132,7 @@ main.fit .todayhead{flex:none}
   .tcol{overflow:visible;margin-bottom:20px;display:block}
   .tscroll,.panelscroll{overflow:visible;min-height:0}
   .sidepanel{display:block;overflow:visible}
-  .sidepanel.appts{max-height:none}
+  .sidepanel.appts{flex:none;min-height:0}
   /* На узком окне колонки складываются — прокрутка снова страничная. */
   .tcol.side{padding:0;margin-top:0;display:block;overflow:visible}
   .sidepanel.routines{overflow:visible}

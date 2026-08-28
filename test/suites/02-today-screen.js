@@ -74,9 +74,13 @@ T.ok("заголовок дел — вне обёртки", (function () {
   return h2.indexOf('class="todayhead"') < h2.indexOf('class="tscroll"'); })());
 T.ok("рутина забирает свободную высоту",
   /\.sidepanel\.routines\{[^}]*flex:1 1 auto/.test(CSS2));
-T.ok("встречи держат свою высоту, но крутятся, если их много",
-  /\.sidepanel\.appts\{[^}]*flex:0 1 auto/.test(CSS2)
-  && /\.sidepanel\.appts\{[^}]*max-height/.test(CSS2));
+T.ok("панель встреч фиксированной высоты — даже когда их нет",
+  /\.sidepanel\.appts\{[^}]*flex:0 0 /.test(CSS2)
+  && /\.sidepanel\.appts\{[^}]*min-height/.test(CSS2));
+T.ok("нижняя панель без отступа снизу — низ вровень с колонкой дел",
+  /\.tcol\.side \.sidepanel:last-child\{[^}]*margin-bottom:0/.test(CSS2));
+T.ok("колонки растянуты на одну высоту",
+  /\.tgrid\{[^}]*align-items:stretch/.test(CSS2));
 T.ok("у обеих панелей своя прокручиваемая область",
   (view.innerHTML.match(/class="panelscroll"/g) || []).length === 2);
 
