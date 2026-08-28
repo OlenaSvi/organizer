@@ -140,7 +140,8 @@ document.addEventListener("click", e => {
 
     case "capsave":   saveCapture(); break;
     case "capsavetake": saveCaptureTake(); break;
-    case "capopen":   capOpen[el.dataset.k] = true; drawCapture(); break;
+    case "formopen":  formOpen[el.dataset.k] = true;
+                      if (draftId) drawCapture(); else refreshEdit(id || DIREDIT); break;
     case "capcancel": cancelCapture(); break;
 
     case "assign":  if (it && it.spheres.indexOf(v) < 0) {

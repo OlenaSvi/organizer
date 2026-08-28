@@ -3082,8 +3082,9 @@ function openSettings() {
    те же параметры, что и при редактировании: вид, шаги, дедлайн, клетка
    матрицы, сферы, место, человек. Заполнять — по желанию.           */
 let draftId = null, capFocus = false, stepFocus = false;
-/* Какие необязательные блоки формы раскрыты в этот раз. */
-let capOpen = { notes: false, steps: false };
+/* Какие необязательные блоки формы раскрыты в этот раз — общее для
+   создания и правки. */
+let formOpen = { notes: false, steps: false };
 
 /* Перерисовка открытой формы после каждой правки: черновик — своей
    отрисовкой, существующее дело — редактором. Функция была потеряна
@@ -3093,9 +3094,61 @@ const refreshEdit = id => {
   if (host.innerHTML) openEdit(id); else render();
 };
 
+/* ── Общая форма дела ────────────────────────────────────────────────
+   Одна разметка на создание и на правку: секции и их порядок совпадают,
+   различаются только заполненность и кнопки внизу. Раньше формы жили
+   отдельно и успели разъехаться.                                     */
+function itemFormHTML(it, ids) {
+  const D = ["вс","пн","вт","ср","чт","пт","сб"];
+  const openNotes = formOpen.notes || !!(it.notes || "").trim();
+  const openSteps = !isRoutine(it) && (formOpen.steps || (it.multi && it.steps.length));
+  const bNotes = `<button class="addtoday" data-act="formopen" data-k="notes">＋ заметка</button>`;
+  const bSteps = `<button class="addtoday" data-act="formopen" data-k="steps">＋ шаги</button>`;
+  const extra = (!openNotes && !openSteps)
+    ? (isRoutine(it) ? bNotes : `<div class="caprow">${bNotes}${bSteps}</div>`)
+    : (openNotes ? notesBlockHTML(it, ids.notes) : bNotes)
+      + (isRoutine(it) ? "" : openSteps ? stepsBlockHTML(it) : bSteps);
+
+  return `<div class="cfggrid" style="margin-bottom:4px">
+      ${isRoutine(it) ? `<div class="cfgitem"><p class="lbl">В какие дни</p>
+        <div class="rt">${D.map((d, i) =>
+          `<div class="${it.routine && it.routine.days.indexOf(i) >= 0 ? "hit" : ""}"
+            data-act="rday" data-id="${it.id}" data-i="${i}" style="cursor:pointer">${d}</div>`).join("")}</div></div>`
+        : `<div class="cfgitem">${whenFieldsHTML(it, ids.date, ids.time)}</div>`}
+      <div class="cfgitem"><p class="lbl">Вид дела</p>${ddTypeHTML(it)}</div>
+    </div>
+
+    <p class="lbl" style="margin-top:18px">Сфера
+      <span class="qs" style="text-transform:none;letter-spacing:0;margin-left:8px">можно несколько</span></p>
+    <div class="chips">${S.spheres.map(v =>
+      `<button class="chip ${it.spheres.indexOf(v) >= 0 ? "on" : ""}" data-act="esphere"
+        data-id="${it.id}" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div>
+    ${(it.spheres || []).length > 1 ? `<div class="dupe">Это по-прежнему <b>одна запись</b>.
+      Она видна во всех выбранных ветках, а отметите сделанной — исчезнет сразу отовсюду.</div>` : ""}
+
+    <div class="cfggrid">
+      <div class="cfgitem"><p class="lbl">Место</p>${ddPickHTML(it, "place")}</div>
+      <div class="cfgitem"><p class="lbl">Человек</p>${ddPickHTML(it, "person")}</div>
+    </div>
+
+    ${isRoutine(it) || isIdea(it) ? "" : `<p class="lbl">Важность</p>
+      <div class="chips">${[["imp", "важное"], ["not", "неважное"]].map(([k, L]) =>
+        `<button class="chip ${(isImportant(it) ? "imp" : "not") === k ? "on" : ""}"
+          data-act="equad" data-id="${it.id}" data-q="${k}">${L}</button>`).join("")}</div>
+      <p class="qs" style="margin:-6px 0 4px">Срочность сюда не входит —
+        она считается из дедлайна.</p>`}
+
+    ${(isChoice(it) || isIdea(it)) ? `<p class="lbl">Варианты</p>
+      <div>${(it.options || []).map(o => `<div class="opt">· ${esc(o.text)}</div>`).join("")
+        || `<div class="opt" style="color:var(--dim)">пока пусто</div>`}</div>
+      <input type="text" id="newOpt" placeholder="Добавить вариант и нажать Enter" style="margin-top:10px">` : ""}
+
+    ${extra}`;
+}
+
 function openCapture(preset) {
   capFocus = true;
-  capOpen = { notes: false, steps: false };
+  formOpen = { notes: false, steps: false };
   const it = {
     id: uid(), title: "", type: defaultType(), multi: false, spheres: [], place: null,
     person: null, due: null, time: null, steps: [], options: [], routine: null,
@@ -3119,52 +3172,12 @@ function drawCapture() {
     list.map(v => `<button class="chip ${cur(v) ? "on" : ""}" data-act="${act}"
       data-id="${it.id}" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div>`;
 
-  /* Форма короткая по умолчанию: заметка и шаги раскрываются кнопками —
-     нужны они редко, а окно от них вырастало вдвое. Важность здесь не
-     спрашиваем: по умолчанию дело важное, поменять можно в матрице. */
-  const openNotes = capOpen.notes || !!(it.notes || "").trim();
-  const openSteps = !isRoutine(it) && (capOpen.steps || (it.multi && it.steps.length));
-  /* Пока оба блока свёрнуты — они стоят парой в ряд. Как только один
-     раскрыт, он занимает всю ширину, а второй остаётся кнопкой ниже. */
-  const bNotes = `<button class="addtoday" data-act="capopen" data-k="notes">＋ заметка</button>`;
-  const bSteps = `<button class="addtoday" data-act="capopen" data-k="steps">＋ шаги</button>`;
-  const extraHTML = (!openNotes && !openSteps)
-    ? (isRoutine(it) ? bNotes : `<div class="caprow">${bNotes}${bSteps}</div>`)
-    : (openNotes ? notesBlockHTML(it, "capNotes") : bNotes)
-      + (isRoutine(it) ? "" : openSteps ? stepsBlockHTML(it) : bSteps);
   openModal(`<h3>Новое дело</h3>
     <input type="text" id="capText" placeholder="Что нужно сделать?"
       autocomplete="off" value="${esc(it.title)}">
     <div id="capDupe"></div>
 
-    <div class="cfggrid" style="margin-bottom:4px">
-      ${isRoutine(it) ? `<div class="cfgitem"><p class="lbl">В какие дни</p>
-        <div class="rt">${D.map((d, i) =>
-          `<div class="${it.routine ? (it.routine.days.indexOf(i) >= 0 ? "hit" : "") : ""}"
-            data-act="rday" data-id="${it.id}" data-i="${i}" style="cursor:pointer">${d}</div>`).join("")}</div></div>`
-        : `<div class="cfgitem">${whenFieldsHTML(it, "capDate", "capTime")}</div>`}
-      <div class="cfgitem"><p class="lbl">Вид дела</p>${ddTypeHTML(it)}</div>
-    </div>
-
-    <p class="lbl" style="margin-top:18px">Сфера
-      <span class="qs" style="text-transform:none;letter-spacing:0;margin-left:8px">можно несколько</span></p>
-    <div class="chips">${S.spheres.map(v =>
-      `<button class="chip ${it.spheres.indexOf(v) >= 0 ? "on" : ""}" data-act="esphere"
-        data-id="${it.id}" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div>
-
-    <div class="cfggrid">
-      <div class="cfgitem"><p class="lbl">Место</p>${ddPickHTML(it, "place")}</div>
-      <div class="cfgitem"><p class="lbl">Человек</p>${ddPickHTML(it, "person")}</div>
-    </div>
-
-    ${isRoutine(it) || isIdea(it) ? "" : `<p class="lbl">Важность</p>
-      <div class="chips">${[["imp", "важное"], ["not", "неважное"]].map(([k, L]) =>
-        `<button class="chip ${(isImportant(it) ? "imp" : "not") === k ? "on" : ""}"
-          data-act="equad" data-id="${it.id}" data-q="${k}">${L}</button>`).join("")}</div>
-      <p class="qs" style="margin:-6px 0 4px">Срочность сюда не входит —
-        она считается из дедлайна.</p>`}
-
-    ${extraHTML}
+    ${itemFormHTML(it, { date: "capDate", time: "capTime", notes: "capNotes" })}
 
     <div class="row" style="justify-content:flex-start;margin-top:20px">
       <button class="btn primary" data-act="capsave">Добавить</button>
@@ -3437,48 +3450,20 @@ function openEdit(id) {
   const it = S.items.find(x => x.id === id); if (!it) return;
   /* openEdit вызывается заново после каждой правки, чтобы перерисовать
      окно, — снимок делаем только при первом открытии этого дела.     */
-  if (!editBackup || editBackup.id !== id) editBackup = JSON.parse(JSON.stringify(it));
+  if (!editBackup || editBackup.id !== id) {
+    editBackup = JSON.parse(JSON.stringify(it));
+    formOpen = { notes: false, steps: false };
+  }
   const D = ["вс","пн","вт","ср","чт","пт","сб"];
   openModal(`<h3>${esc(it.title)}</h3>
     <input type="text" id="edTitle" value="${esc(it.title)}">
-    <p class="lbl">Вид дела</p>
-    ${ddTypeHTML(it)}
-    <p class="qs" style="margin:6px 0 12px">${esc(typeDef(it.type).hint || "")}</p>
 
-    ${stepsBlockHTML(it)}
+    ${itemFormHTML(it, { date: "edDate", time: "edTime", notes: "edNotes" })}
 
-    ${isChoice(it) || isIdea(it) ? `<p class="lbl">Варианты</p>
-      <div>${it.options.map(o => `<div class="opt">· ${esc(o.text)}</div>`).join("")
-        || `<div class="opt" style="color:var(--dim)">пока пусто</div>`}</div>
-      <input type="text" id="newOpt" placeholder="Добавить вариант и нажать Enter" style="margin-top:10px">
-      ${isIdea(it) ? "" : `<div class="dupe">Решение без дедлайна превращается в бесконечное
-        сравнение. К дедлайну берём лучшее из найденного — и закрываем вопрос.</div>`}` : ""}
-
-    ${isRoutine(it) ? `<p class="lbl">В какие дни</p>
-      <div class="rt">${D.map((d, i) => `<div class="${it.routine.days.includes(i) ? "hit" : ""}"
-        data-act="rday" data-id="${it.id}" data-i="${i}" style="cursor:pointer">${d}</div>`).join("")}</div>
-      <div class="dupe">Пропуск ничего не обнуляет. Считаем «сделано X из последних», а не серию,
-        которая рушится от одного дня.</div>` : ""}
-
-    ${whenFieldsHTML(it, "edDate", "edTime")}
-    ${notesBlockHTML(it, "edNotes")}
-
-    ${isRoutine(it) || isIdea(it) ? "" : quadPickHTML(it)}
-    <p class="lbl">Сферы — можно выбрать несколько</p>
-    <div class="chips">${S.spheres.map(sp =>
-      `<button class="chip ${(it.spheres || []).indexOf(sp) >= 0 ? "on" : ""}" data-act="esphere" data-id="${it.id}" data-v="${esc(sp)}">${esc(sp)}</button>`).join("")}</div>
-    ${(it.spheres || []).length > 1 ? `<div class="dupe">Это по-прежнему <b>одна запись</b>.
-      Она видна во всех выбранных ветках, а отметите сделанной — исчезнет сразу отовсюду.
-      Дублировать дело руками не нужно.</div>` : ""}
-    <p class="lbl">Место</p>${ddPickHTML(it, "place")}
-    <p class="lbl" style="margin-top:12px">Кого касается</p>${ddPickHTML(it, "person")}
-
-    <div class="row">
-      <button class="btn outline danger" data-act="del" data-id="${it.id}">Удалить</button>
-      <div class="spacer"></div>
-      ${isRoutine(it) || isAppt(it) ? "" : `<button class="btn ghost" data-act="pin" data-id="${it.id}">${
-        pickedToday(it) ? "Убрать из сегодня" : "Сделать сегодня"}</button>`}
+    <div class="row" style="justify-content:flex-start;margin-top:20px">
       <button class="btn primary" data-act="esave" data-id="${it.id}">Готово</button>
+      <div class="spacer"></div>
+      <button class="btn outline danger" data-act="del" data-id="${it.id}">Удалить</button>
     </div>`, "item:" + it.id, { act: "ecancel", id: it.id, title: "Отменить правки и закрыть" });
 
   wireStepsInput(id);
@@ -3655,7 +3640,8 @@ document.addEventListener("click", e => {
 
     case "capsave":   saveCapture(); break;
     case "capsavetake": saveCaptureTake(); break;
-    case "capopen":   capOpen[el.dataset.k] = true; drawCapture(); break;
+    case "formopen":  formOpen[el.dataset.k] = true;
+                      if (draftId) drawCapture(); else refreshEdit(id || DIREDIT); break;
     case "capcancel": cancelCapture(); break;
 
     case "assign":  if (it && it.spheres.indexOf(v) < 0) {
