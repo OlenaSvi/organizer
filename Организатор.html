@@ -213,12 +213,6 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .undo{font-size:13px;color:var(--accent);font-weight:600;padding:2px 8px;border-radius:8px}
 .undo:hover{background:var(--accent-soft)}
 .dayhead{font-size:13.5px;font-weight:700;margin:18px 0 8px;color:var(--dim)}
-.tally + .dayhead{margin-top:10px}
-/* Итог недели — просто фраза, а не карточка: он ничего не содержит,
-   ему нечего обрамлять.                                            */
-.tally{background:transparent;border:0;padding:0 2px 4px;margin-bottom:0;
-  box-shadow:none;font-size:14px;color:var(--dim)}
-.tally b{font-size:15px;color:var(--good);font-weight:700}
 .empty{text-align:center;color:var(--dim);padding:50px 20px;line-height:1.7}
 
 /* счётчик дня: сегменты + «N из 5» */
@@ -1985,13 +1979,10 @@ function doneListHTML(q) {
     .filter(e => !q
       || e.it.title.toLowerCase().indexOf(q.toLowerCase()) >= 0
       || words.every(w => norm(e.it.title).some(v => v.indexOf(w) === 0)));
-  const week = all.filter(e => e.when && e.when >= addDays(today(), -6)).length;
   const days = [];
   all.forEach(e => { if (days.indexOf(e.when) < 0) days.push(e.when); });
   const onDay = d => all.filter(e => e.when === d);
-  return `<div class="tally"><b>${week}</b> ${plural(week, "дело", "дела", "дел")}
-      за последние 7 дней. ${week ? "Это не «ничего»." : "Неделя была на другое — тоже нормально."}</div>
-    ${days.length ? days.slice(0, 40).map(d => `<div class="dayhead">${formatDay(d)}</div>` +
+  return `${days.length ? days.slice(0, 40).map(d => `<div class="dayhead">${formatDay(d)}</div>` +
         onDay(d).map(e => doneRow(e, d === today() || !e.isRoutine)).join("")).join("")
       : `<div class="empty" style="padding:30px 20px">Здесь появится всё, что вы отметите сделанным.</div>`}`;
 }
