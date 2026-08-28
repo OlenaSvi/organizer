@@ -418,6 +418,14 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
    выпадающих панелей: они плавают поверх и окно не растягивают. */
 .modal *{max-width:100%}
 .modal .dd{max-width:none}
+/* Ряд кнопок внизу окна закреплён: длинную форму можно листать, а
+   «Готово», «Добавить» и «Применить» остаются на виду. Отрицательные
+   отступы гасят внутреннее поле окна, чтобы полоса шла от края до края. */
+.modal .row.modalfoot{position:sticky;bottom:-24px;z-index:4;
+  margin:20px -24px -24px;padding:16px 24px 24px;
+  background:var(--panel);border-top:1px solid var(--hairline);
+  justify-content:flex-start;align-items:center}
+.modal .row.modalfoot .spacer{flex:1}
 .modal h3{margin:0 0 16px;font-size:17px;font-weight:700;padding-right:42px}
 .modalbar{position:sticky;top:0;height:0;display:flex;justify-content:flex-end;z-index:3}
 .modalx{width:30px;height:30px;margin:-6px -6px 0 0;border-radius:8px;background:var(--soft);

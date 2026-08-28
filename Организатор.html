@@ -418,6 +418,14 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
    выпадающих панелей: они плавают поверх и окно не растягивают. */
 .modal *{max-width:100%}
 .modal .dd{max-width:none}
+/* Ряд кнопок внизу окна закреплён: длинную форму можно листать, а
+   «Готово», «Добавить» и «Применить» остаются на виду. Отрицательные
+   отступы гасят внутреннее поле окна, чтобы полоса шла от края до края. */
+.modal .row.modalfoot{position:sticky;bottom:-24px;z-index:4;
+  margin:20px -24px -24px;padding:16px 24px 24px;
+  background:var(--panel);border-top:1px solid var(--hairline);
+  justify-content:flex-start;align-items:center}
+.modal .row.modalfoot .spacer{flex:1}
 .modal h3{margin:0 0 16px;font-size:17px;font-weight:700;padding-right:42px}
 .modalbar{position:sticky;top:0;height:0;display:flex;justify-content:flex-end;z-index:3}
 .modalx{width:30px;height:30px;margin:-6px -6px 0 0;border-radius:8px;background:var(--soft);
@@ -3056,8 +3064,7 @@ function openSettings() {
       способ перенести данные или подстраховаться.</p>
     <input type="file" id="importFile" accept=".json,application/json" hidden>
 
-    <div class="setdiv"></div>
-    <div class="row">
+    <div class="row modalfoot">
       <span class="qs" style="margin:0">${cfgDirty()
         ? `<b style="color:var(--warm)">Есть неприменённые изменения</b>`
         : "Всё применено"}</span>
@@ -3179,7 +3186,7 @@ function drawCapture() {
 
     ${itemFormHTML(it, { date: "capDate", time: "capTime", notes: "capNotes" })}
 
-    <div class="row" style="justify-content:flex-start;margin-top:20px">
+    <div class="row modalfoot">
       <button class="btn primary" data-act="capsave">Добавить</button>
       ${isRoutine(it) || isAppt(it) || isIdea(it) ? ""
         : `<button class="btn soft" data-act="capsavetake">добавить и взять</button>`}
@@ -3437,7 +3444,7 @@ function openItem(id) {
       <div class="opt" style="white-space:pre-wrap">${esc(it.notes)}</div>` : ""}
 
     <div class="sep"></div>
-    <div class="row" style="margin-top:0">
+    <div class="row modalfoot">
       <button class="btn link" data-act="edit" data-id="${it.id}">Редактировать</button>
       <div class="spacer"></div>
       ${isRoutine(it) || isAppt(it) || isIdea(it) ? "" : `<button class="btn ${
@@ -3460,7 +3467,7 @@ function openEdit(id) {
 
     ${itemFormHTML(it, { date: "edDate", time: "edTime", notes: "edNotes" })}
 
-    <div class="row" style="justify-content:flex-start;margin-top:20px">
+    <div class="row modalfoot">
       <button class="btn primary" data-act="esave" data-id="${it.id}">Готово</button>
       <div class="spacer"></div>
       <button class="btn outline danger" data-act="del" data-id="${it.id}">Удалить</button>

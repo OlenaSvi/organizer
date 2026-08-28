@@ -319,8 +319,7 @@ function openSettings() {
       способ перенести данные или подстраховаться.</p>
     <input type="file" id="importFile" accept=".json,application/json" hidden>
 
-    <div class="setdiv"></div>
-    <div class="row">
+    <div class="row modalfoot">
       <span class="qs" style="margin:0">${cfgDirty()
         ? `<b style="color:var(--warm)">Есть неприменённые изменения</b>`
         : "Всё применено"}</span>
@@ -442,7 +441,7 @@ function drawCapture() {
 
     ${itemFormHTML(it, { date: "capDate", time: "capTime", notes: "capNotes" })}
 
-    <div class="row" style="justify-content:flex-start;margin-top:20px">
+    <div class="row modalfoot">
       <button class="btn primary" data-act="capsave">Добавить</button>
       ${isRoutine(it) || isAppt(it) || isIdea(it) ? ""
         : `<button class="btn soft" data-act="capsavetake">добавить и взять</button>`}
@@ -700,7 +699,7 @@ function openItem(id) {
       <div class="opt" style="white-space:pre-wrap">${esc(it.notes)}</div>` : ""}
 
     <div class="sep"></div>
-    <div class="row" style="margin-top:0">
+    <div class="row modalfoot">
       <button class="btn link" data-act="edit" data-id="${it.id}">Редактировать</button>
       <div class="spacer"></div>
       ${isRoutine(it) || isAppt(it) || isIdea(it) ? "" : `<button class="btn ${
@@ -723,7 +722,7 @@ function openEdit(id) {
 
     ${itemFormHTML(it, { date: "edDate", time: "edTime", notes: "edNotes" })}
 
-    <div class="row" style="justify-content:flex-start;margin-top:20px">
+    <div class="row modalfoot">
       <button class="btn primary" data-act="esave" data-id="${it.id}">Готово</button>
       <div class="spacer"></div>
       <button class="btn outline danger" data-act="del" data-id="${it.id}">Удалить</button>
