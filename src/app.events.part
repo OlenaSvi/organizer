@@ -174,6 +174,7 @@ document.addEventListener("click", e => {
     case "hereset": S.hereNow = el.dataset.v || null; DD = null; save(); render(); break;
     case "allfilterset": ALLFILTER = el.dataset.v; ALLQUERY = ""; DD = null; render(); break;
     case "allsortset":   ALLSORT = el.dataset.v; DD = null; render(); break;
+    case "allperiodset": ALLPERIOD = el.dataset.v; DD = null; render(); break;
     case "etype":   if (it) { it.type = el.dataset.k;
                       if (isRoutine(it) && !it.routine) it.routine = { days:[0,1,2,3,4,5,6], history:[] };
                       /* У идеи и рутины нет срока: старый дедлайн не должен
@@ -416,6 +417,7 @@ function saveView() {
   try {
     localStorage.setItem(VIEWKEY, JSON.stringify({
       tab: TAB, axis: AXIS, calMode: CALMODE, allFilter: ALLFILTER, allSort: ALLSORT,
+      allPeriod: ALLPERIOD,
     }));
   } catch (e) {}
 }

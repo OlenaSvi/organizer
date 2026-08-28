@@ -454,6 +454,24 @@ function apptRowHTML(i) {
    и в каждом что-то намеренно не показано. Здесь не показано ничего.  */
 let ALLFILTER = savedView.allFilter || "all", ALLQUERY = "";
 let ALLSORT = savedView.allSort || "due";
+let ALLPERIOD = savedView.allPeriod || "all";
+
+/* Период отвечает на разные вопросы в разных срезах: в архиве — «что я
+   сделала за неделю» (по дате выполнения), в живых списках — «что я
+   записала за неделю» (по дате появления дела).                     */
+const ALLPERIODS = [
+  ["all",   "за всё время", 0],
+  ["week",  "за неделю",    7],
+  ["month", "за месяц",    30],
+];
+const periodDef = () => ALLPERIODS.find(x => x[0] === ALLPERIOD) || ALLPERIODS[0];
+const inPeriod = date => {
+  const days = periodDef()[2];
+  if (!days) return true;
+  return !!date && date >= addDays(today(), -days);
+};
+const CALICON = `<svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+  stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3.2" width="12" height="10.8" rx="2"/><path d="M2 6.4h12M5.4 1.8v2.6M10.6 1.8v2.6"/></svg>`;
 
 /* Порядок отвечает на разные вопросы: «что горит» (срок), «что я сама
    считаю важным» (важность), «что я недавно записала» (свежесть),
@@ -490,6 +508,7 @@ function allItems() {
   const words = norm(ALLQUERY);
   const q = ALLQUERY.trim().toLowerCase();
   return live().filter(f)
+    .filter(i => inPeriod(i.created))
     .filter(i => !q || i.title.toLowerCase().indexOf(q) >= 0
       || words.every(w => norm(i.title).some(v => v.indexOf(w) === 0)))
     .sort(sortDef()[2]);
@@ -542,6 +561,13 @@ function renderAll() {
         ${DD === "allfilter" ? `<div class="dd">${allFilters().map(([k, L]) =>
           `<button class="ddrow ${ALLFILTER === k ? "on" : ""}" data-act="allfilterset"
              data-v="${k}"><span>${esc(L)}</span>${ALLFILTER === k ? ddCheck : ""}</button>`).join("")}</div>` : ""}
+      </span>
+      <span class="ddwrap" data-ddwrap>
+        <button class="ddbtn" data-act="dd" data-k="allperiod" title="Период">${CALICON}<span>${
+          esc(periodDef()[1])}</span><i class="caret">▾</i></button>
+        ${DD === "allperiod" ? `<div class="dd right">${ALLPERIODS.map(([k, L]) =>
+          `<button class="ddrow ${ALLPERIOD === k ? "on" : ""}" data-act="allperiodset"
+             data-v="${k}"><span>${esc(L)}</span>${ALLPERIOD === k ? ddCheck : ""}</button>`).join("")}</div>` : ""}
       </span>
       ${ALLFILTER === "done" ? "" : `<span class="ddwrap" data-ddwrap>
         <button class="ddbtn" data-act="dd" data-k="allsort" title="Порядок">${SORTICON}<span>${
@@ -606,9 +632,11 @@ function doneRow(e, canUndo) {
    неделю остаются — у них своя работа: доказывать, что день не пустой. */
 function doneListHTML(q) {
   const words = norm(q || "");
-  const all = doneEntries().filter(e => !q
-    || e.it.title.toLowerCase().indexOf(q.toLowerCase()) >= 0
-    || words.every(w => norm(e.it.title).some(v => v.indexOf(w) === 0)));
+  const all = doneEntries()
+    .filter(e => inPeriod(e.when))
+    .filter(e => !q
+      || e.it.title.toLowerCase().indexOf(q.toLowerCase()) >= 0
+      || words.every(w => norm(e.it.title).some(v => v.indexOf(w) === 0)));
   const week = all.filter(e => e.when && e.when >= addDays(today(), -6)).length;
   const days = [];
   all.forEach(e => { if (days.indexOf(e.when) < 0) days.push(e.when); });
