@@ -49,6 +49,42 @@ T.ok("крупно — текст шага", title === esc(nextStep(m).text), "�
 T.ok("под ним «Шаг N из M» и название дела",
   card.indexOf("class=\"stepno\">Шаг 2 из") >= 0 && card.indexOf("в «" + esc(m.title) + "»") >= 0);
 
+T.head("НЕДЕЛЯ НАЧИНАЕТСЯ КАК В НАСТРОЙКАХ");
+T.reset();
+var rt2 = T.routine();
+/* Ленивый захват до </div></div> терял последний день: берём кусок от
+   начала блока и вытаскиваем все подписи дней подряд. */
+function weekRow(html) {
+  var at = html.indexOf('<div class="rt">');
+  if (at < 0) return [];
+  var src = html.slice(at, at + 900);
+  var out = [], mm, re2 = />([а-я]{2})</g;
+  while ((mm = re2.exec(src)) && out.length < 7) out.push(mm[1]);
+  return out;
+}
+S.cfg.weekStart = 1; save();
+openItem(rt2.id); clickOn({ act: "edit", id: rt2.id });
+var w1 = weekRow(host.innerHTML);
+T.ok("при «пн» неделя начинается с понедельника", w1[0] === "пн" && w1[6] === "вс",
+  w1.join(" "));
+clickOn({ act: "ecancel", id: rt2.id });
+T.ok("в просмотре тот же порядок", weekRow(host.innerHTML)[0] === "пн",
+  weekRow(host.innerHTML).join(" "));
+closeModal();
+
+S.cfg.weekStart = 0; save();
+openItem(rt2.id); clickOn({ act: "edit", id: rt2.id });
+var w0 = weekRow(host.innerHTML);
+T.ok("при «вс» неделя начинается с воскресенья", w0[0] === "вс" && w0[6] === "сб",
+  w0.join(" "));
+clickOn({ act: "ecancel", id: rt2.id }); closeModal();
+S.cfg.weekStart = 1; save();
+
+T.ok("точки под рутиной идут в том же порядке", (function () {
+  render();
+  var dots = /class="rdots"[\s\S]*?<\/div>/.exec(view.innerHTML)[0];
+  return (dots.match(/<i /g) || []).length === 7; })());
+
 T.head("РУТИНА КРУТИТСЯ САМА, ВСТРЕЧИ НЕ УЕЗЖАЮТ");
 T.reset(); render();
 T.ok("панели помечены", view.innerHTML.indexOf("sidepanel routines") >= 0

@@ -3220,9 +3220,9 @@ function itemFormHTML(it, ids) {
 
   return `<div class="cfggrid" style="margin-bottom:4px">
       ${isRoutine(it) ? `<div class="cfgitem"><p class="lbl">В какие дни</p>
-        <div class="rt">${D.map((d, i) =>
+        <div class="rt">${wdOrder().map(i =>
           `<div class="${it.routine && it.routine.days.indexOf(i) >= 0 ? "hit" : ""}"
-            data-act="rday" data-id="${it.id}" data-i="${i}" style="cursor:pointer">${d}</div>`).join("")}</div></div>`
+            data-act="rday" data-id="${it.id}" data-i="${i}" style="cursor:pointer">${WD_BY_DAY[i]}</div>`).join("")}</div></div>`
         : `<div class="cfgitem">${whenFieldsHTML(it, ids.date, ids.time)}</div>`}
       <div class="cfgitem"><p class="lbl">Вид дела</p>${ddTypeHTML(it)}</div>
     </div>
@@ -3526,7 +3526,8 @@ function openItem(id) {
       <div>${it.options.map(o => `<div class="opt">· ${esc(o.text)}</div>`).join("")}</div>` : "")
     + (isRoutine(it) && it.routine ? (() => { const wi = weekInfo(it);
       return `<p class="lbl">В какие дни</p>
-      <div class="rt">${D.map((d, k) => `<div class="${it.routine.days.indexOf(k) >= 0 ? "hit" : ""}">${d}</div>`).join("")}</div>
+      <div class="rt">${wdOrder().map(k =>
+        `<div class="${it.routine.days.indexOf(k) >= 0 ? "hit" : ""}">${WD_BY_DAY[k]}</div>`).join("")}</div>
       <p class="qs" style="margin:12px 0 4px">На этой неделе: <b style="color:var(--good)">${
         wi.hit} из ${wi.of}</b> уже сделано</p>
       ${weekDotsHTML(it)}`; })() : "")
