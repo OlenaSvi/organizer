@@ -103,7 +103,15 @@ main.fit .todayhead{flex:none}
 .tcol > .todayhead{position:sticky;top:0;z-index:5;background:var(--panel);
   margin:0 -24px 8px;padding:20px 24px 12px;border-bottom:1px solid var(--hairline);
   border-radius:var(--r) var(--r) 0 0}
-.tcol.side{background:transparent;box-shadow:none;padding:2px;border-left:0}
+/* Правая колонка — стопка: список рутин тянется и крутится внутри себя,
+   а панель встреч держит свою высоту и остаётся на виду.           */
+.tcol.side{background:transparent;box-shadow:none;padding:2px;border-left:0;
+  display:flex;flex-direction:column;overflow:hidden}
+.sidepanel.routines{flex:1 1 auto;min-height:120px;display:flex;flex-direction:column;
+  overflow:hidden}
+.sidepanel.routines .rbox{overflow-y:auto;min-height:0;scrollbar-width:thin;
+  margin-right:-6px;padding-right:6px}
+.sidepanel.appts{flex:0 0 auto}
 .tcol > .lbl:first-child{margin-top:0}
 .sidepanel{background:var(--panel);border-radius:var(--r);box-shadow:var(--shadow);
   padding:0 22px 20px;margin-bottom:20px}
@@ -116,7 +124,10 @@ main.fit .todayhead{flex:none}
   main.fit{height:auto;overflow:visible;display:block;padding-bottom:90px}
   .tgrid{display:block}
   .tcol{overflow:visible;margin-bottom:20px}
-  .tcol.side{padding:0;margin-top:0}
+  /* На узком окне колонки складываются — прокрутка снова страничная. */
+  .tcol.side{padding:0;margin-top:0;display:block;overflow:visible}
+  .sidepanel.routines{display:block;overflow:visible}
+  .sidepanel.routines .rbox{overflow:visible;margin-right:0;padding-right:0}
   /* В столбике колонки не крутятся сами — закрепление ни к чему,
      иначе шапки липли бы к краю окна поверх друг друга.             */
   .tcol > .todayhead,.sidepanel h3{position:static}
@@ -1739,13 +1750,13 @@ function renderToday() {
 
     `</div><div class="tcol side">` +
 
-    (anyRout ? `<div class="sidepanel"><h3>Рутина</h3>
+    (anyRout ? `<div class="sidepanel routines"><h3>Рутина</h3>
       <div class="rbox">
         ${routines.map(i => routineRowHTML(i, anyRout > 1)).join("")}
         ${routDone.map(i => doneLineHTML(i, today())).join("")}
       </div></div>` : "") +
 
-    `<div class="sidepanel"><h3>Аппоинтменты</h3>
+    `<div class="sidepanel appts"><h3>Аппоинтменты</h3>
       <div class="apptbox">${appts.length ? appts.map(apptRowHTML).join("")
         : `<div class="apptempty"><b>На сегодня встреч нет</b>
              Это не «ничего» — день дышит свободнее.</div>`}</div></div>` +

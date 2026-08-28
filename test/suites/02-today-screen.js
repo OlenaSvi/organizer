@@ -49,6 +49,25 @@ T.ok("крупно — текст шага", title === esc(nextStep(m).text), "�
 T.ok("под ним «Шаг N из M» и название дела",
   card.indexOf("class=\"stepno\">Шаг 2 из") >= 0 && card.indexOf("в «" + esc(m.title) + "»") >= 0);
 
+T.head("РУТИНА КРУТИТСЯ САМА, ВСТРЕЧИ НЕ УЕЗЖАЮТ");
+T.reset(); render();
+T.ok("панели помечены", view.innerHTML.indexOf("sidepanel routines") >= 0
+  && view.innerHTML.indexOf("sidepanel appts") >= 0);
+var CSS2 = (function () {
+  try { ObjC.import("Foundation");
+    return $.NSString.stringWithContentsOfFileEncodingError(
+      "Организатор.html", 4, null).js.replace(/\s+/g, " ");
+  } catch (e) { return ""; }
+})();
+T.ok("правая колонка — вертикальная стопка без своей прокрутки",
+  /\.tcol\.side\{[^}]*flex-direction:column/.test(CSS2)
+  && /\.tcol\.side\{[^}]*overflow:hidden/.test(CSS2));
+T.ok("список рутин прокручивается внутри себя",
+  /\.sidepanel\.routines \.rbox\{[^}]*overflow-y:auto/.test(CSS2));
+T.ok("панель рутин тянется, встречи — нет",
+  /\.sidepanel\.routines\{[^}]*flex:1/.test(CSS2)
+  && /\.sidepanel\.appts\{[^}]*flex:0 0 auto/.test(CSS2));
+
 T.head("РУТИНА: СТРОКА НЕ РАССЫПАЕТСЯ");
 T.reset();
 var rr = T.routine();

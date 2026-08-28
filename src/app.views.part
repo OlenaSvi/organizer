@@ -424,13 +424,13 @@ function renderToday() {
 
     `</div><div class="tcol side">` +
 
-    (anyRout ? `<div class="sidepanel"><h3>Рутина</h3>
+    (anyRout ? `<div class="sidepanel routines"><h3>Рутина</h3>
       <div class="rbox">
         ${routines.map(i => routineRowHTML(i, anyRout > 1)).join("")}
         ${routDone.map(i => doneLineHTML(i, today())).join("")}
       </div></div>` : "") +
 
-    `<div class="sidepanel"><h3>Аппоинтменты</h3>
+    `<div class="sidepanel appts"><h3>Аппоинтменты</h3>
       <div class="apptbox">${appts.length ? appts.map(apptRowHTML).join("")
         : `<div class="apptempty"><b>На сегодня встреч нет</b>
              Это не «ничего» — день дышит свободнее.</div>`}</div></div>` +
