@@ -514,6 +514,9 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .donename:hover{color:var(--ink)}
 .donebox{margin-top:2px;display:flex;flex-direction:column;gap:2px;
   border-bottom:1px solid var(--hairline);padding-bottom:10px}
+/* У закрытого шага рядом мелко написано, из какого он дела. */
+.ofdeal{font-size:12px;color:var(--faint);white-space:nowrap;margin-left:auto;
+  padding-left:10px}
 .apptbox{display:flex;flex-direction:column;gap:4px;margin-top:0}
 .aline{display:flex;align-items:flex-start;gap:10px;padding:8px 4px;border-radius:10px;
   background:transparent;border:0;transition:background .15s}
@@ -1453,6 +1456,16 @@ function todayItems() {
   const rest = all.filter(i => !isRoutine(i));
   const doneTasks = S.items.filter(i => i.done && !i.draft && !isRoutine(i)
     && i.doneAt === today());
+  /* Шаги, закрытые сегодня у ещё живых дел: дело продолжается, но
+     сделанное за день это тоже. У законченного дела шаги не дублируем —
+     показываем само дело.                                            */
+  const doneSteps = [];
+  S.items.forEach(i => {
+    if (i.draft || i.done || !i.multi) return;
+    (i.steps || []).forEach((st, k) => {
+      if (st.done && st.doneAt === today()) doneSteps.push({ it: i, st, k });
+    });
+  });
 
   /* Ваш выбор + сегодняшние встречи: они в дне по факту, а не по решению. */
   /* Встречу дня убрать нельзя — она назначена. Уйдёт сама, когда
@@ -1557,7 +1570,7 @@ function todayItems() {
   if (nAway) parts.push(nAway + " в других местах");
   const whyRest = parts.join(" · ");
   const whyEmpty = parts.length ? whyRest : "живых дел нет. Новые появятся здесь сами";
-  return { routines, routDone, mine, doneTasks, apptCount, chosenCount, away,
+  return { routines, routDone, mine, doneTasks, doneSteps, apptCount, chosenCount, away,
            queued, whyEmpty, whyRest, proposals };
 }
 
@@ -1610,6 +1623,17 @@ function doneLineHTML(i, when) {
   </div>`;
 }
 
+/* Закрытый шаг в «сделанном»: зачёркнут его текст, рядом — из какого
+   дела. Галочка возвращает шаг в работу, а не всё дело.            */
+function stepDoneLineHTML(d) {
+  return `<div class="doneline">
+    <button class="tick" data-act="undostep" data-id="${d.it.id}" data-i="${d.k}"
+      title="Вернуть шаг в работу"></button>
+    <button class="donename" data-act="open" data-id="${d.it.id}">${esc(d.st.text)}</button>
+    <span class="ofdeal">${esc(d.it.title)} · шаг ${d.k + 1} из ${d.it.steps.length}</span>
+  </div>`;
+}
+
 function suggestRowHTML(s) {
   const i = s.it;
   return `<div class="suggrow">
@@ -1634,7 +1658,7 @@ function suggestRowHTML(s) {
 }
 
 function renderToday() {
-  const { routines, routDone, mine, doneTasks, proposals,
+  const { routines, routDone, mine, doneTasks, doneSteps, proposals,
           apptCount, chosenCount, away, queued, whyEmpty, whyRest } = todayItems();
   const cap = S.cfg.todayCap;
   const tasks = mine.filter(i => !isTodayAppt(i));
@@ -1649,7 +1673,7 @@ function renderToday() {
   /* Счётчик рассказывает весь день: сделанное — ярким, взятое и ещё не
      сделанное — полупрозрачным, сверх лимита — розовым. Сделанное не
      исчезает из счёта — день не пятится назад, а наполняется.       */
-  const doneN = doneTasks.length;
+  const doneN = doneTasks.length + doneSteps.length;
   const takenN = chosenCount + doneN;
   const segs = Array.from({ length: Math.max(cap, takenN) }, (_, k) =>
     `<i class="${k < doneN ? "dn" : k < takenN ? "on" : ""}${k >= cap ? " ov" : ""}"></i>`).join("");
@@ -1675,8 +1699,9 @@ function renderToday() {
             Возьмите из предложенного — или ничего, если сегодня не тот день.</div>`
         : `<div class="empty" style="padding:26px 20px">На сегодня всё.</div>`)) +
 
-    (doneTasks.length ? `<div class="donebox">${doneTasks.map(i =>
-      doneLineHTML(i, i.doneAt)).join("")}</div>` : "") +
+    (doneTasks.length || doneSteps.length ? `<div class="donebox">${
+      doneTasks.map(i => doneLineHTML(i, i.doneAt)).join("")
+      + doneSteps.map(stepDoneLineHTML).join("")}</div>` : "") +
 
     (proposals.length ? `<div class="suggbox">
       <div class="suggtop">
@@ -3562,7 +3587,10 @@ function toggleDone(id) {
     const h = it.routine.history, i = h.indexOf(today());
     if (i >= 0) h.splice(i, 1); else h.push(today());
   } else if (nextStep(it)) {
-    nextStep(it).done = true;
+    /* Закрытый шаг помнит свой день — он попадает в «сделанное» за
+       сегодня, а дело остаётся в списке со следующим шагом.        */
+    const st = nextStep(it);
+    st.done = true; st.doneAt = today();
     if (!nextStep(it)) { it.done = true; it.doneAt = today(); }
   } else {
     it.done = !it.done;
@@ -3750,6 +3778,9 @@ document.addEventListener("click", e => {
     case "ecancel": cancelItem(id); break;
     case "opendone": openDone(id, el.dataset.when || null); break;
     case "undo":    toggleDone(id); if (host.innerHTML) closeModal(); break;
+    case "undostep": if (it) { const st2 = it.steps[+el.dataset.i];
+                       if (st2) { st2.done = false; delete st2.doneAt; }
+                       save(); render(); } break;
     case "del":     if (it && confirm("Удалить «" + it.title + "»?")) {
                       S.items = S.items.filter(x => x.id !== id); save(); closeModal(); render(); } break;
   }

@@ -40,7 +40,10 @@ function toggleDone(id) {
     const h = it.routine.history, i = h.indexOf(today());
     if (i >= 0) h.splice(i, 1); else h.push(today());
   } else if (nextStep(it)) {
-    nextStep(it).done = true;
+    /* Закрытый шаг помнит свой день — он попадает в «сделанное» за
+       сегодня, а дело остаётся в списке со следующим шагом.        */
+    const st = nextStep(it);
+    st.done = true; st.doneAt = today();
     if (!nextStep(it)) { it.done = true; it.doneAt = today(); }
   } else {
     it.done = !it.done;
@@ -228,6 +231,9 @@ document.addEventListener("click", e => {
     case "ecancel": cancelItem(id); break;
     case "opendone": openDone(id, el.dataset.when || null); break;
     case "undo":    toggleDone(id); if (host.innerHTML) closeModal(); break;
+    case "undostep": if (it) { const st2 = it.steps[+el.dataset.i];
+                       if (st2) { st2.done = false; delete st2.doneAt; }
+                       save(); render(); } break;
     case "del":     if (it && confirm("Удалить «" + it.title + "»?")) {
                       S.items = S.items.filter(x => x.id !== id); save(); closeModal(); render(); } break;
   }

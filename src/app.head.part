@@ -514,6 +514,9 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .donename:hover{color:var(--ink)}
 .donebox{margin-top:2px;display:flex;flex-direction:column;gap:2px;
   border-bottom:1px solid var(--hairline);padding-bottom:10px}
+/* У закрытого шага рядом мелко написано, из какого он дела. */
+.ofdeal{font-size:12px;color:var(--faint);white-space:nowrap;margin-left:auto;
+  padding-left:10px}
 .apptbox{display:flex;flex-direction:column;gap:4px;margin-top:0}
 .aline{display:flex;align-items:flex-start;gap:10px;padding:8px 4px;border-radius:10px;
   background:transparent;border:0;transition:background .15s}
