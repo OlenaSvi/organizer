@@ -92,65 +92,40 @@ function renderMap() {
       style="fill:none;stroke:var(--dash);stroke-width:1.5" opacity=".9"/>`;
 
     if (sel) {
-      /* Все листья, без потолка. Раскладываем дугами внутри сектора
-         своей ветки: сколько помещается на ближней дуге — столько на
-         ней, остальные на следующей, дальше от центра. Дуги сдвинуты
-         на полшага — подписи стоят в шахматном порядке. Карта от
-         этого растёт, но колесо и «уместить» это переваривают.      */
-      const sector = (Math.PI * 2) / n;
-      const arc = sector * 0.78;
-      /* Шаг считаем по реальному габариту пилюли, спроецированному на
-         направление луча и на перпендикуляр к нему. Иначе у ветки,
-         смотрящей вверх, широкие подписи расходятся вбок и налезают
-         друг на друга — фиксированного шага им мало.                 */
-      const maxLw = items.reduce((w, it) => Math.max(w,
-        Math.min(it.title.length, 24) * 7 + 22), 60);
-      const ca = Math.abs(Math.cos(ang)), sa = Math.abs(Math.sin(ang));
-      const along  = maxLw * ca + 22 * sa + 18;   // вдоль луча: шаг между дугами
-      const across = maxLw * sa + 22 * ca + 14;   // поперёк: шаг между соседями
-      let done = 0, ringNo = 0, ringR = R + pw / 2 + 60;
-      while (done < items.length) {
-        /* Отступ листьев считаем от КРАЯ пилюли ветки, а не от её центра:
-           у длинного названия пилюля широкая, и листья налезали на неё. */
-        const LR = ringR;
-        const step = across / LR;                  // угловой шаг одной подписи
-        const cap = Math.max(1, Math.floor(arc / step));
-        const take = items.slice(done, done + cap);
-        const spread = Math.min(step * take.length, arc);
-        const stag = (ringNo % 2) ? spread / Math.max(take.length, 1) / 2 : 0;
-        take.forEach((it, j) => {
-          const a2 = ang + stag + (j - (take.length - 1) / 2) * (spread / Math.max(take.length - 1, 1));
-          const lx = Math.cos(a2) * LR, ly = Math.sin(a2) * LR;
-          const left = lx < 0;
-          const label = it.title.length > 24 ? it.title.slice(0, 23) + "…" : it.title;
-          /* Лист — мини-пилюля на 10% фоне своего цвета, к ветке идёт
-             пунктирная нить. Нажатие в любом месте пилюли — просмотр. */
-          /* Ширина с запасом: кириллица в Manrope шире латиницы, и при
-             скупой оценке короткие подписи сидели в пилюле криво.   */
-          const lw = label.length * 7 + 22;
-          const px0 = left ? lx - lw : lx;
-          /* Нить — от края пилюли ветки до края пилюли листа. Пилюля листа
-             растёт от точки в сторону подписи, поэтому её центр смещён
-             на пол-ширины — иначе нить обрывалась, не долетев.       */
-          const lcx = px0 + lw / 2;
-          const bOut = edge(x, y, a2 + Math.PI, pw / 2, ph / 2);
-          const dx = lcx - x, dy = ly - y;
-          const aIn = Math.atan2(dy, dx);
-          const lIn = edge(lcx, ly, aIn, lw / 2, 11);
-          links += `<path d="M${bOut.x} ${bOut.y} Q${(x + lcx) / 2} ${(y + ly) / 2} ${lIn.x} ${lIn.y}"
-              style="fill:none;stroke:var(--dash);stroke-width:1.2;stroke-dasharray:3 4"/>`;
-          svg += `<g class="leaf" data-drag-map="${it.id}" data-from="${esc(v)}">
-              <rect x="${px0}" y="${ly - 11}" width="${lw}" height="22" rx="11"
-                style="fill:color-mix(in srgb, ${col} 22%, transparent)"
-                data-act="open" data-id="${it.id}"></rect>
-              <text x="${px0 + lw / 2}" y="${ly + 4}" font-size="12"
-                text-anchor="middle" style="fill:${col}" font-weight="600"
-                data-act="open" data-id="${it.id}">${esc(label)}</text>
-            </g>`;
-          grow(px0 - 4, ly - 15, px0 + lw + 4, ly + 15);
-        });
-        done += take.length; ringNo++; ringR += along;
-      }
+      /* Листья стоят ровным столбцом сбоку от ветки, а не веером: при
+         девяти делах веер превращался в кашу из пересекающихся нитей.
+         От ветки идёт одна «шина» — горизонталь до колонки и вертикаль
+         вдоль неё, — а от шины к каждому листу короткий отвод.       */
+      const side = x >= 0 ? 1 : -1;                 // столбец наружу от центра
+      const busX = x + side * (pw / 2 + 44);        // где стоит вертикаль
+      const stepY = 30;
+      const topY = y - (items.length - 1) * stepY / 2;
+      const botY = topY + (items.length - 1) * stepY;
+
+      links += `<path d="M${x + side * pw / 2} ${y} H${busX}"
+        style="fill:none;stroke:var(--dash);stroke-width:1.2"/>`;
+      if (items.length > 1)
+        links += `<path d="M${busX} ${topY} V${botY}"
+          style="fill:none;stroke:var(--dash);stroke-width:1.2"/>`;
+
+      items.forEach((it, j) => {
+        const ly = topY + j * stepY;
+        const label = it.title.length > 24 ? it.title.slice(0, 23) + "…" : it.title;
+        const lw = label.length * 7 + 22;
+        const gap = 12;
+        const px0 = side > 0 ? busX + gap : busX - gap - lw;
+        links += `<path d="M${busX} ${ly} H${side > 0 ? px0 : px0 + lw}"
+          style="fill:none;stroke:var(--dash);stroke-width:1.2;stroke-dasharray:3 4"/>`;
+        svg += `<g class="leaf" data-drag-map="${it.id}" data-from="${esc(v)}">
+            <rect x="${px0}" y="${ly - 11}" width="${lw}" height="22" rx="11"
+              style="fill:color-mix(in srgb, ${col} 22%, transparent)"
+              data-act="open" data-id="${it.id}"></rect>
+            <text x="${px0 + lw / 2}" y="${ly + 4}" font-size="12"
+              text-anchor="middle" style="fill:${col}" font-weight="600"
+              data-act="open" data-id="${it.id}">${esc(label)}</text>
+          </g>`;
+        grow(px0 - 4, ly - 15, px0 + lw + 4, ly + 15);
+      });
     }
 
     /* Ветка всегда залита своим цветом целиком — она главная. Раскрытая

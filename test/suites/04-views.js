@@ -44,6 +44,39 @@ T.ok("подписи по центру своих пилюль", offc.length ===
 T.ok("ветки залиты цветом", /fill:var\(--sph-\d\);opacity/.test(svg));
 T.ok("листья — бледный тот же цвет", svg.indexOf("color-mix(in srgb, var(--sph-") >= 0);
 
+T.head("КАРТА: МНОГО ДЕЛ В ОДНОЙ ВЕТКЕ — СТОЛБЦОМ");
+for (var q = 0; q < 9; q++) S.items.push({
+  id: "col" + q, title: "Довольно длинное название дела " + (q + 1),
+  type: defaultType(), spheres: ["развитие"], created: today(), due: null, steps: [],
+  done: false, multi: false, place: null, person: null, time: null, options: [],
+  routine: null, notes: "", forceImp: null, today: null, notToday: null });
+AXIS = "sphere"; S.open = ["развитие"]; render();
+var svg2 = view.innerHTML.slice(view.innerHTML.indexOf('id="mapG"'),
+                                view.innerHTML.indexOf("</svg>"));
+var leafRects = [], mm2, rre = /<g class="leaf"[\s\S]*?<rect x="([-\d.e]+)" y="([-\d.e]+)" width="([\d.e]+)" height="([\d.e]+)"/g;
+while ((mm2 = rre.exec(svg2)))
+  leafRects.push({ l: +mm2[1], t: +mm2[2], r: +mm2[1] + +mm2[3], b: +mm2[2] + +mm2[4] });
+var inBranch = live().filter(function (i) {
+  return (i.spheres || []).indexOf("развитие") >= 0; }).length;
+T.ok("нарисованы все дела ветки", leafRects.length === inBranch,
+  leafRects.length + " из " + inBranch);
+var xs = leafRects.map(function (b) { return Math.round(b.l); });
+T.ok("листья стоят одной колонкой", new Set(xs).size === 1,
+  "разных левых краёв: " + new Set(xs).size);
+var ys = leafRects.map(function (b) { return b.t; }).sort(function (a, b) { return a - b; });
+var gaps = [];
+for (var g = 1; g < ys.length; g++) gaps.push(Math.round(ys[g] - ys[g - 1]));
+T.ok("шаг между ними одинаковый", new Set(gaps).size === 1, "шаги: " + gaps.join(","));
+var over2 = [];
+for (var a2 = 0; a2 < leafRects.length; a2++)
+  for (var b2 = a2 + 1; b2 < leafRects.length; b2++) {
+    var A2 = leafRects[a2], B2 = leafRects[b2];
+    if (A2.l < B2.r && B2.l < A2.r && A2.t < B2.b && B2.t < A2.b) over2.push(a2 + "×" + b2);
+  }
+T.ok("не налезают друг на друга", over2.length === 0, over2.join(" "));
+S.items = S.items.filter(function (i) { return String(i.id).indexOf("col") !== 0; });
+S.open = [];
+
 T.head("КАРТА: КЛИК ПО ЛИСТУ НА ВСЕХ ОСЯХ");
 ["sphere", "place", "person", "type"].forEach(function (ax) {
   AXIS = ax; S.open = axisValues(ax).slice(); render();
