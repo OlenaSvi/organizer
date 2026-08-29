@@ -77,6 +77,31 @@ T.ok("не налезают друг на друга", over2.length === 0, over2
 S.items = S.items.filter(function (i) { return String(i.id).indexOf("col") !== 0; });
 S.open = [];
 
+T.head("КАРТА: РАСКРЫТЫ ВСЕ ВЕТКИ РАЗОМ");
+["развитие", "Быт", "бюрократия"].forEach(function (sp, si) {
+  for (var z = 0; z < 6 + si * 2; z++) S.items.push({
+    id: "z" + si + "_" + z, title: "Дело " + sp + " номер " + (z + 1),
+    type: defaultType(), spheres: [sp], created: today(), due: null, steps: [],
+    done: false, multi: false, place: null, person: null, time: null, options: [],
+    routine: null, notes: "", forceImp: null, today: null, notToday: null });
+});
+AXIS = "sphere"; S.open = S.spheres.slice(); render();
+var svg3 = view.innerHTML.slice(view.innerHTML.indexOf('id="mapG"'),
+                                view.innerHTML.indexOf("</svg>"));
+var all3 = [], m3, gre3 = /<g class="(branch|leaf)"[\s\S]*?<rect x="([-\d.e]+)" y="([-\d.e]+)" width="([\d.e]+)" height="([\d.e]+)"/g;
+while ((m3 = gre3.exec(svg3)))
+  all3.push({ kind: m3[1], l: +m3[2], t: +m3[3], r: +m3[2] + +m3[4], b: +m3[3] + +m3[5] });
+T.ok("узлов много", all3.length > 25, all3.length + " узлов");
+var bad3 = 0;
+for (var i3 = 0; i3 < all3.length; i3++)
+  for (var j3 = i3 + 1; j3 < all3.length; j3++) {
+    var A3 = all3[i3], B3 = all3[j3];
+    if (A3.l < B3.r && B3.l < A3.r && A3.t < B3.b && B3.t < A3.b) bad3++;
+  }
+T.ok("ничего не налезает друг на друга", bad3 === 0, bad3 + " пересечений");
+S.items = S.items.filter(function (i) { return String(i.id).indexOf("z") !== 0; });
+S.open = [];
+
 T.head("КАРТА: КЛИК ПО ЛИСТУ НА ВСЕХ ОСЯХ");
 ["sphere", "place", "person", "type"].forEach(function (ax) {
   AXIS = ax; S.open = axisValues(ax).slice(); render();

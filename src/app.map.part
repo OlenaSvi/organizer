@@ -44,8 +44,29 @@ function renderMap() {
      Прячется только пустое «без места»: это не ветка, а остаток.    */
   const vals = axisValues(AXIS).filter(v => v !== NOPLACE || itemsIn(v).length);
   const n = Math.max(vals.length, 1);
-  const R = 155 + Math.min(n, 12) * 9;          // больше веток — шире круг
   MAPNODES = [];
+
+  /* Ветки стоят по кругу не поровну, а по месту, которое им нужно:
+     раскрытая ветка с десятью делами занимает столбец в 300px, и
+     соседей приходится раздвигать — иначе столбцы налезают друг на
+     друга. Считаем «вес» каждой ветки, распределяем 360° по весам и
+     подбираем радиус так, чтобы всё поместилось.                   */
+  const stepY = 30, colGap = 56;
+  const need = vals.map(v => {
+    if (!isOpen(v)) return 120;
+    const items = itemsIn(v);
+    const maxLw = items.reduce((w, it) => Math.max(w,
+      Math.min(it.title.length, 24) * 7 + 22), 60);
+    /* Блок раскрытой ветки занимает место и в высоту (столбец), и вбок
+       (ширина подписей): вбок он задевает соседей, стоящих рядом по
+       кругу, поэтому ширина входит в вес с долей, а не игнорируется. */
+    return items.length * stepY + 60 + Math.min(maxLw, 220) * 0.45;
+  });
+  const total = need.reduce((a, b) => a + b, 0);
+  const R = Math.max(155 + Math.min(n, 12) * 9, total / (2 * Math.PI) + 30);
+  const angles = [];
+  let acc = 0;
+  need.forEach(w => { angles.push((acc + w / 2) / total * Math.PI * 2 - Math.PI / 2); acc += w; });
 
   /* Считаем реальные границы всего нарисованного, включая подписи.
      Раньше поле было фиксированным, и длинные названия уезжали за край. */
@@ -73,7 +94,7 @@ function renderMap() {
     return { x: cx - Math.cos(a) * t, y: cy - Math.sin(a) * t };
   };
   vals.forEach((v, k) => {
-    const ang = (k / n) * Math.PI * 2 - Math.PI / 2;
+    const ang = angles[k];
     const x = Math.cos(ang) * R, y = Math.sin(ang) * R;
     const items = itemsIn(v);
     /* Все оси цветные: ветка залита своим цветом целиком, её дела —
@@ -108,10 +129,14 @@ function renderMap() {
         links += `<path d="M${busX} ${topY} V${botY}"
           style="fill:none;stroke:var(--dash);stroke-width:1.2"/>`;
 
+      /* Все пилюли столбца одной ширины — по самой длинной подписи:
+         иначе у левого столбца рваным выглядит внешний край.        */
+      const colW = items.reduce((w, it) => Math.max(w,
+        Math.min(it.title.length, 24) * 7 + 22), 90);
       items.forEach((it, j) => {
         const ly = topY + j * stepY;
         const label = it.title.length > 24 ? it.title.slice(0, 23) + "…" : it.title;
-        const lw = label.length * 7 + 22;
+        const lw = colW;
         const gap = 12;
         const px0 = side > 0 ? busX + gap : busX - gap - lw;
         links += `<path d="M${busX} ${ly} H${side > 0 ? px0 : px0 + lw}"
