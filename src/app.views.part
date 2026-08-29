@@ -4,6 +4,31 @@
    ══════════════════════════════════════════════════════════════════ */
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g,
   c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+/* Ссылка в заметке или варианте остаётся ссылкой. Текст режется на куски,
+   и КАЖДЫЙ кусок экранируется отдельно — включая сам адрес и его href.
+   Обратный порядок (сначала экранировать всё, потом искать адреса)
+   выглядит проще, но дырявый: после экранирования кавычка становится
+   &quot;, и адрес «дотягивается» до неё.                              */
+const URLRE = /(?:https?:\/\/|www\.)[^\s<>"'«»]+/gi;
+function linkify(text) {
+  const s = String(text == null ? "" : text);
+  let out = "", last = 0, m;
+  URLRE.lastIndex = 0;
+  while ((m = URLRE.exec(s))) {
+    let url = m[0], tail = "";
+    /* Точка или скобка в конце — знак препинания, а не часть адреса. */
+    const tr = /[.,;:!?)\]»}]+$/.exec(url);
+    if (tr) { tail = tr[0]; url = url.slice(0, -tail.length); }
+    if (!url.replace(/^https?:\/\/|^www\./i, "")) continue;   // остался один протокол
+    const href = /^www\./i.test(url) ? "https://" + url : url;
+    out += esc(s.slice(last, m.index))
+      + `<a class="lnk" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${
+        esc(url)}</a>` + esc(tail);
+    last = m.index + m[0].length;
+  }
+  return out + esc(s.slice(last));
+}
 const view = document.getElementById("view");
 /* Метка человека прячется, если такое же слово уже стоит сферой:
    «Мама» живёт на обеих осях, и подряд получалось «Мама Мама».

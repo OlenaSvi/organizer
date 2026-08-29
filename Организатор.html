@@ -520,6 +520,11 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
    отдельности, а сам приём мыши — тогда любая будущая кнопка, какого бы
    вида она ни была, замолкает в отключённом состоянии сама.          */
 .btn[disabled]{pointer-events:none}
+/* Ссылка внутри заметки или варианта. Подчёркнута всегда: в спокойном
+   тексте цвета мало, чтобы понять, что это кликается.               */
+.lnk{color:var(--accent); text-decoration:underline; text-underline-offset:2px;
+  text-decoration-thickness:1px; overflow-wrap:anywhere}
+.lnk:hover{text-decoration-thickness:2px}
 .btn.ghost:hover{color:var(--ink)}
 
 /* рутина: буквы недели один раз сверху, под каждой — точки дней */
@@ -1392,6 +1397,31 @@ function findDupes(text, skipId) {
    ══════════════════════════════════════════════════════════════════ */
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g,
   c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+/* Ссылка в заметке или варианте остаётся ссылкой. Текст режется на куски,
+   и КАЖДЫЙ кусок экранируется отдельно — включая сам адрес и его href.
+   Обратный порядок (сначала экранировать всё, потом искать адреса)
+   выглядит проще, но дырявый: после экранирования кавычка становится
+   &quot;, и адрес «дотягивается» до неё.                              */
+const URLRE = /(?:https?:\/\/|www\.)[^\s<>"'«»]+/gi;
+function linkify(text) {
+  const s = String(text == null ? "" : text);
+  let out = "", last = 0, m;
+  URLRE.lastIndex = 0;
+  while ((m = URLRE.exec(s))) {
+    let url = m[0], tail = "";
+    /* Точка или скобка в конце — знак препинания, а не часть адреса. */
+    const tr = /[.,;:!?)\]»}]+$/.exec(url);
+    if (tr) { tail = tr[0]; url = url.slice(0, -tail.length); }
+    if (!url.replace(/^https?:\/\/|^www\./i, "")) continue;   // остался один протокол
+    const href = /^www\./i.test(url) ? "https://" + url : url;
+    out += esc(s.slice(last, m.index))
+      + `<a class="lnk" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${
+        esc(url)}</a>` + esc(tail);
+    last = m.index + m[0].length;
+  }
+  return out + esc(s.slice(last));
+}
 const view = document.getElementById("view");
 /* Метка человека прячется, если такое же слово уже стоит сферой:
    «Мама» живёт на обеих осях, и подряд получалось «Мама Мама».
@@ -3112,10 +3142,10 @@ function openDone(id, when) {
 
     ${it.options && it.options.length ? `<p class="lbl">Варианты</p>
       <div style="margin-bottom:16px">${it.options.map(o =>
-        `<div class="readstep"><span class="m">·</span><span class="tx">${esc(o.text)}</span></div>`).join("")}</div>` : ""}
+        `<div class="readstep"><span class="m">·</span><span class="tx">${linkify(o.text)}</span></div>`).join("")}</div>` : ""}
 
     ${hasNotes(it) ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
-      <div class="readnote">${esc(it.notes)}</div>` : ""}
+      <div class="readnote">${linkify(it.notes)}</div>` : ""}
 
     ${!it.notes && !hasSteps && !rout && !(it.options || []).length
       ? `<p class="qs" style="margin-bottom:16px">Ни шагов, ни заметок — просто сделано.</p>` : ""}
@@ -3629,7 +3659,7 @@ function openItem(id) {
         st.done ? "done" : ""}"><span class="stepnum">${k + 1}</span><span class="tx">${
         esc(st.text)}</span></div>`).join("")}</div>` : "")
     + ((isChoice(it) || isIdea(it)) && (it.options || []).length ? `<p class="lbl">Варианты</p>
-      <div>${it.options.map(o => `<div class="opt">· ${esc(o.text)}</div>`).join("")}</div>` : "")
+      <div>${it.options.map(o => `<div class="opt">· ${linkify(o.text)}</div>`).join("")}</div>` : "")
     + (isRoutine(it) && it.routine ? (() => { const wi = weekInfo(it);
       return `<p class="lbl">В какие дни</p>
       <div class="rt">${wdOrder().map(k =>
@@ -3640,7 +3670,7 @@ function openItem(id) {
     /* Класс .readnote, а не .opt: у вариантов есть верхняя граница,
        и она рисовала лишнюю линию под заголовком «Заметка».        */
     + (hasNotes(it) ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
-      <div class="readnote">${esc(it.notes)}</div>` : "");
+      <div class="readnote">${linkify(it.notes)}</div>` : "");
 
   openModal(`<h3>${kindIcon(it)}${esc(it.title)}</h3>
     <div class="readmeta" style="margin-top:-4px">

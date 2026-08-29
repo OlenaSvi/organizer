@@ -520,6 +520,11 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
    отдельности, а сам приём мыши — тогда любая будущая кнопка, какого бы
    вида она ни была, замолкает в отключённом состоянии сама.          */
 .btn[disabled]{pointer-events:none}
+/* Ссылка внутри заметки или варианта. Подчёркнута всегда: в спокойном
+   тексте цвета мало, чтобы понять, что это кликается.               */
+.lnk{color:var(--accent); text-decoration:underline; text-underline-offset:2px;
+  text-decoration-thickness:1px; overflow-wrap:anywhere}
+.lnk:hover{text-decoration-thickness:2px}
 .btn.ghost:hover{color:var(--ink)}
 
 /* рутина: буквы недели один раз сверху, под каждой — точки дней */

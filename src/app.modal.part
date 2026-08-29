@@ -177,10 +177,10 @@ function openDone(id, when) {
 
     ${it.options && it.options.length ? `<p class="lbl">Варианты</p>
       <div style="margin-bottom:16px">${it.options.map(o =>
-        `<div class="readstep"><span class="m">·</span><span class="tx">${esc(o.text)}</span></div>`).join("")}</div>` : ""}
+        `<div class="readstep"><span class="m">·</span><span class="tx">${linkify(o.text)}</span></div>`).join("")}</div>` : ""}
 
     ${hasNotes(it) ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
-      <div class="readnote">${esc(it.notes)}</div>` : ""}
+      <div class="readnote">${linkify(it.notes)}</div>` : ""}
 
     ${!it.notes && !hasSteps && !rout && !(it.options || []).length
       ? `<p class="qs" style="margin-bottom:16px">Ни шагов, ни заметок — просто сделано.</p>` : ""}
@@ -694,7 +694,7 @@ function openItem(id) {
         st.done ? "done" : ""}"><span class="stepnum">${k + 1}</span><span class="tx">${
         esc(st.text)}</span></div>`).join("")}</div>` : "")
     + ((isChoice(it) || isIdea(it)) && (it.options || []).length ? `<p class="lbl">Варианты</p>
-      <div>${it.options.map(o => `<div class="opt">· ${esc(o.text)}</div>`).join("")}</div>` : "")
+      <div>${it.options.map(o => `<div class="opt">· ${linkify(o.text)}</div>`).join("")}</div>` : "")
     + (isRoutine(it) && it.routine ? (() => { const wi = weekInfo(it);
       return `<p class="lbl">В какие дни</p>
       <div class="rt">${wdOrder().map(k =>
@@ -705,7 +705,7 @@ function openItem(id) {
     /* Класс .readnote, а не .opt: у вариантов есть верхняя граница,
        и она рисовала лишнюю линию под заголовком «Заметка».        */
     + (hasNotes(it) ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
-      <div class="readnote">${esc(it.notes)}</div>` : "");
+      <div class="readnote">${linkify(it.notes)}</div>` : "");
 
   openModal(`<h3>${kindIcon(it)}${esc(it.title)}</h3>
     <div class="readmeta" style="margin-top:-4px">

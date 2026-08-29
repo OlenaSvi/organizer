@@ -78,4 +78,57 @@ T.ok("идея теряет срок", x.due === null);
 clickOn({ act: "ecancel", id: x.id }); closeModal();
 T.reset();
 
+T.head("ССЫЛКА В ЗАМЕТКЕ ОСТАЁТСЯ ССЫЛКОЙ");
+T.reset();
+var n = T.tasks()[0];
+n.notes = "запись тут https://example.com/a?x=1&y=2 и всё";
+openItem(n.id);
+var h = host.innerHTML.replace(/\s+/g, " ");
+T.ok("адрес стал ссылкой",
+  /<a class="lnk" href="https:\/\/example\.com\/a\?x=1&amp;y=2"/.test(h), h.slice(h.indexOf("<a"), h.indexOf("<a") + 90));
+T.ok("открывается в новой вкладке и без доступа к странице",
+  /target="_blank" rel="noopener noreferrer"/.test(h));
+T.ok("текст вокруг остался текстом",
+  h.indexOf("запись тут") >= 0 && h.indexOf("и всё") >= 0);
+
+T.head("ТОЧКА В КОНЦЕ — НЕ ЧАСТЬ АДРЕСА");
+n.notes = "смотри https://example.com/страница. потом решим";
+openItem(n.id);
+h = host.innerHTML.replace(/\s+/g, " ");
+T.ok("точка осталась снаружи ссылки", /страница<\/a>\./.test(h) || /<\/a>\./.test(h),
+  h.slice(h.indexOf("<a"), h.indexOf("<a") + 140));
+
+T.head("АДРЕС БЕЗ HTTP");
+n.notes = "www.example.com";
+openItem(n.id);
+h = host.innerHTML.replace(/\s+/g, " ");
+T.ok("к www дописывается https", /href="https:\/\/www\.example\.com"/.test(h));
+T.ok("а видно по-прежнему www", />www\.example\.com</.test(h));
+
+T.head("ОПАСНОЕ ОСТАЁТСЯ БЕЗОПАСНЫМ");
+n.notes = '<script>alert(1)</script> и javascript:alert(2) и "кавычки"';
+openItem(n.id);
+h = host.innerHTML;
+T.ok("разметка из заметки не исполняется", h.indexOf("<script") < 0);
+T.ok("javascript: ссылкой не становится", h.indexOf('href="javascript:') < 0);
+T.ok("кавычки экранированы", h.indexOf('&quot;') >= 0 || h.indexOf("&#39;") >= 0);
+n.notes = "";
+
+T.head("В ВАРИАНТАХ ТОЖЕ");
+var ch = live().find(isChoice);
+ch.options = [{ text: "вот этот https://shop.example/item" }];
+openItem(ch.id);
+T.ok("вариант со ссылкой", /<a class="lnk" href="https:\/\/shop\.example\/item"/
+  .test(host.innerHTML.replace(/\s+/g, " ")));
+ch.options = [];
+
+T.head("БЕЗ АДРЕСОВ НИЧЕГО НЕ МЕНЯЕТСЯ");
+n.notes = "просто заметка без адресов";
+openItem(n.id);
+T.ok("лишних ссылок не появилось", host.innerHTML.indexOf('class="lnk"') < 0);
+T.ok("текст на месте", host.innerHTML.indexOf("просто заметка без адресов") >= 0);
+n.notes = "";
+closeModal();
+T.reset();
+
 T.done();
