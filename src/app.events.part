@@ -416,7 +416,7 @@ function renderChrome() {
      остаётся открытым за полночь.                                   */
   const hd = document.getElementById("headDate");
   if (hd) hd.innerHTML = todayWidget();
-  const n = live().filter(inInbox).length;
+  const n = here().filter(inInbox).length;
   const ib = document.getElementById("inboxBtn");
   ib.hidden = !n; ib.textContent = "Разобрать · " + n;
 }

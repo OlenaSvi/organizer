@@ -433,7 +433,7 @@ function openCapture(preset) {
   const it = {
     id: uid(), title: "", type: defaultType(), multi: false, spheres: [], place: null,
     person: null, due: null, time: null, steps: [], options: [], routine: null,
-    done: false, created: today(), createdAt: Date.now(), notes: "", forceImp: null,
+    done: false, created: today(), createdAt: stamp(), notes: "", forceImp: null,
     today: null, notToday: null, draft: true,
   };
   /* Создание наследует ракурс: день в календаре даёт дедлайн, ветка на
@@ -519,7 +519,7 @@ function cancelCapture() {
 
 /* ── Разобрать: всё, что записано без ветки ──────────────────────── */
 function openInbox() {
-  const inb = live().filter(inInbox);
+  const inb = here().filter(inInbox);
   openModal(`<h3>Разобрать · ${inb.length}</h3>
     <p class="sub">Записать сразу, разложить потом — так мысли не теряются.</p>
     ${inb.map(i => `<div class="card" style="box-shadow:none">

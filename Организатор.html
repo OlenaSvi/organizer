@@ -851,6 +851,11 @@ button.ddday:hover{background:var(--bg)}
    ══════════════════════════════════════════════════════════════════ */
 const KEY = "organizer.v1";
 const uid = () => Math.random().toString(36).slice(2, 10);
+/* Момент записи обязан расти. Часы дают миллисекунды, а два дела можно
+   записать быстрее — тогда моменты совпадут, дела снова станут
+   неразличимы и «сначала новые» опять свалится на алфавит.          */
+let lastStamp = 0;
+const stamp = () => (lastStamp = Math.max(Date.now(), lastStamp + 1));
 /* Дата берётся по МЕСТНОМУ времени, а не по Гринвичу. Иначе в Амстердаме
    до 02:00, а на Кипре и в Израиле до 03:00 приложение считало бы, что
    ещё вчера: дела отмечались бы вчерашним днём.                      */
@@ -1300,6 +1305,25 @@ const hasNotes = it => !!String(it.notes || "").trim();
 
 /* Доступно ли отсюда: дела без места видны всегда, дела с местом — только «здесь» */
 const reachable = it => !S.hereNow || !it.place || it.place === S.hereNow;
+/* Дела, привязанные к другому месту, не показываются НИГДЕ, пока стоит
+   отметка «я сейчас здесь»: держать их перед глазами нечестно — сделать
+   их отсюда всё равно нельзя. Чтобы увидеть всё сразу, в том же
+   переключателе есть «Везде · без учёта места». Поэтому ракурсы берут
+   дела через here(), а не через live(). Через live() остаётся то, что
+   про данные, а не про «что мне делать»: счётчики мест в переключателе
+   и в справочнике, поиск дубликатов, выгрузка и архив.              */
+const here = () => live().filter(reachable);
+const awayAll = () => S.hereNow ? live().filter(i => !reachable(i)).length : 0;
+/* Спрятанное местом называем словами и в одной формулировке на все
+   экраны: молчаливое исчезновение дел выглядит как «переключатель не
+   работает» — или хуже, как потеря.                                 */
+function awayNote(n) {
+  if (!S.hereNow) return "";
+  return `<p class="sub">Показано доступное из «${esc(S.hereNow)}»${n
+    ? ` — ещё ${n} ${plural(n, "дело", "дела", "дел")} ${
+        plural(n, "привязано", "привязаны", "привязаны")} к другим местам и ${
+        plural(n, "ждёт", "ждут", "ждут")} вас там` : ""}.</p>`;
+}
 
 /* ── Самопочинка данных ──────────────────────────────────────────────
    Вызывается при загрузке и перед каждой отрисовкой: чинит то, что
@@ -1748,10 +1772,7 @@ function renderToday() {
       ${takenN ? `<span class="mineno ${over ? "over" : ""}"
         title="Сделано из поставленных на сегодня. Полоски — лимит дня: ${cap}">сделано ${doneN} из ${takenN}</span>` : ""}</div>` +
     `<div class="tscroll">` +
-    (S.hereNow ? `<p class="sub">Показано доступное из «${esc(S.hereNow)}»${
-        away ? ` — ещё ${away} ${plural(away, "дело", "дела", "дел")} ${plural(away,
-        "привязано", "привязаны", "привязаны")} к другим местам и ${plural(away,
-        "ждёт", "ждут", "ждут")} вас там` : ""}.</p>` : "") +
+    awayNote(away) +
     (over ? `<div class="toomany">Взято больше, чем помещается в день.</div>` : "") +
     (heavy ? `<div class="toomany">Сегодня ${apptCount} ${
         plural(apptCount, "встреча", "встречи", "встреч")} и ${chosenCount} ${
@@ -1880,7 +1901,7 @@ function allItems() {
   const f = (FS.find(x => x[0] === ALLFILTER) || FS[0])[2] || (() => true);
   const words = norm(ALLQUERY);
   const q = ALLQUERY.trim().toLowerCase();
-  return live().filter(f)
+  return here().filter(f)
     .filter(i => inPeriod(i.created))
     .filter(i => !q || i.title.toLowerCase().indexOf(q) >= 0
       || words.every(w => norm(i.title).some(v => v.indexOf(w) === 0)))
@@ -1926,6 +1947,7 @@ function renderAll() {
   view.innerHTML = `<div class="todayhead"><h2>Список</h2></div>
     <p class="sub">Плоский список: по умолчанию видно всё живое — дела, рутина,
       идеи и встречи. Срезом можно оставить что-то одно.</p>
+    ${awayNote(awayAll())}
     <div class="allbar">
       <input type="text" id="allInput" class="allsearch" placeholder="Поиск по названию"
         autocomplete="off" value="${esc(ALLQUERY)}">
@@ -2061,7 +2083,7 @@ function calDays() {
 
 /* На день попадают встречи и дедлайны. Рутины сюда не попадают:
    у рутины нет конкретного дня, только расписание — её место в «Сегодня». */
-const calItems = iso => live().filter(i => !isRoutine(i) && i.due === iso)
+const calItems = iso => here().filter(i => !isRoutine(i) && i.due === iso)
   .sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
 
 function calTitle() {
@@ -2120,6 +2142,7 @@ function renderCalendarDay(bar) {
     ? todayItems().mine.filter(i => list.indexOf(i) < 0) : [];
   view.innerHTML = `<h2>Календарь</h2>
     <p class="sub">Один день целиком.</p>
+    ${awayNote(awayAll())}
     ${bar}
     <div class="daybox">
       <div class="dayhd">
@@ -2164,6 +2187,7 @@ function renderCalendar() {
 
   view.innerHTML = `<h2>Календарь</h2>
     <p class="sub">Встречи и дедлайны.</p>
+    ${awayNote(awayAll())}
     <p class="draghint">Дело можно перетащить на другой день — дедлайн переедет вместе с ним.</p>
     ${bar}
     <div class="calhead">${wdOrder().map(d => `<div>${WD_BY_DAY[d]}</div>`).join("")}</div>
@@ -2202,7 +2226,7 @@ function renderMatrix() {
   /* Рутины и идеи в матрицу не попадают: одна не про конкретный день,
      другая ещё не обязательство. Остальное — всё, включая неразобранное:
      у него тоже есть дедлайн, и его тоже надо разложить.             */
-  const pool = live().filter(i => !isRoutine(i) && !isIdea(i));
+  const pool = here().filter(i => !isRoutine(i) && !isIdea(i));
   const q = { iu: [], in: [], nu: [], nn: [] };
   pool.forEach(i => q[quadrant(i)].push(i));
   /* Внутри клетки — по дедлайну: ближайшее сверху, бессрочное внизу. */
@@ -2229,6 +2253,7 @@ function renderMatrix() {
     <p class="sub">Строки — срочность: считается из дедлайна и меняется только вместе с ним.
       Столбцы — важность: это всегда ваше решение. По умолчанию дело важное —
       вы его записали, значит оно зачем-то нужно.</p>
+    ${awayNote(awayAll())}
     <p class="draghint">Перетащите дело в соседний столбец, чтобы сменить важность.
       Строку перетаскиванием не изменить — для этого нужен другой дедлайн.</p>
     <div class="matrix">
@@ -2268,7 +2293,7 @@ const inAxis = (it, v) => AXIS === "place" ? (it.place || NOPLACE) === v
   : (it.spheres || []).indexOf(v) >= 0;      // на оси сфер дело бывает в нескольких
 /* Дело без сферы на осях мест и людей видно как любое другое: место и
    человек у него есть. Прячет его только ось сфер — прятать больше нечего. */
-const itemsIn = v => live().filter(i => inAxis(i, v));
+const itemsIn = v => here().filter(i => inAxis(i, v));
 
 function wrapLabel(t, max) {
   const w = String(t).split(" "), out = []; let cur = "";
@@ -2434,6 +2459,7 @@ function renderMap() {
   view.innerHTML = `<h2>Карта</h2>
     <p class="sub">Здесь ничего не теряется. Раскрытые ветки такими и остаются —
       можно раскрыть все сразу и увидеть картину целиком.</p>
+    ${awayNote(awayAll())}
     <p class="draghint">Дело можно перетащить с ветки на ветку — метка переедет вместе с ним.</p>
     <div class="maprow">
       <div class="axis">${Object.keys(AXES).map(a =>
@@ -3342,7 +3368,7 @@ function openCapture(preset) {
   const it = {
     id: uid(), title: "", type: defaultType(), multi: false, spheres: [], place: null,
     person: null, due: null, time: null, steps: [], options: [], routine: null,
-    done: false, created: today(), createdAt: Date.now(), notes: "", forceImp: null,
+    done: false, created: today(), createdAt: stamp(), notes: "", forceImp: null,
     today: null, notToday: null, draft: true,
   };
   /* Создание наследует ракурс: день в календаре даёт дедлайн, ветка на
@@ -3428,7 +3454,7 @@ function cancelCapture() {
 
 /* ── Разобрать: всё, что записано без ветки ──────────────────────── */
 function openInbox() {
-  const inb = live().filter(inInbox);
+  const inb = here().filter(inInbox);
   openModal(`<h3>Разобрать · ${inb.length}</h3>
     <p class="sub">Записать сразу, разложить потом — так мысли не теряются.</p>
     ${inb.map(i => `<div class="card" style="box-shadow:none">
@@ -4108,7 +4134,7 @@ function renderChrome() {
      остаётся открытым за полночь.                                   */
   const hd = document.getElementById("headDate");
   if (hd) hd.innerHTML = todayWidget();
-  const n = live().filter(inInbox).length;
+  const n = here().filter(inInbox).length;
   const ib = document.getElementById("inboxBtn");
   ib.hidden = !n; ib.textContent = "Разобрать · " + n;
 }

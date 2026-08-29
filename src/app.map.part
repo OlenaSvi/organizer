@@ -20,7 +20,7 @@ const inAxis = (it, v) => AXIS === "place" ? (it.place || NOPLACE) === v
   : (it.spheres || []).indexOf(v) >= 0;      // на оси сфер дело бывает в нескольких
 /* Дело без сферы на осях мест и людей видно как любое другое: место и
    человек у него есть. Прячет его только ось сфер — прятать больше нечего. */
-const itemsIn = v => live().filter(i => inAxis(i, v));
+const itemsIn = v => here().filter(i => inAxis(i, v));
 
 function wrapLabel(t, max) {
   const w = String(t).split(" "), out = []; let cur = "";
@@ -186,6 +186,7 @@ function renderMap() {
   view.innerHTML = `<h2>Карта</h2>
     <p class="sub">Здесь ничего не теряется. Раскрытые ветки такими и остаются —
       можно раскрыть все сразу и увидеть картину целиком.</p>
+    ${awayNote(awayAll())}
     <p class="draghint">Дело можно перетащить с ветки на ветку — метка переедет вместе с ним.</p>
     <div class="maprow">
       <div class="axis">${Object.keys(AXES).map(a =>
