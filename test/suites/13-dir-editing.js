@@ -14,7 +14,7 @@ T.ok("неактивная кнопка не отзывается на наве�
   try { ObjC.import("Foundation");
     var css = $.NSString.stringWithContentsOfFileEncodingError(
       "Организатор.html", 4, null).js.replace(/\s+/g, " ");
-    return /\.btn\[disabled\]:hover\{/.test(css);
+    return /\.btn\[disabled\]\{[^}]*pointer-events:none/.test(css);
   } catch (e) { return false; }
 })());
 

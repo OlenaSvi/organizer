@@ -515,12 +515,12 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .btn.outline.danger:hover{border-color:var(--warm);color:var(--warm);
   background:var(--warm-soft)}
 .btn[disabled]{opacity:.45;cursor:default}
-/* Неактивная кнопка не отзывается на наведение: подсветка обещала бы
-   действие, которого сейчас нет.                                    */
-.btn[disabled]:hover{color:inherit;background:inherit;border-color:var(--line);
-  filter:none;text-decoration:none}
+/* Неактивная кнопка вообще не отзывается на курсор: подсветка обещала бы
+   действие, которого сейчас нет. Гасим не каждое правило наведения по
+   отдельности, а сам приём мыши — тогда любая будущая кнопка, какого бы
+   вида она ни была, замолкает в отключённом состоянии сама.          */
+.btn[disabled]{pointer-events:none}
 .btn.ghost:hover{color:var(--ink)}
-.btn.ghost[disabled]:hover{color:var(--dim)}
 
 /* рутина: буквы недели один раз сверху, под каждой — точки дней */
 /* Буквы недели стоят ровно над колонками точек: тот же шаг (9px + 7px)
