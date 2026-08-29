@@ -50,6 +50,12 @@ openItem(ch.id); clickOn({ act: "edit", id: ch.id });
 h = host.innerHTML;
 T.ok("у «выбрать/купить» есть кнопка «＋ варианты»", h.indexOf("＋ варианты") >= 0);
 T.ok("список вариантов пока свёрнут", h.indexOf("newOpt") < 0);
+/* Кнопка обязана нести data-id: без него перерисовка не знает, какое
+   дело открыто, и блок молча не раскрывается. Харнесс атрибуты из
+   разметки не читает, поэтому проверяем их прямо в HTML. */
+T.ok("кнопка «＋ варианты» несёт свой id",
+  new RegExp('data-act="formopen"[^>]*data-k="options"[^>]*data-id="' + ch.id + '"')
+    .test(h.replace(/\s+/g, " ")));
 clickOn({ act: "formopen", k: "options", id: ch.id });
 T.ok("раскрывается по нажатию", host.innerHTML.indexOf("newOpt") >= 0);
 clickOn({ act: "ecancel", id: ch.id }); closeModal();
@@ -85,7 +91,19 @@ h = host.innerHTML;
 T.ok("в редакторе: Удалить · Готово",
   h.indexOf('data-act="del"') >= 0 && h.indexOf('data-act="esave"') >= 0);
 
+T.head("ЗАМЕТКА РАСКРЫВАЕТСЯ У ДЕЛА С ШАГАМИ");
+var withSteps = live().find(function (i) { return i.multi && i.steps.length; });
+openItem(withSteps.id); clickOn({ act: "edit", id: withSteps.id });
+T.ok("кнопка «＋ заметка» несёт свой id",
+  new RegExp('data-act="formopen"[^>]*data-k="notes"[^>]*data-id="' + withSteps.id + '"')
+    .test(host.innerHTML.replace(/\s+/g, " ")));
+clickOn({ act: "formopen", k: "notes", id: withSteps.id });
+T.ok("нажатие раскрывает поле заметки", host.innerHTML.indexOf("edNotes") >= 0);
+T.ok("шаги при этом остались", host.innerHTML.indexOf('id="newStep"') >= 0);
+clickOn({ act: "ecancel", id: withSteps.id }); closeModal();
+
 T.head("ПРАВКА И ОТКАТ РАБОТАЮТ");
+openItem(x.id); clickOn({ act: "edit", id: x.id });
 clickOn({ act: "dd", k: "place:" + x.id });
 clickOn({ act: "ddset", f: "place", id: x.id, v: "Израиль" });
 T.ok("поле меняет дело", x.place === "Израиль");

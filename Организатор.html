@@ -3232,8 +3232,12 @@ function itemFormHTML(it, ids) {
   const openNotes = formOpen.notes || hasNotes(it);
   const openOpts = canOpts && (formOpen.options || (it.options || []).length);
   const openSteps = canSteps && it.multi;
-  const bNotes = `<button class="addtoday" data-act="formopen" data-k="notes">＋ заметка</button>`;
-  const bOpts = `<button class="addtoday" data-act="formopen" data-k="options">＋ варианты</button>`;
+  /* data-id обязателен: без него перерисовка не знает, какое дело
+     открыто, и блок молча не раскрывался.                          */
+  const bNotes = `<button class="addtoday" data-act="formopen" data-k="notes"
+    data-id="${it.id}">＋ заметка</button>`;
+  const bOpts = `<button class="addtoday" data-act="formopen" data-k="options"
+    data-id="${it.id}">＋ варианты</button>`;
   const bSteps = `<button class="addtoday" data-act="emulti" data-id="${it.id}">＋ шаги</button>`;
   /* Когда пусто, отдельная плашка «Пока ничего нет» не нужна: поле
      ввода само говорит, что здесь делать.                          */
@@ -3784,7 +3788,7 @@ document.addEventListener("click", e => {
     case "capsave":   saveCapture(); break;
     case "capsavetake": saveCaptureTake(); break;
     case "formopen":  formOpen[el.dataset.k] = true;
-                      if (draftId) drawCapture(); else refreshEdit(id || DIREDIT); break;
+                      if (draftId) drawCapture(); else refreshEdit(id); break;
     case "capcancel": cancelCapture(); break;
 
     case "assign":  if (it && it.spheres.indexOf(v) < 0) {
