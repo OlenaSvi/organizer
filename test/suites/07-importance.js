@@ -98,4 +98,35 @@ T.ok("крестик откатывает", isImportant(x));
 closeModal();
 T.reset();
 
+T.head("ВСЕ ДЕЛА В КЛЕТКЕ ВИДНЫ");
+/* Клетка обрывала список на восьмом деле и писала «и ещё 12» — а это
+   никуда не вело: остальные дела становились недостижимы. */
+var MCSS = (function () {
+  try {
+    ObjC.import("Foundation");
+    return $.NSString.stringWithContentsOfFileEncodingError(
+      "Организатор.html", 4, null).js.replace(/\s+/g, " ");
+  } catch (e) { return ""; }
+})();
+T.reset();
+S.items = [];
+var many = [];
+for (var k = 1; k <= 20; k++) {
+  var t20 = { id: "m" + k, title: "Дело номер " + k, type: defaultType(),
+    multi: false, spheres: ["Быт"], place: null, person: null, due: null,
+    time: null, steps: [], options: [], routine: null, done: false,
+    created: today(), notes: "", forceImp: true, today: null, notToday: null };
+  S.items.push(t20); many.push(t20);
+}
+TAB = "matrix"; render();
+var mh = view.innerHTML;
+var missing = many.filter(function (i) { return mh.indexOf(esc(i.title)) < 0; });
+T.ok("видны все двадцать", missing.length === 0,
+  missing.length ? "не хватает " + missing.length : "");
+T.ok("тупикового «и ещё» больше нет", mh.indexOf("и ещё") < 0);
+T.ok("длинный список прокручивается внутри клетки",
+  /\.quad ul\{[^}]*overflow-y:auto/.test(MCSS),
+  "иначе одна клетка растянула бы всю строку матрицы");
+T.reset();
+
 T.done();
