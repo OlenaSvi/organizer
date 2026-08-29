@@ -51,16 +51,22 @@ function renderMap() {
      соседей приходится раздвигать — иначе столбцы налезают друг на
      друга. Считаем «вес» каждой ветки, распределяем 360° по весам и
      подбираем радиус так, чтобы всё поместилось.                   */
-  const stepY = 30, colGap = 56;
+  const stepY = 30;
+  /* Ширина пилюли ветки — та же формула, что при отрисовке ниже. */
+  const pillW = v => Math.max((axisLabel(v) + " · " + itemsIn(v).length).length * 7.6 + 28, 58);
   const need = vals.map(v => {
-    if (!isOpen(v)) return 120;
+    /* Даже закрытой ветке нужно место по своей ширине: у видов дел
+       названия длинные («сходить / съездить · 1» — под 190px), и с
+       постоянным весом соседи снизу круга слипались.               */
+    const base = pillW(v) + 48;
+    if (!isOpen(v)) return base;
     const items = itemsIn(v);
     const maxLw = items.reduce((w, it) => Math.max(w,
       Math.min(it.title.length, 24) * 7 + 22), 60);
     /* Блок раскрытой ветки занимает место и в высоту (столбец), и вбок
        (ширина подписей): вбок он задевает соседей, стоящих рядом по
        кругу, поэтому ширина входит в вес с долей, а не игнорируется. */
-    return items.length * stepY + 60 + Math.min(maxLw, 220) * 0.45;
+    return Math.max(base, items.length * stepY + 60 + Math.min(maxLw, 220) * 0.45);
   });
   const total = need.reduce((a, b) => a + b, 0);
   const R = Math.max(155 + Math.min(n, 12) * 9, total / (2 * Math.PI) + 30);

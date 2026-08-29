@@ -102,6 +102,86 @@ T.ok("ничего не налезает друг на друга", bad3 === 0, 
 S.items = S.items.filter(function (i) { return String(i.id).indexOf("z") !== 0; });
 S.open = [];
 
+T.head("КАРТА: ДЛИННЫЕ ИМЕНА ВЕТОК НЕ СЛИПАЮТСЯ");
+["sphere", "place", "person", "type"].forEach(function (ax2) {
+  AXIS = ax2; S.open = []; render();
+  var sv = view.innerHTML.slice(view.innerHTML.indexOf('id="mapG"'),
+                                view.innerHTML.indexOf("</svg>"));
+  var br = [], mb, bre = /<g class="branch"[\s\S]*?<rect x="([-\d.e]+)" y="([-\d.e]+)" width="([\d.e]+)" height="([\d.e]+)"[\s\S]*?>([^<]*)<\/text>/g;
+  while ((mb = bre.exec(sv)))
+    br.push({ l: +mb[1], t: +mb[2], r: +mb[1] + +mb[3], b: +mb[2] + +mb[4], txt: mb[5] });
+  var hit = [];
+  for (var p1 = 0; p1 < br.length; p1++)
+    for (var p2 = p1 + 1; p2 < br.length; p2++) {
+      var X = br[p1], Y = br[p2];
+      if (X.l < Y.r && Y.l < X.r && X.t < Y.b && Y.t < X.b)
+        hit.push(X.txt + " × " + Y.txt);
+    }
+  T.ok("ось «" + AXES[ax2] + "»: ветки не пересекаются", hit.length === 0, hit.join(", "));
+});
+
+/* Тот же случай, что на экране Елены: одна большая ветка раскрыта и
+   сдвигает остальные — закрытые с длинными именами слипались. */
+AXIS = "type";
+var doKey = S.types.find(function (t2) { return t2.key === "task"; });
+if (doKey) {
+  for (var d2 = 0; d2 < 10; d2++) S.items.push({
+    id: "d2_" + d2, title: "Написать эндокринологу " + (d2 + 1), type: doKey.key,
+    spheres: ["другое"], created: today(), due: null, steps: [], done: false,
+    multi: false, place: null, person: null, time: null, options: [],
+    routine: null, notes: "", forceImp: null, today: null, notToday: null });
+  S.open = [doKey.key]; render();
+  var sv2 = view.innerHTML.slice(view.innerHTML.indexOf('id="mapG"'),
+                                 view.innerHTML.indexOf("</svg>"));
+  var br2 = [], mb2, bre2 = /<g class="branch"[\s\S]*?<rect x="([-\d.e]+)" y="([-\d.e]+)" width="([\d.e]+)" height="([\d.e]+)"[\s\S]*?>([^<]*)<\/text>/g;
+  while ((mb2 = bre2.exec(sv2)))
+    br2.push({ l: +mb2[1], t: +mb2[2], r: +mb2[1] + +mb2[3], b: +mb2[2] + +mb2[4], txt: mb2[5] });
+  var hit2 = [];
+  for (var q1 = 0; q1 < br2.length; q1++)
+    for (var q2 = q1 + 1; q2 < br2.length; q2++) {
+      var U = br2[q1], V = br2[q2];
+      if (U.l < V.r && V.l < U.r && U.t < V.b && V.t < U.b) hit2.push(U.txt + " × " + V.txt);
+    }
+  T.ok("с раскрытой большой веткой соседи тоже не слипаются",
+    hit2.length === 0, hit2.join(", "));
+  S.items = S.items.filter(function (i) { return String(i.id).indexOf("d2_") !== 0; });
+}
+S.open = []; AXIS = "sphere";
+
+/* Набор с экрана Елены: длинные названия видов рядом внизу круга. */
+T.head("КАРТА: ВЕТКИ НЕ ТЕСНЯТСЯ");
+var keep = S.items.slice();
+S.items = [];
+[[10, "plain", "Написать эндокринологу"], [6, "routine", "Рутина"],
+ [2, "appt", "Приём"], [1, "idea", "Инвестиции"],
+ [1, "errand", "Съездить"], [1, "choice", "Выбрать подарок"]].forEach(function (spec) {
+  var tp = S.types.find(function (x) { return x.kind === spec[1]; }) || S.types[0];
+  for (var i4 = 0; i4 < spec[0]; i4++) S.items.push({
+    id: spec[1] + i4, title: spec[2] + " " + (i4 + 1), type: tp.key, spheres: ["другое"],
+    created: today(), due: null, steps: [], done: false, multi: false, place: null,
+    person: null, time: null, options: [],
+    routine: spec[1] === "routine" ? { days: [0,1,2,3,4,5,6], history: [] } : null,
+    notes: "", forceImp: null, today: null, notToday: null });
+});
+AXIS = "type";
+S.open = [S.types.find(function (t3) { return t3.kind === "plain"; }).key];
+render();
+var sv3 = view.innerHTML.slice(view.innerHTML.indexOf('id="mapG"'),
+                               view.innerHTML.indexOf("</svg>"));
+var br3 = [], mb3, bre3 = /<g class="branch"[\s\S]*?<rect x="([-\d.e]+)" y="([-\d.e]+)" width="([\d.e]+)" height="([\d.e]+)"/g;
+while ((mb3 = bre3.exec(sv3)))
+  br3.push({ l: +mb3[1], t: +mb3[2], r: +mb3[1] + +mb3[3], b: +mb3[2] + +mb3[4] });
+var gap3 = 1e9;
+for (var g1 = 0; g1 < br3.length; g1++)
+  for (var g2 = g1 + 1; g2 < br3.length; g2++) {
+    var G1 = br3[g1], G2 = br3[g2];
+    var dx3 = Math.max(G1.l - G2.r, G2.l - G1.r, 0);
+    var dy3 = Math.max(G1.t - G2.b, G2.t - G1.b, 0);
+    gap3 = Math.min(gap3, (dx3 || dy3) ? Math.hypot(dx3, dy3) : -1);
+  }
+T.ok("между ветками есть воздух", gap3 >= 24, Math.round(gap3) + "px");
+S.items = keep; S.open = []; AXIS = "sphere";
+
 T.head("КАРТА: КЛИК ПО ЛИСТУ НА ВСЕХ ОСЯХ");
 ["sphere", "place", "person", "type"].forEach(function (ax) {
   AXIS = ax; S.open = axisValues(ax).slice(); render();
