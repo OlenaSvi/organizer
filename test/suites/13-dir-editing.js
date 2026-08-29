@@ -10,6 +10,13 @@ T.ok("кнопка «Сохранить изменения» есть", h.indexO
 T.ok("пока правок нет — кнопка неактивна",
   /data-act="dirsave"[^>]*disabled|disabled[^>]*data-act="dirsave"/.test(h.replace(/\s+/g, " ")));
 T.ok("пока правок нет — сообщения нет", h.indexOf("Изменения сохранены") < 0);
+T.ok("неактивная кнопка не отзывается на наведение", (function () {
+  try { ObjC.import("Foundation");
+    var css = $.NSString.stringWithContentsOfFileEncodingError(
+      "Организатор.html", 4, null).js.replace(/\s+/g, " ");
+    return /\.btn\[disabled\]:hover\{/.test(css);
+  } catch (e) { return false; }
+})());
 
 T.head("ПРАВКА, СОХРАНЕНИЕ, СООБЩЕНИЕ");
 clickOn({ act: "diredit", v: "Быт" });
