@@ -61,8 +61,10 @@ globalThis.T = {
       mk({ title: "Записаться к врачу", spheres: ["здоровье физическое"], person: "Мама" }),
       mk({ title: "Разобрать шкаф", spheres: ["Быт"] }),
       mk({ title: "Найти курсы", spheres: ["развитие"] }),
+      /* Все дни: иначе проверки «Сегодня» падали бы по выходным —
+         рутина на пн–пт в субботу законно не показывается. */
       mk({ title: "Зарядка", type: kind("routine"), spheres: ["здоровье физическое"],
-           routine: { days: [1, 2, 3, 4, 5], history: [] } }),
+           routine: { days: [0, 1, 2, 3, 4, 5, 6], history: [] } }),
       mk({ title: "Чтение", type: kind("routine"), spheres: ["развитие"],
            routine: { days: [0, 1, 2, 3, 4, 5, 6], history: [] } }),
       mk({ title: "Приём у врача", type: kind("appt"), spheres: ["здоровье физическое"],

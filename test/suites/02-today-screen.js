@@ -139,7 +139,13 @@ var rr = T.routine();
 rr.title = "Стакан тёплой воды натощак";
 rr.spheres = ["здоровье физическое", "развитие"];
 render();
-var line = /<div class="rline[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/.exec(view.innerHTML)[0];
+/* Берём кусок разметки от нужной рутины: ленивый захват до трёх
+   закрывающих тегов цеплял соседнюю строку. */
+var line = (function () {
+  var h2 = view.innerHTML, at = h2.indexOf(esc(rr.title));
+  var from = h2.lastIndexOf('<div class="rline', at);
+  return h2.slice(from, from + 1200);
+})();
 T.ok("название и счёт — верхней строкой",
   /class="rtop">[\s\S]*?rname[\s\S]*?rscore/.test(line));
 T.ok("чипы сфер — отдельной строкой",

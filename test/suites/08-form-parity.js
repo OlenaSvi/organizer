@@ -31,17 +31,37 @@ T.ok("сфера отмечена", new RegExp('chip on" data-act="esphere"[^>]*
 T.ok("важность отмечена",
   /chip on"[^>]*data-act="equad"[^>]*data-q="imp"/.test(h.replace(/\s+/g, " ")));
 
-T.head("ЗАМЕТКА И ШАГИ: СВЁРНУТЫ, ПОКА ПУСТЫ");
-T.ok("у пустого дела — кнопки «＋»",
-  h.indexOf("＋ заметка") >= 0 && h.indexOf("＋ шаги") >= 0);
+T.head("ШАГИ ВИДНЫ СРАЗУ, ЗАМЕТКА И ВАРИАНТЫ — ПО КНОПКЕ");
+T.ok("блок шагов открыт без нажатия",
+  h.indexOf('data-act="emulti"') >= 0 && h.indexOf("＋ шаги") < 0);
+T.ok("заметка свёрнута", h.indexOf("＋ заметка") >= 0 && h.indexOf("edNotes") < 0);
 clickOn({ act: "ecancel", id: x.id }); closeModal();
+
+var ch = live().find(isChoice);
+openItem(ch.id); clickOn({ act: "edit", id: ch.id });
+h = host.innerHTML;
+T.ok("у «выбрать/купить» есть кнопка «＋ варианты»", h.indexOf("＋ варианты") >= 0);
+T.ok("список вариантов пока свёрнут", h.indexOf("newOpt") < 0);
+clickOn({ act: "formopen", k: "options", id: ch.id });
+T.ok("раскрывается по нажатию", host.innerHTML.indexOf("newOpt") >= 0);
+clickOn({ act: "ecancel", id: ch.id }); closeModal();
+
+ch.options = [{ text: "подешевле" }];
+openItem(ch.id); clickOn({ act: "edit", id: ch.id });
+T.ok("заполненные варианты раскрыты сразу", host.innerHTML.indexOf("newOpt") >= 0);
+clickOn({ act: "ecancel", id: ch.id }); closeModal();
+ch.options = [];
+
+var plain = T.tasks().find(function (i) { return !isChoice(i) && !isIdea(i); });
+openItem(plain.id); clickOn({ act: "edit", id: plain.id });
+T.ok("у обычного дела вариантов нет вовсе",
+  host.innerHTML.indexOf("＋ варианты") < 0 && host.innerHTML.indexOf("newOpt") < 0);
+clickOn({ act: "ecancel", id: plain.id }); closeModal();
 
 var m2 = live().find(function (i) { return i.multi && i.steps.length > 1; });
 m2.notes = "уже есть заметка";
 openItem(m2.id); clickOn({ act: "edit", id: m2.id });
-h = host.innerHTML;
-T.ok("заполненная заметка раскрыта сразу", h.indexOf("edNotes") >= 0);
-T.ok("существующие шаги раскрыты сразу", h.indexOf('data-act="emulti"') >= 0);
+T.ok("заполненная заметка раскрыта сразу", host.innerHTML.indexOf("edNotes") >= 0);
 clickOn({ act: "ecancel", id: m2.id }); closeModal();
 m2.notes = "";
 

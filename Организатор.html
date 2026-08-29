@@ -3196,7 +3196,7 @@ function openSettings() {
 let draftId = null, capFocus = false, stepFocus = false;
 /* Какие необязательные блоки формы раскрыты в этот раз — общее для
    создания и правки. */
-let formOpen = { notes: false, steps: false };
+let formOpen = { notes: false, options: false };
 
 /* Перерисовка открытой формы после каждой правки: черновик — своей
    отрисовкой, существующее дело — редактором. Функция была потеряна
@@ -3212,14 +3212,22 @@ const refreshEdit = id => {
    отдельно и успели разъехаться.                                     */
 function itemFormHTML(it, ids) {
   const D = ["вс","пн","вт","ср","чт","пт","сб"];
+  /* Шаги видны сразу: разбить дело на шаги — обычное решение, ради него
+     не нужно лишнее нажатие. Заметка и варианты нужны реже, поэтому
+     свёрнуты и раскрываются кнопкой (или сами, если уже заполнены).  */
+  const canOpts = isChoice(it) || isIdea(it);
   const openNotes = formOpen.notes || hasNotes(it);
-  const openSteps = !isRoutine(it) && (formOpen.steps || (it.multi && it.steps.length));
+  const openOpts = canOpts && (formOpen.options || (it.options || []).length);
   const bNotes = `<button class="addtoday" data-act="formopen" data-k="notes">＋ заметка</button>`;
-  const bSteps = `<button class="addtoday" data-act="formopen" data-k="steps">＋ шаги</button>`;
-  const extra = (!openNotes && !openSteps)
-    ? (isRoutine(it) ? bNotes : `<div class="caprow">${bNotes}${bSteps}</div>`)
-    : (openNotes ? notesBlockHTML(it, ids.notes) : bNotes)
-      + (isRoutine(it) ? "" : openSteps ? stepsBlockHTML(it) : bSteps);
+  const bOpts = `<button class="addtoday" data-act="formopen" data-k="options">＋ варианты</button>`;
+  const optsHTML = `<p class="lbl">Варианты</p>
+      <div>${(it.options || []).map(o => `<div class="opt">· ${esc(o.text)}</div>`).join("")
+        || `<div class="readnote" style="color:var(--dim)">Пока ничего нет</div>`}</div>
+      <input type="text" id="newOpt" placeholder="Добавить вариант и нажать Enter" style="margin-top:10px">`;
+  const extra = (isRoutine(it) ? "" : stepsBlockHTML(it))
+    + (!openNotes && !openOpts && canOpts ? `<div class="caprow">${bNotes}${bOpts}</div>`
+       : (openNotes ? notesBlockHTML(it, ids.notes) : bNotes)
+         + (canOpts ? (openOpts ? optsHTML : bOpts) : ""));
 
   return `<div class="cfggrid" style="margin-bottom:4px">
       ${isRoutine(it) ? `<div class="cfgitem"><p class="lbl">В какие дни</p>
@@ -3250,17 +3258,12 @@ function itemFormHTML(it, ids) {
       <p class="qs" style="margin:-6px 0 4px">Срочность сюда не входит —
         она считается из дедлайна.</p>`}
 
-    ${(isChoice(it) || isIdea(it)) ? `<p class="lbl">Варианты</p>
-      <div>${(it.options || []).map(o => `<div class="opt">· ${esc(o.text)}</div>`).join("")
-        || `<div class="readnote" style="color:var(--dim)">Пока ничего нет</div>`}</div>
-      <input type="text" id="newOpt" placeholder="Добавить вариант и нажать Enter" style="margin-top:10px">` : ""}
-
     ${extra}`;
 }
 
 function openCapture(preset) {
   capFocus = true;
-  formOpen = { notes: false, steps: false };
+  formOpen = { notes: false, options: false };
   const it = {
     id: uid(), title: "", type: defaultType(), multi: false, spheres: [], place: null,
     person: null, due: null, time: null, steps: [], options: [], routine: null,
@@ -3567,7 +3570,7 @@ function openEdit(id) {
      окно, — снимок делаем только при первом открытии этого дела.     */
   if (!editBackup || editBackup.id !== id) {
     editBackup = JSON.parse(JSON.stringify(it));
-    formOpen = { notes: false, steps: false };
+    formOpen = { notes: false, options: false };
   }
   const D = ["вс","пн","вт","ср","чт","пт","сб"];
   openModal(`<h3>${esc(it.title)}</h3>

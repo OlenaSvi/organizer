@@ -37,8 +37,9 @@ clickOn({ act: "cap" });
 var d = S.items.find(function (i) { return i.draft; });
 h = host.innerHTML;
 T.ok("заголовок «Новое дело»", h.indexOf("<h3>Новое дело</h3>") >= 0);
-T.ok("заметка и шаги свёрнуты",
-  h.indexOf("＋ заметка") >= 0 && h.indexOf("＋ шаги") >= 0 && h.indexOf("capNotes") < 0);
+T.ok("шаги видны сразу, заметка свёрнута",
+  h.indexOf('data-act="emulti"') >= 0 && h.indexOf("＋ заметка") >= 0
+  && h.indexOf("capNotes") < 0);
 T.ok("важность в форме есть", h.indexOf("Важность") >= 0);
 d.title = "Проверочное дело";
 clickOn({ act: "dd", k: "due:" + d.id });
@@ -51,13 +52,18 @@ T.ok("«добавить и взять»: сохранило и взяло в д
 S.items = S.items.filter(function (i) { return i.title !== "Проверочное дело"; });
 
 T.head("СРОК: ЧИПЫ И КАЛЕНДАРЬ");
+/* Срок ставим на сегодня: календарь открывается на месяце срока, и в
+   текущем месяце заведомо есть прошедшие дни — кроме первого числа. */
+x.due = today();
 openItem(x.id); clickOn({ act: "edit", id: x.id });
 clickOn({ act: "dd", k: "due:" + x.id });
 h = host.innerHTML;
 T.ok("быстрые чипы", ["сегодня", "завтра", "через неделю", "без срока"]
   .every(function (w) { return h.indexOf(w) >= 0; }));
 T.ok("сетка календаря целая", (h.match(/class="ddday/g) || []).length >= 28);
-T.ok("прошлые дни не нажимаются", /<span class="ddday off/.test(h));
+T.ok("прошлые дни не нажимаются",
+  /<span class="ddday off/.test(h) || today().slice(-2) === "01",
+  "в первый день месяца прошедших дней в сетке может не быть");
 clickOn({ act: "duepick", id: x.id, d: addDays(today(), 9) });
 T.ok("день выбирается", x.due === addDays(today(), 9));
 clickOn({ act: "ecancel", id: x.id }); closeModal();
