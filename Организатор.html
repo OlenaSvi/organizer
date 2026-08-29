@@ -3222,10 +3222,13 @@ function itemFormHTML(it, ids) {
   const openOpts = canOpts && (formOpen.options || (it.options || []).length);
   const bNotes = `<button class="addtoday" data-act="formopen" data-k="notes">＋ заметка</button>`;
   const bOpts = `<button class="addtoday" data-act="formopen" data-k="options">＋ варианты</button>`;
+  /* Когда пусто, отдельная плашка «Пока ничего нет» не нужна: поле
+     ввода само говорит, что здесь делать.                          */
   const optsHTML = `<p class="lbl">Варианты</p>
-      <div>${(it.options || []).map(o => `<div class="opt">· ${esc(o.text)}</div>`).join("")
-        || `<div class="readnote" style="color:var(--dim)">Пока ничего нет</div>`}</div>
-      <input type="text" id="newOpt" placeholder="Добавить вариант и нажать Enter" style="margin-top:10px">`;
+      ${(it.options || []).length
+        ? `<div>${it.options.map(o => `<div class="opt">· ${esc(o.text)}</div>`).join("")}</div>` : ""}
+      <input type="text" id="newOpt" placeholder="Добавить вариант и нажать Enter"${
+        (it.options || []).length ? ` style="margin-top:10px"` : ""}>`;
   const extra = (isRoutine(it) ? "" : stepsBlockHTML(it))
     + (!openNotes && !openOpts && canOpts ? `<div class="caprow">${bNotes}${bOpts}</div>`
        : (openNotes ? notesBlockHTML(it, ids.notes) : bNotes)
@@ -3471,10 +3474,9 @@ function stepsBlockHTML(it) {
         ${editing ? "" : `<button class="linkbtn danger" data-act="delstep"
           data-id="${it.id}" data-i="${i}">убрать</button>`}
       </div>`; }).join("")}</div>
-      <input type="text" id="newStep" placeholder="Добавить шаг и нажать Enter">
-      <p class="qs" style="margin:-4px 0 12px">В списках виден только следующий незакрытый шаг —
-        остальные не смотрят на вас.${it.steps.length > 1
-          ? " Порядок меняется перетаскиванием." : ""}</p>` : ""}`;
+      <input type="text" id="newStep" placeholder="Добавить шаг и нажать Enter"
+        title="В списках виден только следующий незакрытый шаг${it.steps.length > 1
+          ? ". Порядок меняется перетаскиванием" : ""}">` : ""}`;
 }
 
 /* Записать поправленный шаг. Пустой текст не принимаем — для удаления
