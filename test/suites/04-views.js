@@ -242,4 +242,29 @@ ALLSORT = "due";
 T.ok("слова «просрочено» нет нигде", view.innerHTML.indexOf("просрочен") < 0);
 T.reset();
 
+T.head("«СНАЧАЛА НОВЫЕ» — ПО ПОРЯДКУ СОЗДАНИЯ");
+/* Все дела одного дня раньше были неразличимы: хранилась только дата,
+   и внутри дня список раскладывался по алфавиту. Записанное последним
+   должно стоять первым. Имена выбраны так, чтобы алфавит спорил с
+   порядком записи — иначе проверка ничего не докажет. */
+T.reset();
+S.items = [];
+["Аня", "Яна", "Боря"].forEach(function (nm) {
+  clickOn({ act: "cap" });
+  var dr = S.items.find(function (i) { return i.draft; });
+  dr.title = nm;
+  clickOn({ act: "capsave" });
+});
+TAB = "all"; ALLFILTER = "all"; ALLQUERY = ""; ALLPERIOD = "all";
+clickOn({ act: "dd", k: "allsort" });
+clickOn({ act: "allsortset", v: "fresh" });
+var fresh = [];
+document.getElementById("allList").innerHTML
+  .replace(/class="suggname"[^>]*>([^<]+)</g, function (mm, nm) { fresh.push(nm.trim()); return mm; });
+T.ok("последнее записанное — первым", fresh.join(" · ") === "Боря · Яна · Аня",
+  fresh.join(" · "));
+T.ok("это не алфавит", fresh.join() !== "Аня,Боря,Яна");
+ALLSORT = "due";
+T.reset();
+
 T.done();

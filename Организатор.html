@@ -1307,8 +1307,18 @@ const reachable = it => !S.hereNow || !it.place || it.place === S.hereNow;
    Все действия идемпотентны — второй прогон ничего не меняет.       */
 function normalizeItems() {
   let touched = false;
-  S.items.forEach(i => {
+  S.items.forEach((i, n) => {
     if (i.draft) return;
+    /* Момент записи. Раньше хранилась только дата, поэтому все дела
+       одного дня были неразличимы и «сначала новые» раскладывало их
+       по алфавиту. Старым делам момент восстанавливаем по месту в
+       списке: новое дело всегда дописывалось в конец, так что порядок
+       внутри дня восстанавливается верно.                           */
+    if (typeof i.createdAt !== "number") {
+      const t = Date.parse((i.created || today()) + "T00:00:00");
+      i.createdAt = (isNaN(t) ? 0 : t) + n;
+      touched = true;
+    }
     /* У идей и рутин срока нет — забытый дедлайн держал их в календаре
        и в «срок прошёл», хотя они ничего не требуют.                */
     if ((isIdea(i) || isRoutine(i)) && (i.due || i.time)) {
@@ -1843,7 +1853,8 @@ const ALLSORTS = [
   ["due",   "по сроку",         (a, b) => sortKey(a).localeCompare(sortKey(b))],
   ["imp",   "сначала важные",   (a, b) => (isImportant(b) ? 1 : 0) - (isImportant(a) ? 1 : 0)
                                   || sortKey(a).localeCompare(sortKey(b))],
-  ["fresh", "сначала новые",    (a, b) => String(b.created).localeCompare(String(a.created))
+  ["fresh", "сначала новые",    (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
+                                  || String(b.created).localeCompare(String(a.created))
                                   || a.title.localeCompare(b.title, "ru")],
   ["alpha", "по алфавиту",      (a, b) => a.title.localeCompare(b.title, "ru")],
 ];
@@ -3331,7 +3342,7 @@ function openCapture(preset) {
   const it = {
     id: uid(), title: "", type: defaultType(), multi: false, spheres: [], place: null,
     person: null, due: null, time: null, steps: [], options: [], routine: null,
-    done: false, created: today(), notes: "", forceImp: null,
+    done: false, created: today(), createdAt: Date.now(), notes: "", forceImp: null,
     today: null, notToday: null, draft: true,
   };
   /* Создание наследует ракурс: день в календаре даёт дедлайн, ветка на

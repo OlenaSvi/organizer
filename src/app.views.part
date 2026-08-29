@@ -489,7 +489,8 @@ const ALLSORTS = [
   ["due",   "по сроку",         (a, b) => sortKey(a).localeCompare(sortKey(b))],
   ["imp",   "сначала важные",   (a, b) => (isImportant(b) ? 1 : 0) - (isImportant(a) ? 1 : 0)
                                   || sortKey(a).localeCompare(sortKey(b))],
-  ["fresh", "сначала новые",    (a, b) => String(b.created).localeCompare(String(a.created))
+  ["fresh", "сначала новые",    (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
+                                  || String(b.created).localeCompare(String(a.created))
                                   || a.title.localeCompare(b.title, "ru")],
   ["alpha", "по алфавиту",      (a, b) => a.title.localeCompare(b.title, "ru")],
 ];

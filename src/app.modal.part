@@ -433,7 +433,7 @@ function openCapture(preset) {
   const it = {
     id: uid(), title: "", type: defaultType(), multi: false, spheres: [], place: null,
     person: null, due: null, time: null, steps: [], options: [], routine: null,
-    done: false, created: today(), notes: "", forceImp: null,
+    done: false, created: today(), createdAt: Date.now(), notes: "", forceImp: null,
     today: null, notToday: null, draft: true,
   };
   /* Создание наследует ракурс: день в календаре даёт дедлайн, ветка на
