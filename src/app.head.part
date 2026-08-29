@@ -603,8 +603,10 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .btn.soft{background:var(--accent-soft);color:var(--accent)}
 .btn.soft:hover{filter:brightness(.97)}
 .addtoday:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
-.readnote{background:var(--bg);border:0;border-radius:10px;
-  padding:12px 14px;white-space:pre-wrap;line-height:1.45;margin-bottom:14px}
+/* Заметка — просто текст под своим заголовком: плашка вокруг делала
+   из неё отдельный блок, хотя это продолжение дела.                */
+.readnote{background:transparent;border:0;border-radius:0;
+  padding:0 2px;white-space:pre-wrap;line-height:1.5;margin-bottom:14px}
 .readmeta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
 .readsteps{margin-bottom:4px}
 .readstep{display:flex;align-items:baseline;gap:10px;padding:6px 0;font-size:14.5px;
