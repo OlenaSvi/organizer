@@ -7,6 +7,8 @@ DIRPAGE = null; DIREDIT = null; openSettings();
 clickOn({ act: "diropen", p: "sphere" });
 var h = host.innerHTML;
 T.ok("кнопка «Сохранить изменения» есть", h.indexOf('data-act="dirsave"') >= 0);
+T.ok("пока правок нет — кнопка неактивна",
+  /data-act="dirsave"[^>]*disabled|disabled[^>]*data-act="dirsave"/.test(h.replace(/\s+/g, " ")));
 T.ok("пока правок нет — сообщения нет", h.indexOf("Изменения сохранены") < 0);
 
 T.head("ПРАВКА, СОХРАНЕНИЕ, СООБЩЕНИЕ");
@@ -14,11 +16,15 @@ clickOn({ act: "diredit", v: "Быт" });
 document.getElementById("dirName").value = "Дом";
 clickOn({ act: "sphren", v: "Быт" });
 T.ok("имя изменилось в списке", S.spheres.indexOf("Дом") >= 0);
+T.ok("после правки кнопка ожила",
+  !/data-act="dirsave"[^>]*disabled/.test(host.innerHTML.replace(/\s+/g, " ")));
 clickOn({ act: "dirsave" });
 T.ok("окно осталось открытым на той же странице",
   DIRPAGE === "sphere" && host.innerHTML.indexOf("<b>Сферы</b>") >= 0);
 T.ok("слева появилось «Изменения сохранены»",
   host.innerHTML.indexOf("Изменения сохранены") >= 0);
+T.ok("и кнопка снова неактивна — сохранять нечего",
+  /data-act="dirsave"[^>]*disabled/.test(host.innerHTML.replace(/\s+/g, " ")));
 T.ok("записалось в хранилище",
   JSON.parse(localStorage.getItem("organizer.v1")).spheres.indexOf("Дом") >= 0);
 

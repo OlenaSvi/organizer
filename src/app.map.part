@@ -582,6 +582,12 @@ function dirSnapshot() {
   DIRFIELDS.forEach(k => { snap[k] = JSON.parse(JSON.stringify(S[k])); });
   return snap;
 }
+/* Есть ли несохранённые правки: сравниваем текущее состояние со
+   снимком, сделанным при входе. Кнопка сохранения живёт по этому. */
+function dirDirty() {
+  if (!dirBackup) return false;
+  return DIRFIELDS.some(k => JSON.stringify(S[k]) !== JSON.stringify(dirBackup[k]));
+}
 function dirRestore() {
   if (!dirBackup) return;
   DIRFIELDS.forEach(k => { S[k] = JSON.parse(JSON.stringify(dirBackup[k])); });
@@ -632,9 +638,10 @@ function dirPageHTML() {
   </div>
   <p class="qs" style="margin:14px 4px 0">${d.note}</p>
   <div class="row modalfoot">
-    <span class="qs" style="margin:0">${dirSaved ? "Изменения сохранены" : ""}</span>
+    <span class="qs" style="margin:0">${dirSaved && !dirDirty() ? "Изменения сохранены" : ""}</span>
     <div class="spacer"></div>
-    <button class="btn primary" data-act="dirsave">Сохранить изменения</button>
+    <button class="btn ${dirDirty() ? "primary" : "ghost"}" data-act="dirsave"
+      ${dirDirty() ? "" : "disabled"}>Сохранить изменения</button>
   </div>`;
 }
 function wireDirectories() {

@@ -2810,6 +2810,12 @@ function dirSnapshot() {
   DIRFIELDS.forEach(k => { snap[k] = JSON.parse(JSON.stringify(S[k])); });
   return snap;
 }
+/* Есть ли несохранённые правки: сравниваем текущее состояние со
+   снимком, сделанным при входе. Кнопка сохранения живёт по этому. */
+function dirDirty() {
+  if (!dirBackup) return false;
+  return DIRFIELDS.some(k => JSON.stringify(S[k]) !== JSON.stringify(dirBackup[k]));
+}
 function dirRestore() {
   if (!dirBackup) return;
   DIRFIELDS.forEach(k => { S[k] = JSON.parse(JSON.stringify(dirBackup[k])); });
@@ -2860,9 +2866,10 @@ function dirPageHTML() {
   </div>
   <p class="qs" style="margin:14px 4px 0">${d.note}</p>
   <div class="row modalfoot">
-    <span class="qs" style="margin:0">${dirSaved ? "Изменения сохранены" : ""}</span>
+    <span class="qs" style="margin:0">${dirSaved && !dirDirty() ? "Изменения сохранены" : ""}</span>
     <div class="spacer"></div>
-    <button class="btn primary" data-act="dirsave">Сохранить изменения</button>
+    <button class="btn ${dirDirty() ? "primary" : "ghost"}" data-act="dirsave"
+      ${dirDirty() ? "" : "disabled"}>Сохранить изменения</button>
   </div>`;
 }
 function wireDirectories() {
@@ -3762,12 +3769,13 @@ document.addEventListener("click", e => {
        Крестик — выход без сохранения: возвращаем снимок.          */
     case "dirback":   DIRPAGE = null; DIREDIT = null;
                       dirBackup = null; dirSaved = false; openSettings(); break;
-    case "dirsave":   save(); dirBackup = dirSnapshot(); dirSaved = true;
+    case "dirsave":   if (!dirDirty()) break;
+                      save(); dirBackup = dirSnapshot(); dirSaved = true;
                       openSettings(); break;
     case "dirclose":  dirRestore(); dirBackup = null; dirSaved = false;
                       DIRPAGE = null; DIREDIT = null;
                       closeModal(); render(); break;
-    case "diredit":   DIREDIT = v; dirSaved = false; openSettings(); break;
+    case "diredit":   DIREDIT = v; openSettings(); break;
     case "dircancel": DIREDIT = null; openSettings(); break;
     case "exportdata": exportData(); break;
     case "importdata": { const fi = document.getElementById("importFile");
