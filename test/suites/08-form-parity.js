@@ -31,10 +31,18 @@ T.ok("сфера отмечена", new RegExp('chip on" data-act="esphere"[^>]*
 T.ok("важность отмечена",
   /chip on"[^>]*data-act="equad"[^>]*data-q="imp"/.test(h.replace(/\s+/g, " ")));
 
-T.head("ШАГИ ВИДНЫ СРАЗУ, ЗАМЕТКА И ВАРИАНТЫ — ПО КНОПКЕ");
-T.ok("блок шагов открыт без нажатия",
-  h.indexOf('data-act="emulti"') >= 0 && h.indexOf("＋ шаги") < 0);
-T.ok("заметка свёрнута", h.indexOf("＋ заметка") >= 0 && h.indexOf("edNotes") < 0);
+T.head("ШАГИ, ЗАМЕТКА И ВАРИАНТЫ — ОДИНАКОВЫЕ КНОПКИ");
+T.ok("у дела без шагов — пунктирная кнопка «＋ шаги»",
+  h.indexOf("＋ шаги") >= 0 && h.indexOf('class="steps"') < 0);
+T.ok("заметка такая же", h.indexOf("＋ заметка") >= 0 && h.indexOf("edNotes") < 0);
+T.ok("кнопки стоят одним рядом", /<div class="caprow">[\s\S]*?＋ шаги[\s\S]*?＋ заметка/.test(h));
+clickOn({ act: "emulti", id: x.id });
+T.ok("одно нажатие раскрывает блок с полем ввода",
+  host.innerHTML.indexOf('id="newStep"') >= 0 && host.innerHTML.indexOf("＋ шаги") < 0);
+T.ok("и даёт вернуть дело к одному действию",
+  host.innerHTML.indexOf("убрать шаги") >= 0);
+clickOn({ act: "emulti", id: x.id });
+T.ok("возврат работает", host.innerHTML.indexOf("＋ шаги") >= 0);
 clickOn({ act: "ecancel", id: x.id }); closeModal();
 
 var ch = live().find(isChoice);

@@ -366,10 +366,13 @@ function itemFormHTML(it, ids) {
      не нужно лишнее нажатие. Заметка и варианты нужны реже, поэтому
      свёрнуты и раскрываются кнопкой (или сами, если уже заполнены).  */
   const canOpts = isChoice(it) || isIdea(it);
+  const canSteps = !isRoutine(it);
   const openNotes = formOpen.notes || hasNotes(it);
   const openOpts = canOpts && (formOpen.options || (it.options || []).length);
+  const openSteps = canSteps && it.multi;
   const bNotes = `<button class="addtoday" data-act="formopen" data-k="notes">＋ заметка</button>`;
   const bOpts = `<button class="addtoday" data-act="formopen" data-k="options">＋ варианты</button>`;
+  const bSteps = `<button class="addtoday" data-act="emulti" data-id="${it.id}">＋ шаги</button>`;
   /* Когда пусто, отдельная плашка «Пока ничего нет» не нужна: поле
      ввода само говорит, что здесь делать.                          */
   const optsHTML = `<p class="lbl">Варианты</p>
@@ -377,10 +380,15 @@ function itemFormHTML(it, ids) {
         ? `<div>${it.options.map(o => `<div class="opt">· ${esc(o.text)}</div>`).join("")}</div>` : ""}
       <input type="text" id="newOpt" placeholder="Добавить вариант и нажать Enter"${
         (it.options || []).length ? ` style="margin-top:10px"` : ""}>`;
-  const extra = (isRoutine(it) ? "" : stepsBlockHTML(it))
-    + (!openNotes && !openOpts && canOpts ? `<div class="caprow">${bNotes}${bOpts}</div>`
-       : (openNotes ? notesBlockHTML(it, ids.notes) : bNotes)
-         + (canOpts ? (openOpts ? optsHTML : bOpts) : ""));
+  /* Раскрытые блоки идут сверху во всю ширину, свёрнутые — рядом
+     пунктирными кнопками.                                          */
+  const opened = (openSteps ? stepsBlockHTML(it) : "")
+    + (openNotes ? notesBlockHTML(it, ids.notes) : "")
+    + (openOpts ? optsHTML : "");
+  const folded = (canSteps && !openSteps ? bSteps : "")
+    + (!openNotes ? bNotes : "")
+    + (canOpts && !openOpts ? bOpts : "");
+  const extra = opened + (folded ? `<div class="caprow">${folded}</div>` : "");
 
   return `<div class="cfggrid" style="margin-bottom:4px">
       ${isRoutine(it) ? `<div class="cfgitem"><p class="lbl">В какие дни</p>
@@ -597,17 +605,17 @@ function wireNotes(itemId, fieldId) {
 /* ── Шаги: свойство любого дела, а не отдельный вид ──────────────────
    Один и тот же блок используется и в карточке дела, и в панели
    «Сегодня» при записи нового.                                       */
+/* Шаги устроены как заметка и варианты: пока их нет — пунктирная кнопка
+   «＋ шаги», одно нажатие раскрывает блок с полем ввода. Прежний чип
+   «разбить на шаги» требовал второго клика внутри уже открытого блока. */
 function stepsBlockHTML(it) {
-  if (isRoutine(it)) return "";
-  const on = !!it.multi;
+  if (isRoutine(it) || !it.multi) return "";
   const doneN = it.steps.filter(s => s.done).length;
-  return `<p class="lbl">Шаги${on && it.steps.length
-    ? ` · закрыто ${doneN} из ${it.steps.length}` : ""}</p>
-    <div class="chips">
-      <button class="chip ${on ? "on" : ""}" data-act="emulti" data-id="${it.id}">${
-        on ? "✓ в несколько шагов" : "разбить на шаги"}</button>
-    </div>
-    ${on ? `<div class="steps">${it.steps.map((s, i) => {
+  return `<p class="lbl">Шаги${it.steps.length
+    ? ` · закрыто ${doneN} из ${it.steps.length}` : ""}
+      <button class="linkbtn" data-act="emulti" data-id="${it.id}"
+        title="Вернуть дело к одному действию">убрать шаги</button></p>
+    ${true ? `<div class="steps">${it.steps.map((s, i) => {
       const editing = EDITSTEP === it.id + ":" + i;
       return `<div class="step ${s.done ? "done" : ""} ${editing ? "editing" : ""}"${
         !editing && it.steps.length > 1 ? ` draggable="true" data-stepdrag="${it.id}:${i}"
