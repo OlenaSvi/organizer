@@ -91,9 +91,18 @@ document.addEventListener("click", e => {
                         : (isNaN(+raw) ? raw : +raw);
                       openSettings(); } break;   // в силу вступит по кнопке
     case "cfgapply":   applyCfg(); break;
-    case "diropen":   DIRPAGE = el.dataset.p; DIREDIT = null; openSettings(); break;
-    case "dirback":   DIRPAGE = null; DIREDIT = null; openSettings(); break;
-    case "diredit":   DIREDIT = v; openSettings(); break;
+    case "diropen":   DIRPAGE = el.dataset.p; DIREDIT = null;
+                      dirBackup = null; dirSaved = false; openSettings(); break;
+    /* «‹ Настройки» — обычная навигация: сделанное остаётся.
+       Крестик — выход без сохранения: возвращаем снимок.          */
+    case "dirback":   DIRPAGE = null; DIREDIT = null;
+                      dirBackup = null; dirSaved = false; openSettings(); break;
+    case "dirsave":   save(); dirBackup = dirSnapshot(); dirSaved = true;
+                      openSettings(); break;
+    case "dirclose":  dirRestore(); dirBackup = null; dirSaved = false;
+                      DIRPAGE = null; DIREDIT = null;
+                      closeModal(); render(); break;
+    case "diredit":   DIREDIT = v; dirSaved = false; openSettings(); break;
     case "dircancel": DIREDIT = null; openSettings(); break;
     case "exportdata": exportData(); break;
     case "importdata": { const fi = document.getElementById("importFile");

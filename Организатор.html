@@ -2800,6 +2800,21 @@ const DIRS = {
     count: k => live().filter(i => i.type === k).length },
 };
 let DIRPAGE = null, DIREDIT = null;
+/* Справочник правится как форма: снимок при входе, «Сохранить изменения»
+   закрепляет, крестик возвращает к снимку. Правки видны сразу — но не
+   считаются принятыми, пока не нажата кнопка.                       */
+let dirBackup = null, dirSaved = false;
+const DIRFIELDS = ["spheres", "places", "people", "types", "items", "open", "hereNow"];
+function dirSnapshot() {
+  const snap = {};
+  DIRFIELDS.forEach(k => { snap[k] = JSON.parse(JSON.stringify(S[k])); });
+  return snap;
+}
+function dirRestore() {
+  if (!dirBackup) return;
+  DIRFIELDS.forEach(k => { S[k] = JSON.parse(JSON.stringify(dirBackup[k])); });
+  save();
+}
 
 const CHEV = `<svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor"
   stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg>`;
@@ -2839,11 +2854,16 @@ function dirPageHTML() {
          </span>
        </div>`).join("")}
     <div class="diraddrow">
-      <input type="text" id="dirNew" placeholder="Добавить ${d.one}" autocomplete="off">
-      <button class="btn primary" data-act="${d.act}add">Добавить</button>
+      <input type="text" id="dirNew" autocomplete="off"
+        placeholder="Добавить ${d.one} и нажать Enter">
     </div>
   </div>
-  <p class="qs" style="margin:14px 4px 0">${d.note}</p>`;
+  <p class="qs" style="margin:14px 4px 0">${d.note}</p>
+  <div class="row modalfoot">
+    <span class="qs" style="margin:0">${dirSaved ? "Изменения сохранены" : ""}</span>
+    <div class="spacer"></div>
+    <button class="btn primary" data-act="dirsave">Сохранить изменения</button>
+  </div>`;
 }
 function wireDirectories() {
   const nm = document.getElementById("dirName");
@@ -3146,10 +3166,11 @@ function openSettings() {
      Сферы», содержимое — на список. Одно окно, две глубины.        */
   if (DIRPAGE) {
     const d = DIRS[DIRPAGE];
+    if (!dirBackup) dirBackup = dirSnapshot();
     openModal(`<h3 class="dirhead"><button class="btn link" data-act="dirback">‹ Настройки</button>
         <b>${d.title}</b></h3>
       ${dirPageHTML()}`, "settings:" + DIRPAGE,
-      { act: "cfgcancel", title: "Закрыть" });
+      { act: "dirclose", title: "Закрыть без сохранения" });
     wireDirectories();
     return;
   }
@@ -3735,9 +3756,18 @@ document.addEventListener("click", e => {
                         : (isNaN(+raw) ? raw : +raw);
                       openSettings(); } break;   // в силу вступит по кнопке
     case "cfgapply":   applyCfg(); break;
-    case "diropen":   DIRPAGE = el.dataset.p; DIREDIT = null; openSettings(); break;
-    case "dirback":   DIRPAGE = null; DIREDIT = null; openSettings(); break;
-    case "diredit":   DIREDIT = v; openSettings(); break;
+    case "diropen":   DIRPAGE = el.dataset.p; DIREDIT = null;
+                      dirBackup = null; dirSaved = false; openSettings(); break;
+    /* «‹ Настройки» — обычная навигация: сделанное остаётся.
+       Крестик — выход без сохранения: возвращаем снимок.          */
+    case "dirback":   DIRPAGE = null; DIREDIT = null;
+                      dirBackup = null; dirSaved = false; openSettings(); break;
+    case "dirsave":   save(); dirBackup = dirSnapshot(); dirSaved = true;
+                      openSettings(); break;
+    case "dirclose":  dirRestore(); dirBackup = null; dirSaved = false;
+                      DIRPAGE = null; DIREDIT = null;
+                      closeModal(); render(); break;
+    case "diredit":   DIREDIT = v; dirSaved = false; openSettings(); break;
     case "dircancel": DIREDIT = null; openSettings(); break;
     case "exportdata": exportData(); break;
     case "importdata": { const fi = document.getElementById("importFile");

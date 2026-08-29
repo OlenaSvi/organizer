@@ -1,0 +1,61 @@
+/* Второй уровень настроек: правки копятся, кнопка сохраняет, крестик
+   откатывает. Добавление — по Enter, без отдельной кнопки. */
+T.seed();
+
+T.head("КНОПКА СОХРАНЕНИЯ");
+DIRPAGE = null; DIREDIT = null; openSettings();
+clickOn({ act: "diropen", p: "sphere" });
+var h = host.innerHTML;
+T.ok("кнопка «Сохранить изменения» есть", h.indexOf('data-act="dirsave"') >= 0);
+T.ok("пока правок нет — сообщения нет", h.indexOf("Изменения сохранены") < 0);
+
+T.head("ПРАВКА, СОХРАНЕНИЕ, СООБЩЕНИЕ");
+clickOn({ act: "diredit", v: "Быт" });
+document.getElementById("dirName").value = "Дом";
+clickOn({ act: "sphren", v: "Быт" });
+T.ok("имя изменилось в списке", S.spheres.indexOf("Дом") >= 0);
+clickOn({ act: "dirsave" });
+T.ok("окно осталось открытым на той же странице",
+  DIRPAGE === "sphere" && host.innerHTML.indexOf("<b>Сферы</b>") >= 0);
+T.ok("слева появилось «Изменения сохранены»",
+  host.innerHTML.indexOf("Изменения сохранены") >= 0);
+T.ok("записалось в хранилище",
+  JSON.parse(localStorage.getItem("organizer.v1")).spheres.indexOf("Дом") >= 0);
+
+T.head("КРЕСТИК ОТКАТЫВАЕТ НЕСОХРАНЁННОЕ");
+clickOn({ act: "diredit", v: "Дом" });
+document.getElementById("dirName").value = "Хозяйство";
+clickOn({ act: "sphren", v: "Дом" });
+T.ok("правка применилась к списку", S.spheres.indexOf("Хозяйство") >= 0);
+clickOn({ act: "dirclose" });
+T.ok("после крестика вернулось сохранённое",
+  S.spheres.indexOf("Дом") >= 0 && S.spheres.indexOf("Хозяйство") < 0);
+T.ok("метки на делах тоже вернулись",
+  !live().some(function (i) { return (i.spheres || []).indexOf("Хозяйство") >= 0; }));
+
+T.head("ДОБАВЛЕНИЕ ПО ENTER, БЕЗ КНОПКИ");
+DIRPAGE = "sphere"; DIREDIT = null; openSettings();
+T.ok("кнопки «Добавить» нет", host.innerHTML.indexOf('data-act="sphadd"') < 0);
+var inp = document.getElementById("dirNew");
+T.ok("поле подсказывает про Enter",
+  /placeholder="[^"]*Enter"/.test(host.innerHTML));
+inp.value = "Финансы";
+(inp._l.keydown || []).slice(-1).forEach(function (f) { f({ key: "Enter" }); });
+T.ok("Enter добавляет сферу", S.spheres.indexOf("Финансы") >= 0);
+clickOn({ act: "dirsave" });
+
+T.head("УДАЛЕНИЕ ТОЖЕ ОТКАТЫВАЕТСЯ");
+DIRPAGE = "sphere"; openSettings();
+clickOn({ act: "sphdel", v: "Финансы" });
+T.ok("сфера убрана из списка", S.spheres.indexOf("Финансы") < 0);
+clickOn({ act: "dirclose" });
+T.ok("крестик вернул её", S.spheres.indexOf("Финансы") >= 0);
+DIRPAGE = "sphere"; openSettings();
+clickOn({ act: "sphdel", v: "Финансы" });
+clickOn({ act: "dirsave" });
+clickOn({ act: "dirclose" });
+T.ok("после сохранения удаление остаётся", S.spheres.indexOf("Финансы") < 0);
+S.spheres = S.spheres.map(function (x) { return x === "Дом" ? "Быт" : x; });
+save();
+
+T.done();

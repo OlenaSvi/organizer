@@ -284,10 +284,11 @@ function openSettings() {
      Сферы», содержимое — на список. Одно окно, две глубины.        */
   if (DIRPAGE) {
     const d = DIRS[DIRPAGE];
+    if (!dirBackup) dirBackup = dirSnapshot();
     openModal(`<h3 class="dirhead"><button class="btn link" data-act="dirback">‹ Настройки</button>
         <b>${d.title}</b></h3>
       ${dirPageHTML()}`, "settings:" + DIRPAGE,
-      { act: "cfgcancel", title: "Закрыть" });
+      { act: "dirclose", title: "Закрыть без сохранения" });
     wireDirectories();
     return;
   }
