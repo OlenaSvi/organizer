@@ -3476,11 +3476,10 @@ function itemFormHTML(it, ids) {
           `<div class="${it.routine && it.routine.days.indexOf(i) >= 0 ? "hit" : ""}"
             data-act="rday" data-id="${it.id}" data-i="${i}" style="cursor:pointer">${WD_BY_DAY[i]}</div>`).join("")}</div></div>
         <div class="cfgitem"><p class="lbl">Часть дня</p>
-          <div class="chips">${PARTS.map(([k, L]) =>
-            `<button class="chip ${it.partOfDay === k ? "on" : ""}" data-act="ddset"
-              data-f="partOfDay" data-id="${it.id}" data-v="${k}">${L}</button>`).join("")}
-            <button class="chip ${it.partOfDay ? "" : "on"}" data-act="ddset"
-              data-f="partOfDay" data-id="${it.id}" data-v="">не важно</button></div></div>
+          <div class="rt">${PARTS.map(([k, L]) =>
+            `<div class="${it.partOfDay === k ? "hit" : ""}" data-act="rpart"
+              data-id="${it.id}" data-v="${k}" style="cursor:pointer"
+              title="Нажать ещё раз — снять выбор">${L}</div>`).join("")}</div></div>
         <div class="cfgitem"><p class="lbl">Сколько занимает</p>${ddMinsHTML(it)}</div>`
         : `<div class="cfgitem">${whenFieldsHTML(it, ids.date, ids.time)}</div>`}
       <div class="cfgitem"><p class="lbl">Вид дела</p>${ddTypeHTML(it)}</div>
@@ -4076,6 +4075,11 @@ document.addEventListener("click", e => {
     case "editstep": EDITSTEP = id + ":" + el.dataset.i; refreshEdit(id); break;
     case "delstep": if (it) { it.steps.splice(+el.dataset.i, 1);
                       EDITSTEP = null; save(); refreshEdit(id); } break;
+    /* Как у дней недели: повторное нажатие снимает выбор. Отдельная
+       кнопка «не важно» не нужна — «ничего не выбрано» и есть ответ. */
+    case "rpart":   if (it) { it.partOfDay = it.partOfDay === el.dataset.v
+                        ? null : el.dataset.v;
+                      save(); refreshEdit(id); } break;
     case "rday":    if (it) { const d = it.routine.days, i = d.indexOf(+el.dataset.i);
                       if (i >= 0) d.splice(i, 1); else d.push(+el.dataset.i);
                       save(); refreshEdit(id); } break;

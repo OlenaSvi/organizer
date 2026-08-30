@@ -18,8 +18,18 @@ clickOn({ act: "ecancel", id: t0.id }); closeModal();
 
 T.head("ВЫБОР СОХРАНЯЕТСЯ");
 openItem(r.id); clickOn({ act: "edit", id: r.id });
-clickOn({ act: "ddset", f: "partOfDay", id: r.id, v: "morning" });
+T.ok("часть дня набрана теми же плитками, что и дни недели",
+  /<div class="rt">[\s\S]{0,400}data-act="rpart"/.test(host.innerHTML));
+clickOn({ act: "rpart", id: r.id, v: "morning" });
 T.ok("часть дня записалась", r.partOfDay === "morning");
+T.ok("выбранная плитка подсвечена так же, как день недели",
+  /<div class="hit"[^>]*data-act="rpart"[^>]*data-v="morning"/
+    .test(host.innerHTML.replace(/\s+/g, " ")));
+clickOn({ act: "rpart", id: r.id, v: "morning" });
+T.ok("повторное нажатие снимает выбор — это и есть «не важно»", !r.partOfDay);
+T.ok("отдельной кнопки «не важно» больше нет", host.innerHTML.indexOf("не важно") < 0
+  || host.innerHTML.indexOf('data-f="partOfDay"') < 0);
+clickOn({ act: "rpart", id: r.id, v: "morning" });
 clickOn({ act: "dd", k: "mins:" + r.id });
 T.ok("список минут открылся", host.innerHTML.indexOf('data-f="mins"') >= 0);
 /* Самая короткая рутина — тоже рутина: «выпить таблетку» занимает минуту. */
