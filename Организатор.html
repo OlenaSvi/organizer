@@ -3153,6 +3153,17 @@ function ddTypeHTML(it) {
    соседней датой сама, потому что кнопка ровно та же.               */
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
 const MINS5 = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
+/* Плитки дней недели — одна разметка на все четыре места, где они
+   встречаются: форма рутины, форма встречи по расписанию и оба окна
+   просмотра. Раньше это были четыре копии, и одна успела разойтись —
+   показывала неделю с воскресенья вопреки настройке.               */
+function daysRowHTML(days, editId) {
+  return `<div class="rt">${wdOrder().map(d =>
+    `<div class="${(days || []).indexOf(d) >= 0 ? "hit" : ""}"${editId
+      ? ` data-act="rday" data-id="${editId}" data-i="${d}" style="cursor:pointer"` : ""
+      }>${WD_BY_DAY[d]}</div>`).join("")}</div>`;
+}
+
 function ddTimeHTML(it) {
   const cur = it.time || "";
   const part = (key, list, val, ph, f) => `<span class="ddwrap" data-ddwrap
@@ -3297,7 +3308,6 @@ function openDone(id, when) {
   if (!it) return;
   const rout = isRoutine(it);
   const hasSteps = it.multi && it.steps.length;
-  const D = ["вс","пн","вт","ср","чт","пт","сб"];
   openModal(`<h3>${kindIcon(it)}${esc(it.title)}</h3>
     <p class="qs" style="margin:-10px 0 16px">${rout ? "Отмечено"
       : isAppt(it) ? "Состоялась" : "Сделано"}:
@@ -3311,9 +3321,8 @@ function openDone(id, when) {
         it.time ? " " + esc(it.time) : ""}</span>` : ""}
     </div>
 
-    ${rout && it.routine ? `<p class="lbl">Расписание</p>
-      <div class="rt">${D.map((d, i) =>
-        `<div class="${it.routine.days.indexOf(i) >= 0 ? "hit" : ""}">${d}</div>`).join("")}</div>
+    ${rout && it.routine ? `<p class="lbl">В какие дни</p>
+      ${daysRowHTML(it.routine.days)}
       <p class="qs" style="margin:-4px 0 16px">Сделано ${routineScore(it).hit}
         из ${routineScore(it).of} за последнюю неделю.</p>` : ""}
 
@@ -3510,7 +3519,6 @@ const refreshEdit = id => {
    различаются только заполненность и кнопки внизу. Раньше формы жили
    отдельно и успели разъехаться.                                     */
 function itemFormHTML(it, ids) {
-  const D = ["вс","пн","вт","ср","чт","пт","сб"];
   /* Шаги видны сразу: разбить дело на шаги — обычное решение, ради него
      не нужно лишнее нажатие. Заметка и варианты нужны реже, поэтому
      свёрнуты и раскрываются кнопкой (или сами, если уже заполнены).  */
@@ -3554,10 +3562,11 @@ function itemFormHTML(it, ids) {
   const kindItem = `<div class="cfgitem"><p class="lbl">Вид дела</p>${ddTypeHTML(it)}</div>`;
   /* Плитки дней — общие для рутины и для встречи по расписанию:
      сами дни живут в разных полях, разбирается schedDays.           */
-  const daysItem = days => `<div class="cfgitem"><p class="lbl">В какие дни</p>
-      <div class="rt">${wdOrder().map(d =>
-        `<div class="${(days || []).indexOf(d) >= 0 ? "hit" : ""}" data-act="rday"
-          data-id="${it.id}" data-i="${d}" style="cursor:pointer">${WD_BY_DAY[d]}</div>`).join("")}</div></div>`;
+  /* Семь плиток — самый широкий элемент формы. В половине строки они
+     сжимались вдвое против того, как выглядят в просмотре; отсюда и
+     ощущение, что у рутины и у встречи разные дни. Своя строка. */
+  const daysItem = days => `<div class="cfgitem" style="grid-column:1/-1">
+      <p class="lbl">В какие дни</p>${daysRowHTML(days, it.id)}</div>`;
   /* Шаг в пять минут: иначе родной список браузера листается по минуте
      и найти в нём 18:00 — отдельное занятие.                        */
   const timeItem = `<div class="cfgitem"><p class="lbl">Время</p>${ddTimeHTML(it)}</div>`;
@@ -3568,8 +3577,9 @@ function itemFormHTML(it, ids) {
         `<button data-act="arepeat" data-id="${it.id}" data-v="${k}"
           class="${(it.repeat ? "days" : "once") === k ? "on" : ""}">${L}</button>`).join("")}</div></div>`;
   const cells = isRoutine(it)
-    ? daysItem(it.routine && it.routine.days) + kindItem + partItem
+    ? daysItem(it.routine && it.routine.days) + partItem
       + `<div class="cfgitem"><p class="lbl">Сколько занимает</p>${ddMinsHTML(it)}</div>`
+      + kindItem
     : isAppt(it)
       ? whenItem + kindItem + (it.repeat
           ? daysItem(it.repeat.days) + timeItem
@@ -3626,7 +3636,6 @@ function openCapture(preset) {
 function drawCapture() {
   const it = S.items.find(x => x.id === draftId);
   if (!it) return closeModal();
-  const D = ["вс","пн","вт","ср","чт","пт","сб"];
   const chips = (list, act, cur, lbl) => `<p class="lbl">${lbl}</p><div class="chips">${
     list.map(v => `<button class="chip ${cur(v) ? "on" : ""}" data-act="${act}"
       data-id="${it.id}" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div>`;
@@ -3861,7 +3870,6 @@ function openItem(id) {
   const it = S.items.find(x => x.id === id); if (!it) return;
   if (it.draft) return drawCapture();
   if (it.done) return openDone(id, it.doneAt);
-  const D = ["вс","пн","вт","ср","чт","пт","сб"];
   const doneSteps = (it.steps || []).filter(s => s.done).length;
   /* Детали дела: шаги, варианты, расписание рутины, заметка. Собираем
      заранее — если их нет, разделитель не рисуем вовсе, иначе окно
@@ -3881,16 +3889,14 @@ function openItem(id) {
       const last = hist[hist.length - 1];
       const n = hist.length;
       return `<p class="lbl">В какие дни</p>
-      <div class="rt">${wdOrder().map(d =>
-        `<div class="${it.repeat.days.indexOf(d) >= 0 ? "hit" : ""}">${WD_BY_DAY[d]}</div>`).join("")}</div>
+      ${daysRowHTML(it.repeat.days)}
       <p class="qs" style="margin:11px 0 0">${n
         ? `Состоялась ${n} ${plural(n, "раз", "раза", "раз")}, последний раз — ${formatDay(last)}`
         : "Пока не состоялась ни разу"}. Повторяется бессрочно, пока не удалите.</p>`; })() : "")
     + (isRoutine(it) && it.routine ? (() => { const wi = weekInfo(it), mo = monthInfo(it);
       const over = n => n ? ` · +${n} сверх расписания` : "";
       return `<p class="lbl">В какие дни</p>
-      <div class="rt">${wdOrder().map(k =>
-        `<div class="${it.routine.days.indexOf(k) >= 0 ? "hit" : ""}">${WD_BY_DAY[k]}</div>`).join("")}</div>
+      ${daysRowHTML(it.routine.days)}
       ${it.partOfDay || it.mins ? `<p class="qs" style="margin:11px 0 0">${
         [partName(it.partOfDay), minsLabel(it.mins)].filter(Boolean).join(" · ")}</p>` : ""}
       <p class="qs" style="margin:12px 0 4px">На этой неделе: <b style="color:var(--good)">${
@@ -3934,7 +3940,6 @@ function openEdit(id) {
     editBackup = JSON.parse(JSON.stringify(it));
     formOpen = { notes: false, options: false };
   }
-  const D = ["вс","пн","вт","ср","чт","пт","сб"];
   openModal(`<h3>${esc(it.title)}</h3>
     <input type="text" id="edTitle" value="${esc(it.title)}">
 

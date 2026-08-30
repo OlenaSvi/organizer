@@ -20,8 +20,8 @@ T.head("ВЫБОР СОХРАНЯЕТСЯ");
 openItem(r.id); clickOn({ act: "edit", id: r.id });
 T.ok("часть дня — тот же переключатель, что в настройках",
   /<div class="seg"[^>]*>[\s\S]{0,400}data-act="rpart"/.test(host.innerHTML));
-T.ok("переключатель стоит в своей половине строки, рядом с днями",
-  host.innerHTML.indexOf("grid-column:1/-1") < 0);
+T.ok("переключатель стоит в своей половине строки",
+  !/grid-column:1\/-1[^>]*>\s*<p class="lbl">Часть дня/.test(host.innerHTML));
 clickOn({ act: "rpart", id: r.id, v: "morning" });
 T.ok("часть дня записалась", r.partOfDay === "morning");
 T.ok("выбранное подсвечено", /data-v="morning"[^>]*class="on"|class="on"[^>]*data-v="morning"/
@@ -132,6 +132,58 @@ T.ok("названо отдельно", vis.indexOf("сверх расписан
 m = /За 4 недели: (\d+) из (\d+)/.exec(vis);
 T.ok("долю не портит", m && +m[1] === 1 && +m[2] === 4, m ? m[1] + "/" + m[2] : "—");
 closeModal();
+T.reset();
+
+T.head("ПЛИТКИ ДНЕЙ ВЕЗДЕ ОДИНАКОВЫЕ");
+/* Разметка была скопирована в четыре места и успела разойтись: в окне
+   архива неделя начиналась с воскресенья вопреки настройке. */
+T.reset();
+S.cfg.weekStart = 1;
+var rr = live().filter(isRoutine)[0];
+rr.routine.days = [1, 3, 5];
+rr.routine.history = [today()];
+
+function firstDay(html) {
+  var m = /<div class="rt">\s*<div[^>]*>([^<]+)</.exec(html);
+  return m ? m[1].trim() : "—";
+}
+function tiles(html) {
+  var box = /<div class="rt">([\s\S]*?)<\/div>\s*<\/div>/.exec(html);
+  var out = [], m, re = /<div[^>]*>([а-я]{2})</g;
+  if (!box) return out;
+  while ((m = re.exec(box[1]))) out.push(m[1]);
+  return out;
+}
+
+openItem(rr.id);
+var viewDays = tiles(host.innerHTML);
+T.ok("в просмотре неделя с понедельника", firstDay(host.innerHTML) === "пн",
+  viewDays.join(" "));
+closeModal();
+
+openItem(rr.id); clickOn({ act: "edit", id: rr.id });
+T.ok("в форме тот же порядок", firstDay(host.innerHTML) === "пн");
+T.ok("и та же подпись", host.innerHTML.indexOf("В какие дни") >= 0);
+T.ok("блок дней занимает всю ширину строки",
+  /grid-column:1\/-1[^>]*>\s*<p class="lbl">В какие дни/.test(host.innerHTML));
+clickOn({ act: "ecancel", id: rr.id }); closeModal();
+
+clickOn({ act: "opendone", id: rr.id, when: today() });
+T.ok("в окне архива неделя тоже с понедельника",
+  firstDay(host.innerHTML) === "пн", tiles(host.innerHTML).join(" "));
+T.ok("и подпись та же, а не «Расписание»",
+  host.innerHTML.indexOf("В какие дни") >= 0 && host.innerHTML.indexOf("Расписание") < 0);
+closeModal();
+
+S.cfg.weekStart = 0;
+openItem(rr.id);
+T.ok("с воскресеньем в настройках — везде воскресенье",
+  firstDay(host.innerHTML) === "вс");
+closeModal();
+clickOn({ act: "opendone", id: rr.id, when: today() });
+T.ok("в архиве тоже", firstDay(host.innerHTML) === "вс");
+closeModal();
+S.cfg.weekStart = 1;
 T.reset();
 
 T.done();
