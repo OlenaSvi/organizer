@@ -22,6 +22,10 @@ clickOn({ act: "ddset", f: "partOfDay", id: r.id, v: "morning" });
 T.ok("часть дня записалась", r.partOfDay === "morning");
 clickOn({ act: "dd", k: "mins:" + r.id });
 T.ok("список минут открылся", host.innerHTML.indexOf('data-f="mins"') >= 0);
+/* Самая короткая рутина — тоже рутина: «выпить таблетку» занимает минуту. */
+T.ok("одна минута есть в списке",
+  /data-f="mins"[^>]*data-v="1"[^>]*>\s*<span>1 мин<\/span>/
+    .test(host.innerHTML.replace(/\s+/g, " ")));
 clickOn({ act: "ddset", f: "mins", id: r.id, v: "10" });
 T.ok("минуты записались числом, а не строкой", r.mins === 10);
 clickOn({ act: "esave", id: r.id }); closeModal();
