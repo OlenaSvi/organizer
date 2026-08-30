@@ -77,7 +77,22 @@ const isIdea    = it => kindOf(it) === "idea";
 /* Встреча на сегодня — не выбор, а факт дня: она уже назначена.
    Поэтому попадает в «Мой день» сама, а в предложениях встреч нет
    вовсе — предлагать прийти к врачу в другой день бессмысленно.    */
-const isTodayAppt = it => isAppt(it) && it.due === today();
+/* Встреча по расписанию: сессия у психолога дважды в неделю. Своё поле
+   repeat, а не routine, хотя дни недели устроены одинаково: смысл разный.
+   Пропуск рутины не страшен — так задумано. Пропуск встречи страшен:
+   там время, другой человек и договорённость. Поэтому у встречи нет ни
+   счёта «сделано из запланированного», ни разговоров про долю.
+   Повторяется бессрочно, пока её не удалят: срока окончания нет.     */
+const repeats = it => !!(it.repeat && (it.repeat.days || []).length);
+const repeatOn = (it, d) => repeats(it)
+  && it.repeat.days.indexOf(new Date(d + "T12:00:00").getDay()) >= 0
+  && (!it.created || d >= it.created);
+const repeatDone = (it, d) => !!(it.repeat && it.repeat.history.indexOf(d) >= 0);
+/* Дни расписания живут в разных полях у рутины и у встречи. */
+const schedDays = it => isRoutine(it) ? (it.routine && it.routine.days)
+  : (it.repeat && it.repeat.days);
+
+const isTodayAppt = it => isAppt(it) && (it.due === today() || repeatOn(it, today()));
 /* Сортировка по сроку: у встреч учитываем ещё и время внутри дня. */
 const sortKey = i => (i.due || "9999") + "T" + (i.time || "23:59");
 
@@ -534,6 +549,9 @@ function normalizeItems() {
     if (!i.done && isAppt(i) && i.due && i.due < today() && i.autoDone !== i.due) {
       i.done = true; i.doneAt = i.due; i.autoDone = i.due; touched = true;
     }
+    /* Расписание и одна дата — взаимоисключающие ответы на «когда».
+       Оставь обе, и встреча стояла бы и по расписанию, и в свою дату. */
+    if (repeats(i) && i.due) { i.due = null; touched = true; }
     /* Остаток убранной кнопки «завтра»: выбор на будущее число больше
        не существует — список каждого дня собирается в этот день.    */
     if (i.today && i.today > today()) { i.today = null; touched = true; }

@@ -590,7 +590,25 @@ function whenFieldsHTML(it, dateId, timeId) {
   if (isIdea(it)) return `<p class="qs" style="margin:4px 0 14px">У идеи нет срока —
     она ничего не требует и сама в «Сегодня» не просится.
     Захотите взяться — добавьте её туда вручную или смените вид.</p>`;
-  if (isAppt(it)) return `<p class="lbl">Дата и время</p>
+  if (isAppt(it)) {
+    /* Одна дата или расписание — два ответа на «когда», не два поля.
+       Сессия у психолога по вторникам и четвергам не имеет одной даты. */
+    const sw = `<div class="seg" style="margin-bottom:10px">${
+      [["once", "Одна дата"], ["days", "По расписанию"]].map(([k, L]) =>
+        `<button data-act="arepeat" data-id="${it.id}" data-v="${k}"
+          class="${(repeats(it) || (it.repeat && k === "days")) === (k === "days")
+            ? "on" : ""}">${L}</button>`).join("")}</div>`;
+    if (it.repeat) return `<p class="lbl">Когда</p>${sw}
+      <p class="lbl">В какие дни</p>
+      <div class="rt">${wdOrder().map(d =>
+        `<div class="${(it.repeat.days || []).indexOf(d) >= 0 ? "hit" : ""}"
+          data-act="rday" data-id="${it.id}" data-i="${d}" style="cursor:pointer">${WD_BY_DAY[d]}</div>`).join("")}</div>
+      <p class="lbl">Время</p>
+      <input type="time" id="${timeId}" value="${it.time || ""}" style="${DATEBOX};width:130px">
+      <p class="qs" style="margin:8px 0 12px">Повторяется бессрочно, пока не удалите.
+        Каждый раз отмечается отдельно — запись не закрывается.</p>`;
+    return `<p class="lbl">Когда</p>${sw}
+    <p class="lbl">Дата и время</p>
     <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start">
       <div style="flex:1;min-width:0">${ddDueHTML(it)}</div>
       <input type="time" id="${timeId}" value="${it.time || ""}" style="${DATEBOX};width:130px;margin-bottom:0">
@@ -598,6 +616,7 @@ function whenFieldsHTML(it, dateId, timeId) {
     <p class="qs" style="margin:-4px 0 12px">${it.due === today()
       ? "Встреча сегодня — поэтому она стоит в дне и убрать её оттуда нельзя. Смените дату, и она уйдёт сама."
       : "Время видно в списках: «завтра в 14:30»."}</p>`;
+  }
   return `<p class="lbl">Дедлайн</p><div style="margin-bottom:12px">${ddDueHTML(it)}</div>`;
 }
 
@@ -721,6 +740,19 @@ function openItem(id) {
         esc(st.text)}</span></div>`).join("")}</div>` : "")
     + ((isChoice(it) || isIdea(it)) && (it.options || []).length ? `<p class="lbl">Варианты</p>
       <div>${it.options.map(o => `<div class="opt">· ${linkify(o.text)}</div>`).join("")}</div>` : "")
+    /* У встречи по расписанию нет ни доли, ни тепловой карты: пропуск
+       встречи — не статистика, а отдельное событие. Достаточно дней,
+       времени и того, сколько раз она уже состоялась.               */
+    + (isAppt(it) && repeats(it) ? (() => {
+      const hist = (it.repeat.history || []).slice().sort();
+      const last = hist[hist.length - 1];
+      const n = hist.length;
+      return `<p class="lbl">В какие дни</p>
+      <div class="rt">${wdOrder().map(d =>
+        `<div class="${it.repeat.days.indexOf(d) >= 0 ? "hit" : ""}">${WD_BY_DAY[d]}</div>`).join("")}</div>
+      <p class="qs" style="margin:11px 0 0">${n
+        ? `Состоялась ${n} ${plural(n, "раз", "раза", "раз")}, последний раз — ${formatDay(last)}`
+        : "Пока не состоялась ни разу"}. Повторяется бессрочно, пока не удалите.</p>`; })() : "")
     + (isRoutine(it) && it.routine ? (() => { const wi = weekInfo(it), mo = monthInfo(it);
       const over = n => n ? ` · +${n} сверх расписания` : "";
       return `<p class="lbl">В какие дни</p>

@@ -171,12 +171,12 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
   flex:0 0 auto;margin-top:1px;transition:.15s;position:relative;
   display:inline-flex;align-items:center;justify-content:center;padding:0}
 .tick:hover{border-color:var(--accent);background:var(--accent-soft)}
-.card.done .tick,.doneline .tick,.rline.done .tick{background:var(--accent);
+.card.done .tick,.doneline .tick,.rline.done .tick,.aline.done .tick{background:var(--accent);
   border-color:var(--accent)}
 /* Галочка центрируется от середины кружка, а не жёсткими пикселями:
    кружки бывают 19, 20 и 22px, и на мелких она съезжала. Сдвиг по
    вертикали -58%: у «птички» визуальный центр выше геометрического. */
-.card.done .tick::after,.doneline .tick::after,.rline.done .tick::after{
+.card.done .tick::after,.doneline .tick::after,.rline.done .tick::after,.aline.done .tick::after{
   content:"";position:absolute;left:50%;top:50%;width:5px;height:9px;
   border:solid #fff;border-width:0 2px 2px 0;
   transform:translate(-50%,-58%) rotate(45deg)}
@@ -600,6 +600,8 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .ameta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;padding-left:62px}
 .aline .rname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .aline:hover{background:var(--hover)}
+.aline.done{opacity:.6}
+.aline.done .rname{text-decoration:line-through;color:var(--faint)}
 .aline .tick{width:20px;height:20px;margin:0}
 .atime{font-weight:700;font-size:13px;color:var(--accent);min-width:52px;
   background:var(--accent-soft);border-radius:6px;text-align:center;padding:3px 0;
@@ -942,7 +944,22 @@ const isIdea    = it => kindOf(it) === "idea";
 /* Встреча на сегодня — не выбор, а факт дня: она уже назначена.
    Поэтому попадает в «Мой день» сама, а в предложениях встреч нет
    вовсе — предлагать прийти к врачу в другой день бессмысленно.    */
-const isTodayAppt = it => isAppt(it) && it.due === today();
+/* Встреча по расписанию: сессия у психолога дважды в неделю. Своё поле
+   repeat, а не routine, хотя дни недели устроены одинаково: смысл разный.
+   Пропуск рутины не страшен — так задумано. Пропуск встречи страшен:
+   там время, другой человек и договорённость. Поэтому у встречи нет ни
+   счёта «сделано из запланированного», ни разговоров про долю.
+   Повторяется бессрочно, пока её не удалят: срока окончания нет.     */
+const repeats = it => !!(it.repeat && (it.repeat.days || []).length);
+const repeatOn = (it, d) => repeats(it)
+  && it.repeat.days.indexOf(new Date(d + "T12:00:00").getDay()) >= 0
+  && (!it.created || d >= it.created);
+const repeatDone = (it, d) => !!(it.repeat && it.repeat.history.indexOf(d) >= 0);
+/* Дни расписания живут в разных полях у рутины и у встречи. */
+const schedDays = it => isRoutine(it) ? (it.routine && it.routine.days)
+  : (it.repeat && it.repeat.days);
+
+const isTodayAppt = it => isAppt(it) && (it.due === today() || repeatOn(it, today()));
 /* Сортировка по сроку: у встреч учитываем ещё и время внутри дня. */
 const sortKey = i => (i.due || "9999") + "T" + (i.time || "23:59");
 
@@ -1399,6 +1416,9 @@ function normalizeItems() {
     if (!i.done && isAppt(i) && i.due && i.due < today() && i.autoDone !== i.due) {
       i.done = true; i.doneAt = i.due; i.autoDone = i.due; touched = true;
     }
+    /* Расписание и одна дата — взаимоисключающие ответы на «когда».
+       Оставь обе, и встреча стояла бы и по расписанию, и в свою дату. */
+    if (repeats(i) && i.due) { i.due = null; touched = true; }
     /* Остаток убранной кнопки «завтра»: выбор на будущее число больше
        не существует — список каждого дня собирается в этот день.    */
     if (i.today && i.today > today()) { i.today = null; touched = true; }
@@ -1528,6 +1548,10 @@ const colorOf = (axis, name) => {
    У встреч время идёт сразу после даты.                             */
 function dateLabel(it) {
   if (isRoutine(it)) return dueToday(it) ? "сегодня" : "";
+  /* У встречи по расписанию нет одной даты — «когда» отвечает само
+     расписание. Формулировка всё равно одна и живёт здесь.          */
+  if (repeats(it)) return "по " + wdOrder().filter(d => it.repeat.days.indexOf(d) >= 0)
+    .map(d => WD_BY_DAY[d]).join(", ") + (it.time ? " · " + esc(it.time) : "");
   const n = daysUntil(it.due);
   if (n === null) return "";
   const clock = it.time ? " " + esc(it.time) : "";
@@ -1966,7 +1990,11 @@ function apptRowHTML(i) {
   /* Колонка узкая: время и название — верхней строкой, метки — нижней.
      В одну линию они наезжали друг на друга.                        */
   const tags = sphereTags(i) + (i.place ? placeTag(i.place) : "");
-  return `<div class="aline">
+  /* Разовая встреча после галочки уходит из панели сама. Повторяющаяся
+     остаётся — значит, обязана выглядеть отмеченной, иначе кажется,
+     что галочка не сработала.                                       */
+  const done = repeatDone(i, today());
+  return `<div class="aline${done ? " done" : ""}">
     <button class="tick" data-act="toggle" data-id="${i.id}" title="Состоялась"></button>
     <div class="amain">
       <div class="atop">
@@ -2140,10 +2168,14 @@ function doneEntries() {
   const out = [];
   S.items.forEach(i => {
     if (i.draft) return;
+    /* byDay — отметка живёт в истории по дням: вернуть можно только
+       сегодняшнюю, потому что галочка работает с сегодняшним днём. */
     if (isRoutine(i) && i.routine) {
-      i.routine.history.forEach(d => out.push({ it: i, when: d, isRoutine: true }));
+      i.routine.history.forEach(d => out.push({ it: i, when: d, byDay: true }));
+    } else if (repeats(i)) {
+      i.repeat.history.forEach(d => out.push({ it: i, when: d, byDay: true }));
     } else if (i.done) {
-      out.push({ it: i, when: i.doneAt || null, isRoutine: false });
+      out.push({ it: i, when: i.doneAt || null, byDay: false });
     }
   });
   return out.sort((a, b) => String(b.when || "").localeCompare(String(a.when || "")));
@@ -2175,7 +2207,7 @@ function doneListHTML(q) {
   all.forEach(e => { if (days.indexOf(e.when) < 0) days.push(e.when); });
   const onDay = d => all.filter(e => e.when === d);
   return `${days.length ? days.slice(0, 40).map(d => `<div class="dayhead">${formatDay(d)}</div>` +
-        onDay(d).map(e => doneRow(e, d === today() || !e.isRoutine)).join("")).join("")
+        onDay(d).map(e => doneRow(e, d === today() || !e.byDay)).join("")).join("")
       : `<div class="empty" style="padding:30px 20px">Здесь появится всё, что вы отметите сделанным.</div>`}`;
 }
 
@@ -2220,7 +2252,8 @@ function calDays() {
 
 /* На день попадают встречи и дедлайны. Рутины сюда не попадают:
    у рутины нет конкретного дня, только расписание — её место в «Сегодня». */
-const calItems = iso => here().filter(i => !isRoutine(i) && i.due === iso)
+const calItems = iso => here().filter(i => !isRoutine(i)
+    && (i.due === iso || repeatOn(i, iso)))
   .sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
 
 function calTitle() {
@@ -3662,7 +3695,25 @@ function whenFieldsHTML(it, dateId, timeId) {
   if (isIdea(it)) return `<p class="qs" style="margin:4px 0 14px">У идеи нет срока —
     она ничего не требует и сама в «Сегодня» не просится.
     Захотите взяться — добавьте её туда вручную или смените вид.</p>`;
-  if (isAppt(it)) return `<p class="lbl">Дата и время</p>
+  if (isAppt(it)) {
+    /* Одна дата или расписание — два ответа на «когда», не два поля.
+       Сессия у психолога по вторникам и четвергам не имеет одной даты. */
+    const sw = `<div class="seg" style="margin-bottom:10px">${
+      [["once", "Одна дата"], ["days", "По расписанию"]].map(([k, L]) =>
+        `<button data-act="arepeat" data-id="${it.id}" data-v="${k}"
+          class="${(repeats(it) || (it.repeat && k === "days")) === (k === "days")
+            ? "on" : ""}">${L}</button>`).join("")}</div>`;
+    if (it.repeat) return `<p class="lbl">Когда</p>${sw}
+      <p class="lbl">В какие дни</p>
+      <div class="rt">${wdOrder().map(d =>
+        `<div class="${(it.repeat.days || []).indexOf(d) >= 0 ? "hit" : ""}"
+          data-act="rday" data-id="${it.id}" data-i="${d}" style="cursor:pointer">${WD_BY_DAY[d]}</div>`).join("")}</div>
+      <p class="lbl">Время</p>
+      <input type="time" id="${timeId}" value="${it.time || ""}" style="${DATEBOX};width:130px">
+      <p class="qs" style="margin:8px 0 12px">Повторяется бессрочно, пока не удалите.
+        Каждый раз отмечается отдельно — запись не закрывается.</p>`;
+    return `<p class="lbl">Когда</p>${sw}
+    <p class="lbl">Дата и время</p>
     <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start">
       <div style="flex:1;min-width:0">${ddDueHTML(it)}</div>
       <input type="time" id="${timeId}" value="${it.time || ""}" style="${DATEBOX};width:130px;margin-bottom:0">
@@ -3670,6 +3721,7 @@ function whenFieldsHTML(it, dateId, timeId) {
     <p class="qs" style="margin:-4px 0 12px">${it.due === today()
       ? "Встреча сегодня — поэтому она стоит в дне и убрать её оттуда нельзя. Смените дату, и она уйдёт сама."
       : "Время видно в списках: «завтра в 14:30»."}</p>`;
+  }
   return `<p class="lbl">Дедлайн</p><div style="margin-bottom:12px">${ddDueHTML(it)}</div>`;
 }
 
@@ -3793,6 +3845,19 @@ function openItem(id) {
         esc(st.text)}</span></div>`).join("")}</div>` : "")
     + ((isChoice(it) || isIdea(it)) && (it.options || []).length ? `<p class="lbl">Варианты</p>
       <div>${it.options.map(o => `<div class="opt">· ${linkify(o.text)}</div>`).join("")}</div>` : "")
+    /* У встречи по расписанию нет ни доли, ни тепловой карты: пропуск
+       встречи — не статистика, а отдельное событие. Достаточно дней,
+       времени и того, сколько раз она уже состоялась.               */
+    + (isAppt(it) && repeats(it) ? (() => {
+      const hist = (it.repeat.history || []).slice().sort();
+      const last = hist[hist.length - 1];
+      const n = hist.length;
+      return `<p class="lbl">В какие дни</p>
+      <div class="rt">${wdOrder().map(d =>
+        `<div class="${it.repeat.days.indexOf(d) >= 0 ? "hit" : ""}">${WD_BY_DAY[d]}</div>`).join("")}</div>
+      <p class="qs" style="margin:11px 0 0">${n
+        ? `Состоялась ${n} ${plural(n, "раз", "раза", "раз")}, последний раз — ${formatDay(last)}`
+        : "Пока не состоялась ни разу"}. Повторяется бессрочно, пока не удалите.</p>`; })() : "")
     + (isRoutine(it) && it.routine ? (() => { const wi = weekInfo(it), mo = monthInfo(it);
       const over = n => n ? ` · +${n} сверх расписания` : "";
       return `<p class="lbl">В какие дни</p>
@@ -3922,9 +3987,15 @@ function celebrate(it) {
 function toggleDone(id) {
   const it = S.items.find(x => x.id === id); if (!it) return;
   const was = isRoutine(it)
-    ? it.routine.history.indexOf(today()) >= 0 : !!it.done;
+    ? it.routine.history.indexOf(today()) >= 0
+    : repeats(it) ? repeatDone(it, today()) : !!it.done;
   if (isRoutine(it)) {
     const h = it.routine.history, i = h.indexOf(today());
+    if (i >= 0) h.splice(i, 1); else h.push(today());
+  } else if (repeats(it)) {
+    /* Встреча по расписанию не закрывается навсегда: отмечается день,
+       а сама запись живёт дальше — до следующего раза.              */
+    const h = it.repeat.history, i = h.indexOf(today());
     if (i >= 0) h.splice(i, 1); else h.push(today());
   } else if (nextStep(it)) {
     /* Закрытый шаг помнит свой день — он попадает в «сделанное» за
@@ -4094,9 +4165,16 @@ document.addEventListener("click", e => {
                       EDITSTEP = null; save(); refreshEdit(id); } break;
     /* Переключатель, а не набор плиток: выбрано всегда ровно одно, и
        «не важно» — такой же полноправный вариант, а не пустота.      */
+    /* Одна дата или расписание — взаимоисключающий выбор у встречи. */
+    case "arepeat": if (it) {
+                      if (el.dataset.v === "days") {
+                        if (!it.repeat) it.repeat = { days: [], history: [] };
+                        it.due = null;
+                      } else it.repeat = null;
+                      save(); refreshEdit(id); } break;
     case "rpart":   if (it) { it.partOfDay = el.dataset.v || null;
                       save(); refreshEdit(id); } break;
-    case "rday":    if (it) { const d = it.routine.days, i = d.indexOf(+el.dataset.i);
+    case "rday":    if (it) { const d = schedDays(it), i = d.indexOf(+el.dataset.i);
                       if (i >= 0) d.splice(i, 1); else d.push(+el.dataset.i);
                       save(); refreshEdit(id); } break;
     case "placeadd": addPlace(el); break;

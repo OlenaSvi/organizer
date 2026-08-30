@@ -35,9 +35,15 @@ function celebrate(it) {
 function toggleDone(id) {
   const it = S.items.find(x => x.id === id); if (!it) return;
   const was = isRoutine(it)
-    ? it.routine.history.indexOf(today()) >= 0 : !!it.done;
+    ? it.routine.history.indexOf(today()) >= 0
+    : repeats(it) ? repeatDone(it, today()) : !!it.done;
   if (isRoutine(it)) {
     const h = it.routine.history, i = h.indexOf(today());
+    if (i >= 0) h.splice(i, 1); else h.push(today());
+  } else if (repeats(it)) {
+    /* Встреча по расписанию не закрывается навсегда: отмечается день,
+       а сама запись живёт дальше — до следующего раза.              */
+    const h = it.repeat.history, i = h.indexOf(today());
     if (i >= 0) h.splice(i, 1); else h.push(today());
   } else if (nextStep(it)) {
     /* Закрытый шаг помнит свой день — он попадает в «сделанное» за
@@ -207,9 +213,16 @@ document.addEventListener("click", e => {
                       EDITSTEP = null; save(); refreshEdit(id); } break;
     /* Переключатель, а не набор плиток: выбрано всегда ровно одно, и
        «не важно» — такой же полноправный вариант, а не пустота.      */
+    /* Одна дата или расписание — взаимоисключающий выбор у встречи. */
+    case "arepeat": if (it) {
+                      if (el.dataset.v === "days") {
+                        if (!it.repeat) it.repeat = { days: [], history: [] };
+                        it.due = null;
+                      } else it.repeat = null;
+                      save(); refreshEdit(id); } break;
     case "rpart":   if (it) { it.partOfDay = el.dataset.v || null;
                       save(); refreshEdit(id); } break;
-    case "rday":    if (it) { const d = it.routine.days, i = d.indexOf(+el.dataset.i);
+    case "rday":    if (it) { const d = schedDays(it), i = d.indexOf(+el.dataset.i);
                       if (i >= 0) d.splice(i, 1); else d.push(+el.dataset.i);
                       save(); refreshEdit(id); } break;
     case "placeadd": addPlace(el); break;

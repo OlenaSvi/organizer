@@ -95,6 +95,10 @@ const colorOf = (axis, name) => {
    У встреч время идёт сразу после даты.                             */
 function dateLabel(it) {
   if (isRoutine(it)) return dueToday(it) ? "сегодня" : "";
+  /* У встречи по расписанию нет одной даты — «когда» отвечает само
+     расписание. Формулировка всё равно одна и живёт здесь.          */
+  if (repeats(it)) return "по " + wdOrder().filter(d => it.repeat.days.indexOf(d) >= 0)
+    .map(d => WD_BY_DAY[d]).join(", ") + (it.time ? " · " + esc(it.time) : "");
   const n = daysUntil(it.due);
   if (n === null) return "";
   const clock = it.time ? " " + esc(it.time) : "";
@@ -533,7 +537,11 @@ function apptRowHTML(i) {
   /* Колонка узкая: время и название — верхней строкой, метки — нижней.
      В одну линию они наезжали друг на друга.                        */
   const tags = sphereTags(i) + (i.place ? placeTag(i.place) : "");
-  return `<div class="aline">
+  /* Разовая встреча после галочки уходит из панели сама. Повторяющаяся
+     остаётся — значит, обязана выглядеть отмеченной, иначе кажется,
+     что галочка не сработала.                                       */
+  const done = repeatDone(i, today());
+  return `<div class="aline${done ? " done" : ""}">
     <button class="tick" data-act="toggle" data-id="${i.id}" title="Состоялась"></button>
     <div class="amain">
       <div class="atop">
@@ -707,10 +715,14 @@ function doneEntries() {
   const out = [];
   S.items.forEach(i => {
     if (i.draft) return;
+    /* byDay — отметка живёт в истории по дням: вернуть можно только
+       сегодняшнюю, потому что галочка работает с сегодняшним днём. */
     if (isRoutine(i) && i.routine) {
-      i.routine.history.forEach(d => out.push({ it: i, when: d, isRoutine: true }));
+      i.routine.history.forEach(d => out.push({ it: i, when: d, byDay: true }));
+    } else if (repeats(i)) {
+      i.repeat.history.forEach(d => out.push({ it: i, when: d, byDay: true }));
     } else if (i.done) {
-      out.push({ it: i, when: i.doneAt || null, isRoutine: false });
+      out.push({ it: i, when: i.doneAt || null, byDay: false });
     }
   });
   return out.sort((a, b) => String(b.when || "").localeCompare(String(a.when || "")));
@@ -742,7 +754,7 @@ function doneListHTML(q) {
   all.forEach(e => { if (days.indexOf(e.when) < 0) days.push(e.when); });
   const onDay = d => all.filter(e => e.when === d);
   return `${days.length ? days.slice(0, 40).map(d => `<div class="dayhead">${formatDay(d)}</div>` +
-        onDay(d).map(e => doneRow(e, d === today() || !e.isRoutine)).join("")).join("")
+        onDay(d).map(e => doneRow(e, d === today() || !e.byDay)).join("")).join("")
       : `<div class="empty" style="padding:30px 20px">Здесь появится всё, что вы отметите сделанным.</div>`}`;
 }
 
@@ -787,7 +799,8 @@ function calDays() {
 
 /* На день попадают встречи и дедлайны. Рутины сюда не попадают:
    у рутины нет конкретного дня, только расписание — её место в «Сегодня». */
-const calItems = iso => here().filter(i => !isRoutine(i) && i.due === iso)
+const calItems = iso => here().filter(i => !isRoutine(i)
+    && (i.due === iso || repeatOn(i, iso)))
   .sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
 
 function calTitle() {
