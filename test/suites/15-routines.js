@@ -1,6 +1,12 @@
 /* Рутина: сколько занимает, в какую часть дня — и как это видно
    в панели дня и в окне рутины. Плюс карта четырёх недель. */
 T.seed();
+var HCSS = (function () {
+  try { ObjC.import("Foundation");
+    return $.NSString.stringWithContentsOfFileEncodingError(
+      "Организатор.html", 4, null).js.replace(/\s+/g, " ");
+  } catch (e) { return ""; }
+})();
 var routs = live().filter(isRoutine);
 var r = routs[0], r2 = routs[1];
 
@@ -20,8 +26,13 @@ T.head("ВЫБОР СОХРАНЯЕТСЯ");
 openItem(r.id); clickOn({ act: "edit", id: r.id });
 T.ok("часть дня — тот же переключатель, что в настройках",
   /<div class="seg"[^>]*>[\s\S]{0,400}data-act="rpart"/.test(host.innerHTML));
-T.ok("переключатель стоит в своей половине строки",
-  !/grid-column:1\/-1[^>]*>\s*<p class="lbl">Часть дня/.test(host.innerHTML));
+/* Часть дня — последнее поле в сетке и потому занимает строку целиком:
+   рядом с ним не должно зиять пустой клетки. Сам переключатель при этом
+   не растягивается — у .seg подложка по размеру кнопок. */
+T.ok("переключателю отдана строка целиком, пустой клетки рядом нет",
+  /grid-column:1\/-1[^>]*>\s*<p class="lbl">Часть дня/.test(host.innerHTML));
+T.ok("но сам он остаётся по размеру кнопок",
+  /\.seg\{[^}]*width:fit-content/.test(HCSS || ""));
 clickOn({ act: "rpart", id: r.id, v: "morning" });
 T.ok("часть дня записалась", r.partOfDay === "morning");
 T.ok("выбранное подсвечено", /data-v="morning"[^>]*class="on"|class="on"[^>]*data-v="morning"/
@@ -89,12 +100,6 @@ closeModal();
 T.head("ПУСТЫЕ КЛЕТКИ ВИДНЫ");
 /* Дни до появления привычки и будущие рисуются бледно, а не прозрачно:
    у новой рутины три строки были невидимы и карта выглядела дырой. */
-var HCSS = (function () {
-  try { ObjC.import("Foundation");
-    return $.NSString.stringWithContentsOfFileEncodingError(
-      "Организатор.html", 4, null).js.replace(/\s+/g, " ");
-  } catch (e) { return ""; }
-})();
 T.ok("у пустой клетки есть фон",
   !/\.heat i\.gone\{[^}]*background:transparent/.test(HCSS),
   "иначе новая рутина показывает пустоту вместо карты");

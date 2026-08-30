@@ -446,52 +446,52 @@ function itemFormHTML(it, ids) {
     + (canOpts && !openOpts ? bOpts : "");
   const extra = opened + (folded ? `<div class="caprow">${folded}</div>` : "");
 
-  /* Четвёртый вариант — прочерк, а не «не важно»: так переключатель
-     помещается в свою половину строки и не двигает соседей. Смысл
-     держит подсказка при наведении.                                 */
-  const partItem = `<div class="cfgitem"><p class="lbl">Часть дня</p>
-      <div class="seg">${PARTS.concat([["", "—"]]).map(([k, L]) =>
-        `<button data-act="rpart" data-id="${it.id}" data-v="${k}"${
-          k ? "" : ` title="Часть дня не важна"`}
-          class="${(it.partOfDay || "") === k ? "on" : ""}">${L}</button>`).join("")}</div></div>`;
-  const kindItem = `<div class="cfgitem"><p class="lbl">Вид дела</p>${ddTypeHTML(it)}</div>`;
-  /* Плитки дней — общие для рутины и для встречи по расписанию:
-     сами дни живут в разных полях, разбирается schedDays.           */
+  /* Ячейки первой сетки. Порядок один на все виды: сначала «что это»,
+     потом «когда», потом всё остальное. Раньше «Вид дела» оказывался
+     то вторым, то четвёртым — в зависимости от вида дела, и форма
+     каждый раз выглядела по-новому.
+     Широкое (`wide`) занимает строку целиком: и потому что иначе не
+     помещается, и потому что при нечётном числе полей рядом с
+     последним зияла бы пустая клетка.                               */
+  const cell = (label, body, wide) => `<div class="cfgitem"${
+    wide ? ` style="grid-column:1/-1"` : ""}><p class="lbl">${label}</p>${body}</div>`;
+  const kindItem = cell("Вид дела", ddTypeHTML(it));
   /* Семь плиток — самый широкий элемент формы. В половине строки они
-     сжимались вдвое против того, как выглядят в просмотре; отсюда и
-     ощущение, что у рутины и у встречи разные дни. Своя строка. */
-  const daysItem = days => `<div class="cfgitem" style="grid-column:1/-1">
-      <p class="lbl">В какие дни</p>${daysRowHTML(days, it.id)}</div>`;
-  /* Шаг в пять минут: иначе родной список браузера листается по минуте
-     и найти в нём 18:00 — отдельное занятие.                        */
-  const timeItem = `<div class="cfgitem"><p class="lbl">Время</p>${ddTimeHTML(it)}</div>`;
+     сжимались вдвое против того, как выглядят в просмотре.          */
+  const daysItem = days => cell("В какие дни", daysRowHTML(days, it.id), true);
+  const partItem = cell("Часть дня",
+    `<div class="seg">${PARTS.concat([["", "—"]]).map(([k, L]) =>
+      `<button data-act="rpart" data-id="${it.id}" data-v="${k}"${
+        k ? "" : ` title="Часть дня не важна"`}
+        class="${(it.partOfDay || "") === k ? "on" : ""}">${L}</button>`).join("")}</div>`, true);
   /* Одна дата или расписание — два ответа на «когда», а не два поля.
      У сессии по вторникам и четвергам одной даты не существует.      */
-  const whenItem = `<div class="cfgitem"><p class="lbl">Когда</p>
-      <div class="seg">${[["once", "Одна дата"], ["days", "По расписанию"]].map(([k, L]) =>
-        `<button data-act="arepeat" data-id="${it.id}" data-v="${k}"
-          class="${(it.repeat ? "days" : "once") === k ? "on" : ""}">${L}</button>`).join("")}</div></div>`;
-  const cells = isRoutine(it)
-    ? daysItem(it.routine && it.routine.days) + partItem
-      + `<div class="cfgitem"><p class="lbl">Сколько занимает</p>${ddMinsHTML(it)}</div>`
-      + kindItem
+  const whenSwitch = cell("Когда",
+    `<div class="seg">${[["once", "Одна дата"], ["days", "По расписанию"]].map(([k, L]) =>
+      `<button data-act="arepeat" data-id="${it.id}" data-v="${k}"
+        class="${(it.repeat ? "days" : "once") === k ? "on" : ""}">${L}</button>`).join("")}</div>`);
+
+  const cells = kindItem + (
+    isRoutine(it)
+      ? cell("Сколько занимает", ddMinsHTML(it))
+        + daysItem(it.routine && it.routine.days) + partItem
     : isAppt(it)
-      ? whenItem + kindItem + (it.repeat
-          ? daysItem(it.repeat.days) + timeItem
+      ? whenSwitch + (it.repeat
+          ? daysItem(it.repeat.days) + cell("Время", ddTimeHTML(it), true)
           /* Дата, часы и минуты стоят в одну линию — втроём в половину
              строки они не помещаются: кнопка даты сжималась до одной
              буквы, а мини-календарь вылезал за край окна.          */
           : `<div class="cfgitem" style="grid-column:1/-1">${
               whenFieldsHTML(it, ids.date, ids.time)}</div>`)
-      : `<div class="cfgitem">${whenFieldsHTML(it, ids.date, ids.time)}</div>` + kindItem;
+      : `<div class="cfgitem">${whenFieldsHTML(it, ids.date, ids.time)}</div>`);
 
-  return `<div class="cfggrid" style="margin-bottom:4px">
+  return `<div class="cfggrid">
       ${cells}
     </div>
-    ${isAppt(it) && it.repeat ? `<p class="qs" style="margin:-8px 0 14px">Повторяется
+    ${isAppt(it) && it.repeat ? `<p class="qs" style="margin:-8px 0 16px">Повторяется
       бессрочно, пока не удалите. Каждый раз отмечается отдельно — запись не закрывается.</p>` : ""}
 
-    <p class="lbl" style="margin-top:18px">Сфера
+    <p class="lbl">Сфера
       <span class="qs" style="text-transform:none;letter-spacing:0;margin-left:8px">можно несколько</span></p>
     <div class="chips">${S.spheres.map(v =>
       `<button class="chip ${it.spheres.indexOf(v) >= 0 ? "on" : ""}" data-act="esphere"
@@ -647,7 +647,7 @@ const minDate = it => (it.due && it.due < today()) ? it.due : today();
 
 function whenFieldsHTML(it, dateId, timeId) {
   if (isRoutine(it)) return "";
-  if (isIdea(it)) return `<p class="qs" style="margin:4px 0 14px">У идеи нет срока —
+  if (isIdea(it)) return `<p class="qs" style="margin:22px 0 0">У идеи нет срока —
     она ничего не требует и сама в «Сегодня» не просится.
     Захотите взяться — добавьте её туда вручную или смените вид.</p>`;
   if (isAppt(it)) return `<p class="lbl">Дата и время</p>
@@ -658,7 +658,7 @@ function whenFieldsHTML(it, dateId, timeId) {
     <p class="qs" style="margin:8px 0 0">${it.due === today()
       ? "Встреча сегодня — поэтому она стоит в дне и убрать её оттуда нельзя. Смените дату, и она уйдёт сама."
       : "Время видно в списках: «завтра в 14:30»."}</p>`;
-  return `<p class="lbl">Дедлайн</p><div style="margin-bottom:12px">${ddDueHTML(it)}</div>`;
+  return `<p class="lbl">Дедлайн</p>${ddDueHTML(it)}`;
 }
 
 function wireWhen(id, dateId, timeId, after) {
