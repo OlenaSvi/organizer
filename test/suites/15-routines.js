@@ -79,10 +79,26 @@ T.ok("видно длительность", vis.indexOf("10 мин") >= 0);
 
 T.head("КАРТА ЧЕТЫРЁХ НЕДЕЛЬ");
 T.ok("карта есть", host.innerHTML.indexOf('class="heat"') >= 0);
+T.ok("сегодняшняя клетка помечена",
+  (host.innerHTML.match(/class="hc[^"]*\bnow\b/g) || []).length === 1);
 T.ok("в ней 28 клеток",
   (host.innerHTML.match(/class="hc[ "]/g) || []).length === 28,
   String((host.innerHTML.match(/class="hc[ "]/g) || []).length));
 closeModal();
+
+T.head("ПУСТЫЕ КЛЕТКИ ВИДНЫ");
+/* Дни до появления привычки и будущие рисуются бледно, а не прозрачно:
+   у новой рутины три строки были невидимы и карта выглядела дырой. */
+var HCSS = (function () {
+  try { ObjC.import("Foundation");
+    return $.NSString.stringWithContentsOfFileEncodingError(
+      "Организатор.html", 4, null).js.replace(/\s+/g, " ");
+  } catch (e) { return ""; }
+})();
+T.ok("у пустой клетки есть фон",
+  !/\.heat i\.gone\{[^}]*background:transparent/.test(HCSS),
+  "иначе новая рутина показывает пустоту вместо карты");
+T.ok("сегодня выделено в стилях", /\.heat i\.now\{/.test(HCSS));
 
 T.head("ДОЛЯ СЧИТАЕТСЯ ЧЕСТНО");
 r.created = addDays(today(), -60);

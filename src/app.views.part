@@ -347,9 +347,12 @@ function heatHTML(mo) {
       const st = c.future || c.young ? "gone"
         : c.done ? (c.sched ? "done" : "extra")
         : c.sched ? "miss" : "off";
-      return `<i class="hc ${st}" title="${esc(formatDay(c.d) + " — " + (
-        st === "done" ? "сделано" : st === "extra" ? "сделано сверх расписания"
-        : st === "miss" ? "не отмечено (и это не страшно)" : "не по расписанию"))}"></i>`;
+      const why = st === "done" ? "сделано"
+        : st === "extra" ? "сделано сверх расписания"
+        : st === "miss" ? "не отмечено (и это не страшно)"
+        : c.young ? "рутины ещё не было" : c.future ? "ещё впереди" : "не по расписанию";
+      return `<i class="hc ${st}${c.d === today() ? " now" : ""}"
+        title="${esc(formatDay(c.d) + " — " + why)}"></i>`;
     }).join("")).join("")}</div></div>`;
 }
 const weekDotsHTML = it => `<div class="rdots"

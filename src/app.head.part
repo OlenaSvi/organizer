@@ -542,9 +542,16 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .heat i{width:100%;aspect-ratio:1;border-radius:4px;display:block;background:var(--dot-off)}
 .heat i.done{background:var(--accent)}
 .heat i.extra{background:var(--accent);opacity:.5}
+/* Запланировано и не отмечено — пустая клетка в рамке. Не красная:
+   это отсутствие события, а не провинность.                         */
 .heat i.miss{background:transparent;box-shadow:inset 0 0 0 1px var(--line)}
-.heat i.off{background:var(--dot-off);opacity:.5}
-.heat i.gone{background:transparent}
+/* «Ничего и не ждали» — не по расписанию, ещё впереди, рутины тогда не
+   было. Все три бледные и одинаковые: разница не про действие. Но НЕ
+   прозрачные — иначе у новой рутины три строки исчезали и карта
+   выглядела дырой в окне.                                           */
+.heat i.off,.heat i.gone{background:var(--dot-off);opacity:.4}
+/* Сегодня обведено: иначе в двадцати восьми клетках не за что зацепиться. */
+.heat i.now{outline:1.5px solid var(--accent);outline-offset:1.5px}
 .btn.ghost:hover{color:var(--ink)}
 
 /* рутина: буквы недели один раз сверху, под каждой — точки дней */
