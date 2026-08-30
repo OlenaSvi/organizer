@@ -793,6 +793,15 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 /* У правой колонки панель прижимается к правому краю, чтобы не уезжать
    за границу окна.                                                  */
 .cfgitem:last-child .dd.inline{left:auto;right:0}
+/* Поле во всю ширину строки. Список раскрывается от ЛЕВОГО края такого
+   поля: прижатый вправо, он висел посреди широкой кнопки и выглядел
+   съехавшим.                                                        */
+.cfgitem.wide{grid-column:1/-1}
+.cfgitem.wide .dd.inline{left:0;right:auto}
+/* Переключатель ровно той же высоты, что соседнее поле: 44 против 38
+   читались как разъехавшаяся строка.                                */
+.cfgitem .seg{height:44px;align-items:center}
+.cfgitem .seg button{height:38px}
 .ddbtn.wide{min-width:190px}
 .ddbtn:hover{border-color:var(--accent)}
 .ddbtn.dim>span{color:var(--dim)}

@@ -30,7 +30,7 @@ T.ok("часть дня — тот же переключатель, что в н
    рядом с ним не должно зиять пустой клетки. Сам переключатель при этом
    не растягивается — у .seg подложка по размеру кнопок. */
 T.ok("переключателю отдана строка целиком, пустой клетки рядом нет",
-  /grid-column:1\/-1[^>]*>\s*<p class="lbl">Часть дня/.test(host.innerHTML));
+  /class="cfgitem wide"[^>]*>\s*<p class="lbl">Часть дня/.test(host.innerHTML));
 T.ok("но сам он остаётся по размеру кнопок",
   /\.seg\{[^}]*width:fit-content/.test(HCSS || ""));
 clickOn({ act: "rpart", id: r.id, v: "morning" });
@@ -170,7 +170,7 @@ openItem(rr.id); clickOn({ act: "edit", id: rr.id });
 T.ok("в форме тот же порядок", firstDay(host.innerHTML) === "пн");
 T.ok("и та же подпись", host.innerHTML.indexOf("В какие дни") >= 0);
 T.ok("блок дней занимает всю ширину строки",
-  /grid-column:1\/-1[^>]*>\s*<p class="lbl">В какие дни/.test(host.innerHTML));
+  /class="cfgitem wide"[^>]*>\s*<p class="lbl">В какие дни/.test(host.innerHTML));
 clickOn({ act: "ecancel", id: rr.id }); closeModal();
 
 clickOn({ act: "opendone", id: rr.id, when: today() });

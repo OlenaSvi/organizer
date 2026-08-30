@@ -54,7 +54,7 @@ function gridCells(html) {
 }
 function fullCells(html) {
   var g = /<div class="cfggrid"[^>]*>([\s\S]*?)<p class="lbl"[^>]*>\s*Сфера/.exec(html);
-  return g ? (g[1].match(/grid-column:1\/-1/g) || []).length : -1;
+  return g ? (g[1].match(/class="cfgitem wide"/g) || []).length : -1;
 }
 [[T.routine(), "рутина"], [ap, "встреча по расписанию"],
  [T.tasks()[0], "обычное дело"], [live().find(isIdea), "идея"]].forEach(function (p) {
@@ -66,5 +66,28 @@ function fullCells(html) {
 });
 ap.repeat = null;
 T.reset();
+
+T.head("СОСЕДИ В СТРОКЕ ОДНОЙ ВЫСОТЫ");
+var FCSS = (function () {
+  try { ObjC.import("Foundation");
+    return $.NSString.stringWithContentsOfFileEncodingError(
+      "Организатор.html", 4, null).js.replace(/\s+/g, " ");
+  } catch (e) { return ""; }
+})();
+T.ok("переключатель подогнан под высоту поля",
+  /\.cfgitem \.seg\{[^}]*height:44px/.test(FCSS)
+  && /\.ddbtn\{[^}]*height:44px/.test(FCSS),
+  "иначе строка «Вид дела · Когда» выглядит разъехавшейся");
+T.ok("широкое поле раскрывает список от своего левого края",
+  /\.cfgitem\.wide \.dd\.inline\{[^}]*left:0/.test(FCSS),
+  "прижатый вправо, список висел посреди широкой кнопки");
+
+T.head("ПОДСКАЗКА У ИДЕИ НЕ ЗАСЛОНЯЕТ ПОЛЕ");
+var idea = live().find(isIdea);
+openItem(idea.id); clickOn({ act: "edit", id: idea.id });
+var hint = /class="qs"[^>]*>([\s\S]*?)<\/p>/.exec(host.innerHTML);
+T.ok("подсказка короткая", hint && hint[1].replace(/\s+/g, " ").trim().length < 110,
+  hint ? String(hint[1].replace(/\s+/g, " ").trim().length) + " знаков" : "нет");
+clickOn({ act: "ecancel", id: idea.id }); closeModal();
 
 T.done();

@@ -30,12 +30,12 @@ T.ok("и это «По расписанию»",
 T.ok("одной даты больше нет", a.due === null);
 T.ok("появились плитки дней", host.innerHTML.indexOf('data-act="rday"') >= 0);
 T.ok("у времени своя ячейка сетки, рядом с днями",
-  /class="cfgitem"[^>]*>\s*<p class="lbl">Время<\/p>/.test(host.innerHTML));
+  /class="cfgitem[^"]*"[^>]*>\s*<p class="lbl">Время<\/p>/.test(host.innerHTML));
 T.ok("родного поля времени больше нет", host.innerHTML.indexOf('type="time"') < 0);
 T.ok("время набирается такими же кнопками, что и всё остальное",
   (host.innerHTML.match(/data-act="dd" data-k="t[hm]:/g) || []).length === 2);
 T.ok("и у переключателя своя",
-  /class="cfgitem"[^>]*>\s*<p class="lbl">Когда<\/p>/.test(host.innerHTML));
+  /class="cfgitem[^"]*"[^>]*>\s*<p class="lbl">Когда<\/p>/.test(host.innerHTML));
 clickOn({ act: "rday", id: a.id, i: String(WD) });
 clickOn({ act: "rday", id: a.id, i: String(OTHER) });
 T.ok("два дня выбраны", a.repeat.days.length === 2);
@@ -91,7 +91,7 @@ T.ok("поле даты вернулось", host.innerHTML.indexOf("Дата и
 /* Дата, часы и минуты в одной строке. В половине ширины окна кнопка
    даты сжималась до одной буквы, а мини-календарь вылезал за край. */
 T.ok("дате и времени отдана вся ширина строки",
-  /grid-column:1\/-1[^>]*>\s*<p class="lbl">Дата и время/.test(host.innerHTML));
+  /class="cfgitem wide"[^>]*>\s*<p class="lbl">Дата и время/.test(host.innerHTML));
 clickOn({ act: "ecancel", id: a.id }); closeModal();
 T.reset();
 
