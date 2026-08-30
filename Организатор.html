@@ -3524,16 +3524,38 @@ function itemFormHTML(it, ids) {
         `<button data-act="rpart" data-id="${it.id}" data-v="${k}"${
           k ? "" : ` title="Часть дня не важна"`}
           class="${(it.partOfDay || "") === k ? "on" : ""}">${L}</button>`).join("")}</div></div>`;
+  const kindItem = `<div class="cfgitem"><p class="lbl">Вид дела</p>${ddTypeHTML(it)}</div>`;
+  /* Плитки дней — общие для рутины и для встречи по расписанию:
+     сами дни живут в разных полях, разбирается schedDays.           */
+  const daysItem = days => `<div class="cfgitem"><p class="lbl">В какие дни</p>
+      <div class="rt">${wdOrder().map(d =>
+        `<div class="${(days || []).indexOf(d) >= 0 ? "hit" : ""}" data-act="rday"
+          data-id="${it.id}" data-i="${d}" style="cursor:pointer">${WD_BY_DAY[d]}</div>`).join("")}</div></div>`;
+  /* Шаг в пять минут: иначе родной список браузера листается по минуте
+     и найти в нём 18:00 — отдельное занятие.                        */
+  const timeItem = `<div class="cfgitem"><p class="lbl">Время</p>
+      <input type="time" id="${ids.time}" step="300" value="${it.time || ""}"
+        style="${DATEBOX};width:112px;margin-bottom:0"></div>`;
+  /* Одна дата или расписание — два ответа на «когда», а не два поля.
+     У сессии по вторникам и четвергам одной даты не существует.      */
+  const whenItem = `<div class="cfgitem"><p class="lbl">Когда</p>
+      <div class="seg">${[["once", "Одна дата"], ["days", "По расписанию"]].map(([k, L]) =>
+        `<button data-act="arepeat" data-id="${it.id}" data-v="${k}"
+          class="${(it.repeat ? "days" : "once") === k ? "on" : ""}">${L}</button>`).join("")}</div></div>`;
+  const cells = isRoutine(it)
+    ? daysItem(it.routine && it.routine.days) + kindItem + partItem
+      + `<div class="cfgitem"><p class="lbl">Сколько занимает</p>${ddMinsHTML(it)}</div>`
+    : isAppt(it)
+      ? whenItem + kindItem + (it.repeat
+          ? daysItem(it.repeat.days) + timeItem
+          : `<div class="cfgitem">${whenFieldsHTML(it, ids.date, ids.time)}</div>`)
+      : `<div class="cfgitem">${whenFieldsHTML(it, ids.date, ids.time)}</div>` + kindItem;
+
   return `<div class="cfggrid" style="margin-bottom:4px">
-      ${isRoutine(it) ? `<div class="cfgitem"><p class="lbl">В какие дни</p>
-        <div class="rt">${wdOrder().map(i =>
-          `<div class="${it.routine && it.routine.days.indexOf(i) >= 0 ? "hit" : ""}"
-            data-act="rday" data-id="${it.id}" data-i="${i}" style="cursor:pointer">${WD_BY_DAY[i]}</div>`).join("")}</div></div>
-        ${partItem}
-        <div class="cfgitem"><p class="lbl">Сколько занимает</p>${ddMinsHTML(it)}</div>`
-        : `<div class="cfgitem">${whenFieldsHTML(it, ids.date, ids.time)}</div>`}
-      <div class="cfgitem"><p class="lbl">Вид дела</p>${ddTypeHTML(it)}</div>
+      ${cells}
     </div>
+    ${isAppt(it) && it.repeat ? `<p class="qs" style="margin:-8px 0 14px">Повторяется
+      бессрочно, пока не удалите. Каждый раз отмечается отдельно — запись не закрывается.</p>` : ""}
 
     <p class="lbl" style="margin-top:18px">Сфера
       <span class="qs" style="text-transform:none;letter-spacing:0;margin-left:8px">можно несколько</span></p>
@@ -3695,33 +3717,15 @@ function whenFieldsHTML(it, dateId, timeId) {
   if (isIdea(it)) return `<p class="qs" style="margin:4px 0 14px">У идеи нет срока —
     она ничего не требует и сама в «Сегодня» не просится.
     Захотите взяться — добавьте её туда вручную или смените вид.</p>`;
-  if (isAppt(it)) {
-    /* Одна дата или расписание — два ответа на «когда», не два поля.
-       Сессия у психолога по вторникам и четвергам не имеет одной даты. */
-    const sw = `<div class="seg" style="margin-bottom:10px">${
-      [["once", "Одна дата"], ["days", "По расписанию"]].map(([k, L]) =>
-        `<button data-act="arepeat" data-id="${it.id}" data-v="${k}"
-          class="${(repeats(it) || (it.repeat && k === "days")) === (k === "days")
-            ? "on" : ""}">${L}</button>`).join("")}</div>`;
-    if (it.repeat) return `<p class="lbl">Когда</p>${sw}
-      <p class="lbl">В какие дни</p>
-      <div class="rt">${wdOrder().map(d =>
-        `<div class="${(it.repeat.days || []).indexOf(d) >= 0 ? "hit" : ""}"
-          data-act="rday" data-id="${it.id}" data-i="${d}" style="cursor:pointer">${WD_BY_DAY[d]}</div>`).join("")}</div>
-      <p class="lbl">Время</p>
-      <input type="time" id="${timeId}" value="${it.time || ""}" style="${DATEBOX};width:130px">
-      <p class="qs" style="margin:8px 0 12px">Повторяется бессрочно, пока не удалите.
-        Каждый раз отмечается отдельно — запись не закрывается.</p>`;
-    return `<p class="lbl">Когда</p>${sw}
-    <p class="lbl">Дата и время</p>
-    <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start">
+  if (isAppt(it)) return `<p class="lbl">Дата и время</p>
+    <div style="display:flex;gap:10px;align-items:flex-start">
       <div style="flex:1;min-width:0">${ddDueHTML(it)}</div>
-      <input type="time" id="${timeId}" value="${it.time || ""}" style="${DATEBOX};width:130px;margin-bottom:0">
+      <input type="time" id="${timeId}" step="300" value="${it.time || ""}"
+        style="${DATEBOX};width:112px;margin-bottom:0">
     </div>
-    <p class="qs" style="margin:-4px 0 12px">${it.due === today()
+    <p class="qs" style="margin:8px 0 0">${it.due === today()
       ? "Встреча сегодня — поэтому она стоит в дне и убрать её оттуда нельзя. Смените дату, и она уйдёт сама."
       : "Время видно в списках: «завтра в 14:30»."}</p>`;
-  }
   return `<p class="lbl">Дедлайн</p><div style="margin-bottom:12px">${ddDueHTML(it)}</div>`;
 }
 

@@ -22,8 +22,17 @@ T.head("ПЕРЕХОД НА РАСПИСАНИЕ");
 openItem(a.id); clickOn({ act: "edit", id: a.id });
 clickOn({ act: "arepeat", id: a.id, v: "days" });
 T.ok("расписание завелось", !!a.repeat && !a.repeat.days.length);
+T.ok("подсвечена ровно одна кнопка",
+  (host.innerHTML.match(/data-act="arepeat"[^>]*class="on"/g) || []).length === 1,
+  String((host.innerHTML.match(/data-act="arepeat"[^>]*class="on"/g) || []).length));
+T.ok("и это «По расписанию»",
+  /data-v="days"[^>]*class="on"/.test(host.innerHTML.replace(/\s+/g, " ")));
 T.ok("одной даты больше нет", a.due === null);
 T.ok("появились плитки дней", host.innerHTML.indexOf('data-act="rday"') >= 0);
+T.ok("у времени своя ячейка сетки, рядом с днями",
+  /class="cfgitem"[^>]*>\s*<p class="lbl">Время<\/p>/.test(host.innerHTML));
+T.ok("и у переключателя своя",
+  /class="cfgitem"[^>]*>\s*<p class="lbl">Когда<\/p>/.test(host.innerHTML));
 clickOn({ act: "rday", id: a.id, i: String(WD) });
 clickOn({ act: "rday", id: a.id, i: String(OTHER) });
 T.ok("два дня выбраны", a.repeat.days.length === 2);
@@ -71,6 +80,10 @@ T.head("РАЗОВАЯ ВСТРЕЧА НЕ СЛОМАЛАСЬ");
 openItem(a.id); clickOn({ act: "edit", id: a.id });
 clickOn({ act: "arepeat", id: a.id, v: "once" });
 T.ok("расписание убрано", !repeats(a));
+T.ok("и снова подсвечена ровно одна кнопка",
+  (host.innerHTML.match(/data-act="arepeat"[^>]*class="on"/g) || []).length === 1);
+T.ok("и это «Одна дата»",
+  /data-v="once"[^>]*class="on"/.test(host.innerHTML.replace(/\s+/g, " ")));
 T.ok("поле даты вернулось", host.innerHTML.indexOf("Дата и время") >= 0);
 clickOn({ act: "ecancel", id: a.id }); closeModal();
 T.reset();
