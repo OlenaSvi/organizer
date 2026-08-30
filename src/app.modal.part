@@ -478,7 +478,11 @@ function itemFormHTML(it, ids) {
     : isAppt(it)
       ? whenItem + kindItem + (it.repeat
           ? daysItem(it.repeat.days) + timeItem
-          : `<div class="cfgitem">${whenFieldsHTML(it, ids.date, ids.time)}</div>`)
+          /* Дата, часы и минуты стоят в одну линию — втроём в половину
+             строки они не помещаются: кнопка даты сжималась до одной
+             буквы, а мини-календарь вылезал за край окна.          */
+          : `<div class="cfgitem" style="grid-column:1/-1">${
+              whenFieldsHTML(it, ids.date, ids.time)}</div>`)
       : `<div class="cfgitem">${whenFieldsHTML(it, ids.date, ids.time)}</div>` + kindItem;
 
   return `<div class="cfggrid" style="margin-bottom:4px">
