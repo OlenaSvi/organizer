@@ -20,14 +20,17 @@ T.head("ВЫБОР СОХРАНЯЕТСЯ");
 openItem(r.id); clickOn({ act: "edit", id: r.id });
 T.ok("часть дня — тот же переключатель, что в настройках",
   /<div class="seg"[^>]*>[\s\S]{0,400}data-act="rpart"/.test(host.innerHTML));
-T.ok("переключателю дана своя строка во всю ширину",
-  /grid-column:1\/-1[\s\S]{0,200}Часть дня/.test(host.innerHTML));
+T.ok("переключатель стоит в своей половине строки, рядом с днями",
+  host.innerHTML.indexOf("grid-column:1/-1") < 0);
 clickOn({ act: "rpart", id: r.id, v: "morning" });
 T.ok("часть дня записалась", r.partOfDay === "morning");
 T.ok("выбранное подсвечено", /data-v="morning"[^>]*class="on"|class="on"[^>]*data-v="morning"/
   .test(host.innerHTML.replace(/\s+/g, " ")));
-T.ok("«не важно» на месте четвёртой кнопкой",
-  /data-act="rpart"[^>]*data-v=""[^>]*>не важно</.test(host.innerHTML.replace(/\s+/g, " ")));
+T.ok("четвёртая кнопка — прочерк",
+  /data-act="rpart"[^>]*data-v=""[^>]*>—</.test(host.innerHTML.replace(/\s+/g, " ")));
+T.ok("и объясняет себя при наведении",
+  /title="[^"]*не важна[^"]*"[^>]*data-v=""|data-v=""[^>]*title="[^"]*не важна/
+    .test(host.innerHTML.replace(/\s+/g, " ")));
 clickOn({ act: "rpart", id: r.id, v: "" });
 T.ok("«не важно» снимает выбор", !r.partOfDay);
 T.ok("и подсвечивается само",

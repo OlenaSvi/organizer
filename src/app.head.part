@@ -694,7 +694,10 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .cfgitem{min-width:0}
 .cfgitem .lbl{margin-top:0}
 .cfgitem .qs{margin-top:6px}
-@media(max-width:520px){.cfggrid{grid-template-columns:1fr}}
+/* Складываем раньше, чем окно станет совсем узким: в две колонки
+   переключатель части дня перестаёт помещаться и молча обрезается
+   (у окна overflow-x:hidden).                                       */
+@media(max-width:620px){.cfggrid{grid-template-columns:1fr}}
 .dirhead{display:flex;align-items:center;gap:10px}
 .dirhead .btn.link{padding:0;font-size:14px}
 /* Строки, ряд добавления и пояснение живут на одной вертикали: общий
