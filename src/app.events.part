@@ -213,6 +213,14 @@ document.addEventListener("click", e => {
                       EDITSTEP = null; save(); refreshEdit(id); } break;
     /* Переключатель, а не набор плиток: выбрано всегда ровно одно, и
        «не важно» — такой же полноправный вариант, а не пустота.      */
+    /* Час и минуты меняются по отдельности, поэтому недостающая
+       половина берётся из текущего значения, а без него — ровный час. */
+    case "ttime":   if (it) { const f = el.dataset.f, v2 = el.dataset.v;
+                      if (f === "clear") it.time = null;
+                      else { const c = it.time || "09:00";
+                        it.time = f === "h" ? v2 + ":" + c.slice(3, 5)
+                                            : c.slice(0, 2) + ":" + v2; }
+                      DD = null; save(); refreshEdit(id); } break;
     /* Одна дата или расписание — взаимоисключающий выбор у встречи. */
     case "arepeat": if (it) {
                       if (el.dataset.v === "days") {

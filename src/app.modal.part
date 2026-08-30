@@ -41,6 +41,33 @@ function ddTypeHTML(it) {
 
 /* Длительность списком, а не полем ввода: одно нажатие вместо набора,
    и «не важно» — полноправный ответ, а не пустое поле.              */
+/* Время — двумя списками, часы и минуты, а не родным полем браузера.
+   Родное открывало свой список, который листается по минуте и выглядит
+   чужим в этом окне. Один список на все 288 четвертей суток был бы не
+   лучше: 24 строки и 12 — короткие, и высота кнопок совпадает с
+   соседней датой сама, потому что кнопка ровно та же.               */
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+const MINS5 = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
+function ddTimeHTML(it) {
+  const cur = it.time || "";
+  const part = (key, list, val, ph, f) => `<span class="ddwrap" data-ddwrap
+      style="display:inline-block;width:auto;position:relative">
+    <button class="ddbtn ${val ? "" : "dim"}" data-act="dd" data-k="${key}"
+      style="width:auto;min-width:62px"><span>${val || ph}</span><i class="caret">▾</i></button>
+    ${DD === key ? `<div class="dd inline" style="min-width:96px;max-height:232px;overflow-y:auto">
+      ${list.map(v => `<button class="ddrow ${v === val ? "on" : ""}" data-act="ttime"
+          data-f="${f}" data-id="${it.id}" data-v="${v}"><span>${v}</span>${
+          v === val ? ddCheck : ""}</button>`).join("")}
+      <div class="dddiv"></div>
+      <button class="ddrow dim ${cur ? "" : "on"}" data-act="ttime" data-f="clear"
+        data-id="${it.id}" data-v=""><span>без времени</span>${cur ? "" : ddCheck}</button>
+    </div>` : ""}</span>`;
+  return `<div style="display:flex;gap:7px;align-items:center">
+    ${part("th:" + it.id, HOURS, cur.slice(0, 2), "час", "h")}
+    <span class="qs" style="margin:0">:</span>
+    ${part("tm:" + it.id, MINS5, cur.slice(3, 5), "мин", "m")}</div>`;
+}
+
 function ddMinsHTML(it) {
   const key = "mins:" + it.id, open = DD === key;
   return `<div class="ddwrap" data-ddwrap>
@@ -428,9 +455,7 @@ function itemFormHTML(it, ids) {
           data-id="${it.id}" data-i="${d}" style="cursor:pointer">${WD_BY_DAY[d]}</div>`).join("")}</div></div>`;
   /* Шаг в пять минут: иначе родной список браузера листается по минуте
      и найти в нём 18:00 — отдельное занятие.                        */
-  const timeItem = `<div class="cfgitem"><p class="lbl">Время</p>
-      <input type="time" id="${ids.time}" step="300" value="${it.time || ""}"
-        style="${DATEBOX};width:112px;margin-bottom:0"></div>`;
+  const timeItem = `<div class="cfgitem"><p class="lbl">Время</p>${ddTimeHTML(it)}</div>`;
   /* Одна дата или расписание — два ответа на «когда», а не два поля.
      У сессии по вторникам и четвергам одной даты не существует.      */
   const whenItem = `<div class="cfgitem"><p class="lbl">Когда</p>
@@ -613,10 +638,9 @@ function whenFieldsHTML(it, dateId, timeId) {
     она ничего не требует и сама в «Сегодня» не просится.
     Захотите взяться — добавьте её туда вручную или смените вид.</p>`;
   if (isAppt(it)) return `<p class="lbl">Дата и время</p>
-    <div style="display:flex;gap:10px;align-items:flex-start">
+    <div style="display:flex;gap:8px;align-items:center">
       <div style="flex:1;min-width:0">${ddDueHTML(it)}</div>
-      <input type="time" id="${timeId}" step="300" value="${it.time || ""}"
-        style="${DATEBOX};width:112px;margin-bottom:0">
+      ${ddTimeHTML(it)}
     </div>
     <p class="qs" style="margin:8px 0 0">${it.due === today()
       ? "Встреча сегодня — поэтому она стоит в дне и убрать её оттуда нельзя. Смените дату, и она уйдёт сама."

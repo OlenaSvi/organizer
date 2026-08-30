@@ -31,6 +31,9 @@ T.ok("одной даты больше нет", a.due === null);
 T.ok("появились плитки дней", host.innerHTML.indexOf('data-act="rday"') >= 0);
 T.ok("у времени своя ячейка сетки, рядом с днями",
   /class="cfgitem"[^>]*>\s*<p class="lbl">Время<\/p>/.test(host.innerHTML));
+T.ok("родного поля времени больше нет", host.innerHTML.indexOf('type="time"') < 0);
+T.ok("время набирается такими же кнопками, что и всё остальное",
+  (host.innerHTML.match(/data-act="dd" data-k="t[hm]:/g) || []).length === 2);
 T.ok("и у переключателя своя",
   /class="cfgitem"[^>]*>\s*<p class="lbl">Когда<\/p>/.test(host.innerHTML));
 clickOn({ act: "rday", id: a.id, i: String(WD) });
@@ -112,5 +115,23 @@ T.ok("сессия недельной давности видна",
 T.ok("вернуть можно только сегодняшнюю",
   (document.getElementById("allList").innerHTML.match(/>вернуть</g) || []).length === 0);
 ALLFILTER = "all";
+
+T.head("ВРЕМЯ НАБИРАЕТСЯ ЧАСАМИ И МИНУТАМИ");
+a.time = null;
+openItem(a.id); clickOn({ act: "edit", id: a.id });
+clickOn({ act: "dd", k: "th:" + a.id });
+T.ok("список часов открылся", host.innerHTML.indexOf('data-f="h"') >= 0);
+T.ok("часов ровно 24", (host.innerHTML.match(/data-f="h"/g) || []).length === 24);
+clickOn({ act: "ttime", f: "h", id: a.id, v: "18" });
+T.ok("час выбран, минуты ровные", a.time === "18:00");
+clickOn({ act: "dd", k: "tm:" + a.id });
+T.ok("минуты шагают по пять", (host.innerHTML.match(/data-f="m"/g) || []).length === 12);
+clickOn({ act: "ttime", f: "m", id: a.id, v: "45" });
+T.ok("минуты сменились, час остался", a.time === "18:45");
+clickOn({ act: "dd", k: "th:" + a.id });
+clickOn({ act: "ttime", f: "clear", id: a.id, v: "" });
+T.ok("«без времени» очищает", a.time === null);
+a.time = "18:00";
+clickOn({ act: "esave", id: a.id }); closeModal();
 
 T.done();
