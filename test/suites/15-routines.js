@@ -18,17 +18,20 @@ clickOn({ act: "ecancel", id: t0.id }); closeModal();
 
 T.head("ВЫБОР СОХРАНЯЕТСЯ");
 openItem(r.id); clickOn({ act: "edit", id: r.id });
-T.ok("часть дня набрана теми же плитками, что и дни недели",
-  /<div class="rt">[\s\S]{0,400}data-act="rpart"/.test(host.innerHTML));
+T.ok("часть дня — тот же переключатель, что в настройках",
+  /<div class="seg"[^>]*>[\s\S]{0,400}data-act="rpart"/.test(host.innerHTML));
+T.ok("переключателю дана своя строка во всю ширину",
+  /grid-column:1\/-1[\s\S]{0,200}Часть дня/.test(host.innerHTML));
 clickOn({ act: "rpart", id: r.id, v: "morning" });
 T.ok("часть дня записалась", r.partOfDay === "morning");
-T.ok("выбранная плитка подсвечена так же, как день недели",
-  /<div class="hit"[^>]*data-act="rpart"[^>]*data-v="morning"/
-    .test(host.innerHTML.replace(/\s+/g, " ")));
-clickOn({ act: "rpart", id: r.id, v: "morning" });
-T.ok("повторное нажатие снимает выбор — это и есть «не важно»", !r.partOfDay);
-T.ok("отдельной кнопки «не важно» больше нет", host.innerHTML.indexOf("не важно") < 0
-  || host.innerHTML.indexOf('data-f="partOfDay"') < 0);
+T.ok("выбранное подсвечено", /data-v="morning"[^>]*class="on"|class="on"[^>]*data-v="morning"/
+  .test(host.innerHTML.replace(/\s+/g, " ")));
+T.ok("«не важно» на месте четвёртой кнопкой",
+  /data-act="rpart"[^>]*data-v=""[^>]*>не важно</.test(host.innerHTML.replace(/\s+/g, " ")));
+clickOn({ act: "rpart", id: r.id, v: "" });
+T.ok("«не важно» снимает выбор", !r.partOfDay);
+T.ok("и подсвечивается само",
+  /data-v=""[^>]*class="on"|class="on"[^>]*data-v=""/.test(host.innerHTML.replace(/\s+/g, " ")));
 clickOn({ act: "rpart", id: r.id, v: "morning" });
 clickOn({ act: "dd", k: "mins:" + r.id });
 T.ok("список минут открылся", host.innerHTML.indexOf('data-f="mins"') >= 0);

@@ -205,10 +205,9 @@ document.addEventListener("click", e => {
     case "editstep": EDITSTEP = id + ":" + el.dataset.i; refreshEdit(id); break;
     case "delstep": if (it) { it.steps.splice(+el.dataset.i, 1);
                       EDITSTEP = null; save(); refreshEdit(id); } break;
-    /* Как у дней недели: повторное нажатие снимает выбор. Отдельная
-       кнопка «не важно» не нужна — «ничего не выбрано» и есть ответ. */
-    case "rpart":   if (it) { it.partOfDay = it.partOfDay === el.dataset.v
-                        ? null : el.dataset.v;
+    /* Переключатель, а не набор плиток: выбрано всегда ровно одно, и
+       «не важно» — такой же полноправный вариант, а не пустота.      */
+    case "rpart":   if (it) { it.partOfDay = el.dataset.v || null;
                       save(); refreshEdit(id); } break;
     case "rday":    if (it) { const d = it.routine.days, i = d.indexOf(+el.dataset.i);
                       if (i >= 0) d.splice(i, 1); else d.push(+el.dataset.i);

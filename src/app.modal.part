@@ -411,19 +411,24 @@ function itemFormHTML(it, ids) {
     + (canOpts && !openOpts ? bOpts : "");
   const extra = opened + (folded ? `<div class="caprow">${folded}</div>` : "");
 
+  const kindItem = `<div class="cfgitem"><p class="lbl">Вид дела</p>${ddTypeHTML(it)}</div>`;
+  /* Переключателю части дня нужна своя строка: четыре кнопки не влезают
+     в половину ширины окна, а окно вбок не растягивается.            */
+  const partItem = `<div class="cfgitem" style="grid-column:1/-1">
+      <p class="lbl">Часть дня</p>
+      <div class="seg">${PARTS.concat([["", "не важно"]]).map(([k, L]) =>
+        `<button data-act="rpart" data-id="${it.id}" data-v="${k}"
+          class="${(it.partOfDay || "") === k ? "on" : ""}">${L}</button>`).join("")}</div></div>`;
   return `<div class="cfggrid" style="margin-bottom:4px">
       ${isRoutine(it) ? `<div class="cfgitem"><p class="lbl">В какие дни</p>
         <div class="rt">${wdOrder().map(i =>
           `<div class="${it.routine && it.routine.days.indexOf(i) >= 0 ? "hit" : ""}"
             data-act="rday" data-id="${it.id}" data-i="${i}" style="cursor:pointer">${WD_BY_DAY[i]}</div>`).join("")}</div></div>
-        <div class="cfgitem"><p class="lbl">Часть дня</p>
-          <div class="rt">${PARTS.map(([k, L]) =>
-            `<div class="${it.partOfDay === k ? "hit" : ""}" data-act="rpart"
-              data-id="${it.id}" data-v="${k}" style="cursor:pointer"
-              title="Нажать ещё раз — снять выбор">${L}</div>`).join("")}</div></div>
+        ${kindItem}
+        ${partItem}
         <div class="cfgitem"><p class="lbl">Сколько занимает</p>${ddMinsHTML(it)}</div>`
-        : `<div class="cfgitem">${whenFieldsHTML(it, ids.date, ids.time)}</div>`}
-      <div class="cfgitem"><p class="lbl">Вид дела</p>${ddTypeHTML(it)}</div>
+        : `<div class="cfgitem">${whenFieldsHTML(it, ids.date, ids.time)}</div>
+        ${kindItem}`}
     </div>
 
     <p class="lbl" style="margin-top:18px">Сфера
