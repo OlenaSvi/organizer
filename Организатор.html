@@ -525,6 +525,26 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .lnk{color:var(--accent); text-decoration:underline; text-underline-offset:2px;
   text-decoration-thickness:1px; overflow-wrap:anywhere}
 .lnk:hover{text-decoration-thickness:2px}
+
+/* ── рутина: части дня, длительность, карта четырёх недель ───────── */
+.rgroup{display:flex;align-items:baseline;gap:8px;margin:15px 0 8px;font-size:11px;
+  font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
+.rgroup:first-child{margin-top:0}
+.rgroup b{margin-left:auto;font-weight:500;letter-spacing:0;text-transform:none;
+  font-size:12px;color:var(--dim)}
+.rall{margin-left:9px;font-size:12.5px;font-weight:500;color:var(--dim)}
+.rmins{font-size:12px;color:var(--dim);white-space:nowrap}
+.heatwrap{margin-top:2px}
+.heathd,.heat{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;max-width:214px}
+.heathd{font-size:10px;color:var(--dim);text-align:center;margin-bottom:5px}
+/* Пропуск — пустая клетка с тонкой рамкой. Не красная: это отсутствие
+   события, а не провинность.                                        */
+.heat i{width:100%;aspect-ratio:1;border-radius:4px;display:block;background:var(--dot-off)}
+.heat i.done{background:var(--accent)}
+.heat i.extra{background:var(--accent);opacity:.5}
+.heat i.miss{background:transparent;box-shadow:inset 0 0 0 1px var(--line)}
+.heat i.off{background:var(--dot-off);opacity:.5}
+.heat i.gone{background:transparent}
 .btn.ghost:hover{color:var(--ink)}
 
 /* рутина: буквы недели один раз сверху, под каждой — точки дней */
@@ -1221,6 +1241,16 @@ function dueToday(it) {
 
 /* Мягкая серия: считаем «сделано X из последних 7», а не хрупкий стрик.
    Один пропуск ничего не обнуляет — по устройству, а не по доброте.  */
+/* Части дня. Порядок здесь — он же порядок групп в панели дня. */
+const PARTS = [["morning", "Утро"], ["day", "День"], ["evening", "Вечер"]];
+const partName = v => (PARTS.find(x => x[0] === v) || [null, ""])[1];
+/* Готовые длительности, а не поле ввода: выбрать быстрее, чем печатать,
+   и не бывает «пятнадцвть минут». Точность тут не нужна — нужен порядок
+   величины, чтобы понять, помещается ли рутина в утро.               */
+const MINCHOICES = [5, 10, 15, 20, 30, 45, 60, 90];
+const minsLabel = n => n ? n + " мин" : "";
+const sumMins = list => list.reduce((a, i) => a + (i.mins || 0), 0);
+
 function routineScore(it) {
   if (!it.routine) return { hit: 0, of: 0, week: [], fresh: true };
   let hit = 0, of = 0, week = [];
@@ -1699,8 +1729,51 @@ function weekInfo(it) {
       sched: !!(it.routine && it.routine.days.indexOf(wd) >= 0),
       done: !!(it.routine && it.routine.history.indexOf(d) >= 0) };
   });
-  return { days, hit: days.filter(x => x.done).length,
-           of: days.filter(x => x.sched).length };
+  /* Сделанное вне расписания в долю не идёт — иначе выходило «2 из 1».
+     Оно считается отдельно и показывается как плюс, а не как норма. */
+  return { days, hit: days.filter(x => x.done && x.sched).length,
+           of: days.filter(x => x.sched).length,
+           extra: days.filter(x => x.done && !x.sched).length };
+}
+
+/* Четыре недели — горизонт, на котором видно направление, а не
+   вчерашний промах. В знаменатель идут только прожитые дни и только
+   с того дня, как рутина появилась: иначе новая привычка сразу
+   показывала бы провал за месяц, которого не было.                 */
+function monthInfo(it) {
+  const s0 = addDays(startOfWeek(today()), -21);
+  const weeks = []; let hit = 0, of = 0, extra = 0;
+  for (let w = 0; w < 4; w++) {
+    const row = [];
+    for (let k = 0; k < 7; k++) {
+      const d = addDays(s0, w * 7 + k);
+      const future = d > today();
+      const young = !!it.created && d < it.created;
+      const sched = !!(it.routine && it.routine.days.indexOf(
+        new Date(d + "T12:00:00").getDay()) >= 0);
+      const done = !!(it.routine && it.routine.history.indexOf(d) >= 0);
+      if (sched && !future && !young) { of++; if (done) hit++; }
+      if (done && !sched) extra++;
+      row.push({ d, sched, done, future, young });
+    }
+    weeks.push(row);
+  }
+  return { weeks, hit, of, extra };
+}
+
+/* Карта четырёх недель. Пропуск — пустая клетка с тонкой рамкой, а не
+   красная: это отсутствие события, а не провинность.                */
+function heatHTML(mo) {
+  return `<div class="heatwrap">
+    <div class="heathd">${wdOrder().map(d => `<span>${WD_BY_DAY[d]}</span>`).join("")}</div>
+    <div class="heat">${mo.weeks.map(row => row.map(c => {
+      const st = c.future || c.young ? "gone"
+        : c.done ? (c.sched ? "done" : "extra")
+        : c.sched ? "miss" : "off";
+      return `<i class="hc ${st}" title="${esc(formatDay(c.d) + " — " + (
+        st === "done" ? "сделано" : st === "extra" ? "сделано сверх расписания"
+        : st === "miss" ? "не отмечено (и это не страшно)" : "не по расписанию"))}"></i>`;
+    }).join("")).join("")}</div></div>`;
 }
 const weekDotsHTML = it => `<div class="rdots"
     title="Эта неделя. Бледная точка — не по расписанию. Расписание — в карточке рутины">${
@@ -1725,10 +1798,30 @@ function routineRowHTML(i, sortable) {
         <span class="rscore" title="${sc.fresh ? "Рутина заведена сегодня"
           : "Сделано на этой неделе"}">${sc.fresh ? "новая" : wi.hit + " из " + wi.of}</span>
       </div>
-      ${tags ? `<div class="rmeta">${tags}</div>` : ""}
+      ${tags || i.mins ? `<div class="rmeta">${
+        i.mins ? `<span class="rmins">${minsLabel(i.mins)}</span>` : ""}${tags}</div>` : ""}
       ${weekDotsHTML(i)}
     </div>
   </div>`;
+}
+
+/* Группы по частям дня появляются, только если часть дня проставлена
+   хоть у одной рутины. Пока её нет — плоский список, как было: пустой
+   заголовок «В любое время» над всем списком ничего не объясняет.   */
+function routineListHTML(list, sortable) {
+  if (!list.some(i => i.partOfDay))
+    return list.map(i => routineRowHTML(i, sortable)).join("");
+  const head = (label, g) => `<div class="rgroup"><span>${label}</span>${
+    sumMins(g) ? `<b>${minsLabel(sumMins(g))}</b>` : ""}</div>`;
+  const out = [];
+  PARTS.forEach(([k, L]) => {
+    const g = list.filter(i => i.partOfDay === k);
+    if (g.length) out.push(head(L, g) + g.map(i => routineRowHTML(i, sortable)).join(""));
+  });
+  const rest = list.filter(i => !i.partOfDay);
+  if (rest.length) out.push(head("В любое время", rest)
+    + rest.map(i => routineRowHTML(i, sortable)).join(""));
+  return out.join("");
 }
 
 /* Сделанное уезжает в конец своего блока: зачёркнуто, без подробностей.
@@ -1840,9 +1933,10 @@ function renderToday() {
 
     `</div></div><div class="tcol side">` +
 
-    (anyRout ? `<div class="sidepanel routines"><h3>Рутина</h3>
+    (anyRout ? `<div class="sidepanel routines"><h3>Рутина${
+      sumMins(routines) ? `<span class="rall">${minsLabel(sumMins(routines))}</span>` : ""}</h3>
       <div class="panelscroll"><div class="rbox">
-        ${routines.map(i => routineRowHTML(i, anyRout > 1)).join("")}
+        ${routineListHTML(routines, anyRout > 1)}
         ${routDone.map(i => doneLineHTML(i, today())).join("")}
       </div></div></div>` : "") +
 
@@ -3004,6 +3098,22 @@ function ddTypeHTML(it) {
     </div>` : ""}</div>`;
 }
 
+/* Длительность списком, а не полем ввода: одно нажатие вместо набора,
+   и «не важно» — полноправный ответ, а не пустое поле.              */
+function ddMinsHTML(it) {
+  const key = "mins:" + it.id, open = DD === key;
+  return `<div class="ddwrap" data-ddwrap>
+    <button class="ddbtn ${it.mins ? "" : "dim"}" data-act="dd" data-k="${key}"><span>${
+      it.mins ? minsLabel(it.mins) : "не важно"}</span><i class="caret">▾</i></button>
+    ${open ? `<div class="dd inline">
+      ${MINCHOICES.map(n => `<button class="ddrow ${it.mins === n ? "on" : ""}" data-act="ddset"
+          data-f="mins" data-id="${it.id}" data-v="${n}"><span>${minsLabel(n)}</span>${
+          it.mins === n ? ddCheck : ""}</button>`).join("")}
+      <button class="ddrow dim ${it.mins ? "" : "on"}" data-act="ddset" data-f="mins"
+        data-id="${it.id}" data-v=""><span>не важно</span>${it.mins ? "" : ddCheck}</button>
+    </div>` : ""}</div>`;
+}
+
 function ddPickHTML(it, field) {
   const isPlace = field === "place";
   const list = isPlace ? S.places : S.people;
@@ -3364,7 +3474,14 @@ function itemFormHTML(it, ids) {
       ${isRoutine(it) ? `<div class="cfgitem"><p class="lbl">В какие дни</p>
         <div class="rt">${wdOrder().map(i =>
           `<div class="${it.routine && it.routine.days.indexOf(i) >= 0 ? "hit" : ""}"
-            data-act="rday" data-id="${it.id}" data-i="${i}" style="cursor:pointer">${WD_BY_DAY[i]}</div>`).join("")}</div></div>`
+            data-act="rday" data-id="${it.id}" data-i="${i}" style="cursor:pointer">${WD_BY_DAY[i]}</div>`).join("")}</div></div>
+        <div class="cfgitem"><p class="lbl">Часть дня</p>
+          <div class="chips">${PARTS.map(([k, L]) =>
+            `<button class="chip ${it.partOfDay === k ? "on" : ""}" data-act="ddset"
+              data-f="partOfDay" data-id="${it.id}" data-v="${k}">${L}</button>`).join("")}
+            <button class="chip ${it.partOfDay ? "" : "on"}" data-act="ddset"
+              data-f="partOfDay" data-id="${it.id}" data-v="">не важно</button></div></div>
+        <div class="cfgitem"><p class="lbl">Сколько занимает</p>${ddMinsHTML(it)}</div>`
         : `<div class="cfgitem">${whenFieldsHTML(it, ids.date, ids.time)}</div>`}
       <div class="cfgitem"><p class="lbl">Вид дела</p>${ddTypeHTML(it)}</div>
     </div>
@@ -3660,13 +3777,19 @@ function openItem(id) {
         esc(st.text)}</span></div>`).join("")}</div>` : "")
     + ((isChoice(it) || isIdea(it)) && (it.options || []).length ? `<p class="lbl">Варианты</p>
       <div>${it.options.map(o => `<div class="opt">· ${linkify(o.text)}</div>`).join("")}</div>` : "")
-    + (isRoutine(it) && it.routine ? (() => { const wi = weekInfo(it);
+    + (isRoutine(it) && it.routine ? (() => { const wi = weekInfo(it), mo = monthInfo(it);
+      const over = n => n ? ` · +${n} сверх расписания` : "";
       return `<p class="lbl">В какие дни</p>
       <div class="rt">${wdOrder().map(k =>
         `<div class="${it.routine.days.indexOf(k) >= 0 ? "hit" : ""}">${WD_BY_DAY[k]}</div>`).join("")}</div>
+      ${it.partOfDay || it.mins ? `<p class="qs" style="margin:11px 0 0">${
+        [partName(it.partOfDay), minsLabel(it.mins)].filter(Boolean).join(" · ")}</p>` : ""}
       <p class="qs" style="margin:12px 0 4px">На этой неделе: <b style="color:var(--good)">${
-        wi.hit} из ${wi.of}</b> уже сделано</p>
-      ${weekDotsHTML(it)}`; })() : "")
+        wi.hit} из ${wi.of}</b> уже сделано${over(wi.extra)}</p>
+      ${weekDotsHTML(it)}
+      <p class="qs" style="margin:15px 0 6px">За 4 недели: <b style="color:var(--good)">${
+        mo.hit} из ${mo.of}</b>${over(mo.extra)}</p>
+      ${heatHTML(mo)}`; })() : "")
     /* Класс .readnote, а не .opt: у вариантов есть верхняя граница,
        и она рисовала лишнюю линию под заголовком «Заметка».        */
     + (hasNotes(it) ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
@@ -3912,7 +4035,8 @@ document.addEventListener("click", e => {
                       if (f === "type") { it.type = v2;
                         if (isRoutine(it) && !it.routine) it.routine = { days:[0,1,2,3,4,5,6], history:[] };
                         if (isIdea(it) || isRoutine(it)) { it.due = null; it.time = null; }
-                      } else it[f] = v2;
+                      } else if (f === "mins") it.mins = v2 ? +v2 : null;
+                      else it[f] = v2;
                       DD = null; DDM = null; DDADD = false;
                       save(); refreshEdit(id); } break;
     case "ddaddshow": DDADD = true; if (ddId()) refreshEdit(ddId()); break;

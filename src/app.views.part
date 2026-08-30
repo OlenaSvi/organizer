@@ -306,8 +306,51 @@ function weekInfo(it) {
       sched: !!(it.routine && it.routine.days.indexOf(wd) >= 0),
       done: !!(it.routine && it.routine.history.indexOf(d) >= 0) };
   });
-  return { days, hit: days.filter(x => x.done).length,
-           of: days.filter(x => x.sched).length };
+  /* Сделанное вне расписания в долю не идёт — иначе выходило «2 из 1».
+     Оно считается отдельно и показывается как плюс, а не как норма. */
+  return { days, hit: days.filter(x => x.done && x.sched).length,
+           of: days.filter(x => x.sched).length,
+           extra: days.filter(x => x.done && !x.sched).length };
+}
+
+/* Четыре недели — горизонт, на котором видно направление, а не
+   вчерашний промах. В знаменатель идут только прожитые дни и только
+   с того дня, как рутина появилась: иначе новая привычка сразу
+   показывала бы провал за месяц, которого не было.                 */
+function monthInfo(it) {
+  const s0 = addDays(startOfWeek(today()), -21);
+  const weeks = []; let hit = 0, of = 0, extra = 0;
+  for (let w = 0; w < 4; w++) {
+    const row = [];
+    for (let k = 0; k < 7; k++) {
+      const d = addDays(s0, w * 7 + k);
+      const future = d > today();
+      const young = !!it.created && d < it.created;
+      const sched = !!(it.routine && it.routine.days.indexOf(
+        new Date(d + "T12:00:00").getDay()) >= 0);
+      const done = !!(it.routine && it.routine.history.indexOf(d) >= 0);
+      if (sched && !future && !young) { of++; if (done) hit++; }
+      if (done && !sched) extra++;
+      row.push({ d, sched, done, future, young });
+    }
+    weeks.push(row);
+  }
+  return { weeks, hit, of, extra };
+}
+
+/* Карта четырёх недель. Пропуск — пустая клетка с тонкой рамкой, а не
+   красная: это отсутствие события, а не провинность.                */
+function heatHTML(mo) {
+  return `<div class="heatwrap">
+    <div class="heathd">${wdOrder().map(d => `<span>${WD_BY_DAY[d]}</span>`).join("")}</div>
+    <div class="heat">${mo.weeks.map(row => row.map(c => {
+      const st = c.future || c.young ? "gone"
+        : c.done ? (c.sched ? "done" : "extra")
+        : c.sched ? "miss" : "off";
+      return `<i class="hc ${st}" title="${esc(formatDay(c.d) + " — " + (
+        st === "done" ? "сделано" : st === "extra" ? "сделано сверх расписания"
+        : st === "miss" ? "не отмечено (и это не страшно)" : "не по расписанию"))}"></i>`;
+    }).join("")).join("")}</div></div>`;
 }
 const weekDotsHTML = it => `<div class="rdots"
     title="Эта неделя. Бледная точка — не по расписанию. Расписание — в карточке рутины">${
@@ -332,10 +375,30 @@ function routineRowHTML(i, sortable) {
         <span class="rscore" title="${sc.fresh ? "Рутина заведена сегодня"
           : "Сделано на этой неделе"}">${sc.fresh ? "новая" : wi.hit + " из " + wi.of}</span>
       </div>
-      ${tags ? `<div class="rmeta">${tags}</div>` : ""}
+      ${tags || i.mins ? `<div class="rmeta">${
+        i.mins ? `<span class="rmins">${minsLabel(i.mins)}</span>` : ""}${tags}</div>` : ""}
       ${weekDotsHTML(i)}
     </div>
   </div>`;
+}
+
+/* Группы по частям дня появляются, только если часть дня проставлена
+   хоть у одной рутины. Пока её нет — плоский список, как было: пустой
+   заголовок «В любое время» над всем списком ничего не объясняет.   */
+function routineListHTML(list, sortable) {
+  if (!list.some(i => i.partOfDay))
+    return list.map(i => routineRowHTML(i, sortable)).join("");
+  const head = (label, g) => `<div class="rgroup"><span>${label}</span>${
+    sumMins(g) ? `<b>${minsLabel(sumMins(g))}</b>` : ""}</div>`;
+  const out = [];
+  PARTS.forEach(([k, L]) => {
+    const g = list.filter(i => i.partOfDay === k);
+    if (g.length) out.push(head(L, g) + g.map(i => routineRowHTML(i, sortable)).join(""));
+  });
+  const rest = list.filter(i => !i.partOfDay);
+  if (rest.length) out.push(head("В любое время", rest)
+    + rest.map(i => routineRowHTML(i, sortable)).join(""));
+  return out.join("");
 }
 
 /* Сделанное уезжает в конец своего блока: зачёркнуто, без подробностей.
@@ -447,9 +510,10 @@ function renderToday() {
 
     `</div></div><div class="tcol side">` +
 
-    (anyRout ? `<div class="sidepanel routines"><h3>Рутина</h3>
+    (anyRout ? `<div class="sidepanel routines"><h3>Рутина${
+      sumMins(routines) ? `<span class="rall">${minsLabel(sumMins(routines))}</span>` : ""}</h3>
       <div class="panelscroll"><div class="rbox">
-        ${routines.map(i => routineRowHTML(i, anyRout > 1)).join("")}
+        ${routineListHTML(routines, anyRout > 1)}
         ${routDone.map(i => doneLineHTML(i, today())).join("")}
       </div></div></div>` : "") +
 

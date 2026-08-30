@@ -39,6 +39,22 @@ function ddTypeHTML(it) {
     </div>` : ""}</div>`;
 }
 
+/* Длительность списком, а не полем ввода: одно нажатие вместо набора,
+   и «не важно» — полноправный ответ, а не пустое поле.              */
+function ddMinsHTML(it) {
+  const key = "mins:" + it.id, open = DD === key;
+  return `<div class="ddwrap" data-ddwrap>
+    <button class="ddbtn ${it.mins ? "" : "dim"}" data-act="dd" data-k="${key}"><span>${
+      it.mins ? minsLabel(it.mins) : "не важно"}</span><i class="caret">▾</i></button>
+    ${open ? `<div class="dd inline">
+      ${MINCHOICES.map(n => `<button class="ddrow ${it.mins === n ? "on" : ""}" data-act="ddset"
+          data-f="mins" data-id="${it.id}" data-v="${n}"><span>${minsLabel(n)}</span>${
+          it.mins === n ? ddCheck : ""}</button>`).join("")}
+      <button class="ddrow dim ${it.mins ? "" : "on"}" data-act="ddset" data-f="mins"
+        data-id="${it.id}" data-v=""><span>не важно</span>${it.mins ? "" : ddCheck}</button>
+    </div>` : ""}</div>`;
+}
+
 function ddPickHTML(it, field) {
   const isPlace = field === "place";
   const list = isPlace ? S.places : S.people;
@@ -399,7 +415,14 @@ function itemFormHTML(it, ids) {
       ${isRoutine(it) ? `<div class="cfgitem"><p class="lbl">В какие дни</p>
         <div class="rt">${wdOrder().map(i =>
           `<div class="${it.routine && it.routine.days.indexOf(i) >= 0 ? "hit" : ""}"
-            data-act="rday" data-id="${it.id}" data-i="${i}" style="cursor:pointer">${WD_BY_DAY[i]}</div>`).join("")}</div></div>`
+            data-act="rday" data-id="${it.id}" data-i="${i}" style="cursor:pointer">${WD_BY_DAY[i]}</div>`).join("")}</div></div>
+        <div class="cfgitem"><p class="lbl">Часть дня</p>
+          <div class="chips">${PARTS.map(([k, L]) =>
+            `<button class="chip ${it.partOfDay === k ? "on" : ""}" data-act="ddset"
+              data-f="partOfDay" data-id="${it.id}" data-v="${k}">${L}</button>`).join("")}
+            <button class="chip ${it.partOfDay ? "" : "on"}" data-act="ddset"
+              data-f="partOfDay" data-id="${it.id}" data-v="">не важно</button></div></div>
+        <div class="cfgitem"><p class="lbl">Сколько занимает</p>${ddMinsHTML(it)}</div>`
         : `<div class="cfgitem">${whenFieldsHTML(it, ids.date, ids.time)}</div>`}
       <div class="cfgitem"><p class="lbl">Вид дела</p>${ddTypeHTML(it)}</div>
     </div>
@@ -695,13 +718,19 @@ function openItem(id) {
         esc(st.text)}</span></div>`).join("")}</div>` : "")
     + ((isChoice(it) || isIdea(it)) && (it.options || []).length ? `<p class="lbl">Варианты</p>
       <div>${it.options.map(o => `<div class="opt">· ${linkify(o.text)}</div>`).join("")}</div>` : "")
-    + (isRoutine(it) && it.routine ? (() => { const wi = weekInfo(it);
+    + (isRoutine(it) && it.routine ? (() => { const wi = weekInfo(it), mo = monthInfo(it);
+      const over = n => n ? ` · +${n} сверх расписания` : "";
       return `<p class="lbl">В какие дни</p>
       <div class="rt">${wdOrder().map(k =>
         `<div class="${it.routine.days.indexOf(k) >= 0 ? "hit" : ""}">${WD_BY_DAY[k]}</div>`).join("")}</div>
+      ${it.partOfDay || it.mins ? `<p class="qs" style="margin:11px 0 0">${
+        [partName(it.partOfDay), minsLabel(it.mins)].filter(Boolean).join(" · ")}</p>` : ""}
       <p class="qs" style="margin:12px 0 4px">На этой неделе: <b style="color:var(--good)">${
-        wi.hit} из ${wi.of}</b> уже сделано</p>
-      ${weekDotsHTML(it)}`; })() : "")
+        wi.hit} из ${wi.of}</b> уже сделано${over(wi.extra)}</p>
+      ${weekDotsHTML(it)}
+      <p class="qs" style="margin:15px 0 6px">За 4 недели: <b style="color:var(--good)">${
+        mo.hit} из ${mo.of}</b>${over(mo.extra)}</p>
+      ${heatHTML(mo)}`; })() : "")
     /* Класс .readnote, а не .opt: у вариантов есть верхняя граница,
        и она рисовала лишнюю линию под заголовком «Заметка».        */
     + (hasNotes(it) ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>

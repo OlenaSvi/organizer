@@ -164,7 +164,8 @@ document.addEventListener("click", e => {
                       if (f === "type") { it.type = v2;
                         if (isRoutine(it) && !it.routine) it.routine = { days:[0,1,2,3,4,5,6], history:[] };
                         if (isIdea(it) || isRoutine(it)) { it.due = null; it.time = null; }
-                      } else it[f] = v2;
+                      } else if (f === "mins") it.mins = v2 ? +v2 : null;
+                      else it[f] = v2;
                       DD = null; DDM = null; DDADD = false;
                       save(); refreshEdit(id); } break;
     case "ddaddshow": DDADD = true; if (ddId()) refreshEdit(ddId()); break;

@@ -12,7 +12,7 @@ var L = h.indexOf('<div class="tcol">'), Rc = h.indexOf('<div class="tcol side">
 T.ok("слева дела и предложения",
   h.slice(L, Rc).indexOf(">Дела</h2>") >= 0 && h.slice(L, Rc).indexOf("Предлагаю") >= 0);
 T.ok("справа рутина и аппоинтменты",
-  h.slice(Rc).indexOf(">Рутина</h3>") >= 0 && h.slice(Rc).indexOf(">Аппоинтменты</h3>") >= 0);
+  h.slice(Rc).indexOf(">Рутина") >= 0 && h.slice(Rc).indexOf(">Аппоинтменты</h3>") >= 0);
 T.ok("встреча только справа",
   h.slice(Rc).indexOf(esc(ap.title)) >= 0 && h.slice(L, Rc).indexOf(esc(ap.title)) < 0);
 
