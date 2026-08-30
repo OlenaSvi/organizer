@@ -1,10 +1,22 @@
-/* Полная очистка дел: приложение заселяется заново, но справочники,
-   настройки и работоспособность экранов сохраняются. */
+/* Первый запуск: что видит человек, открывший приложение впервые.
+   Плюс — что пустое приложение не ломается ни на одном экране. */
 
-T.head("ДЕЛ НЕТ СОВСЕМ");
-T.ok("список дел пуст", S.items.length === 0, S.items.length + " записей");
-T.ok("порядок дня сброшен", !S.todayOrder);
-T.ok("флаг стоит — второй раз не сработает", S.itemsCleared === true);
+T.head("ПЕРВЫЙ ЗАПУСК: ЕСТЬ ЧТО ПОСМОТРЕТЬ");
+/* Разовые правки чинят историю уже заведённого приложения. Тому, кто
+   открыл его впервые, чинить нечего: очистка дел, сделанная однажды
+   для своих данных, стирала примеры и у него — приложение открывалось
+   пустым, и показать его кому-нибудь было нечего. */
+var fresh = seed();
+T.ok("примеры дел есть", fresh.items.length > 0, fresh.items.length + " записей");
+T.ok("разовые правки отмечены пройденными",
+  fresh.itemsCleared === true && fresh.reset2026_08 === true
+  && fresh.apptTodayExample === true);
+T.ok("справочники на месте", fresh.spheres.length >= 8 && fresh.places.length >= 3);
+var kinds = {};
+fresh.items.forEach(function (i) { kinds[typeDef(i.type).kind] = true; });
+T.ok("показаны все виды дел сразу",
+  ["plain", "choice", "routine", "appt", "idea"].every(function (k) { return kinds[k]; }),
+  Object.keys(kinds).join(", "));
 
 T.head("НОВЫЕ ДЕЛА НЕ УДАЛЯЮТСЯ");
 S.items.push({ id: "mine1", title: "Купить колбасу", type: defaultType(),
@@ -28,6 +40,9 @@ T.ok("настройки не сброшены", S.cfg.todayCap > 0 && S.cfg.urg
   && (S.cfg.theme === "light" || S.cfg.theme === "dark"));
 
 T.head("ПУСТОЕ ПРИЛОЖЕНИЕ НЕ ЛОМАЕТСЯ");
+/* Когда примеры удалены, экраны обязаны объяснять пустоту словами. */
+var keep = S.items;
+S.items = [];
 T.reset();
 ["today", "calendar", "map", "matrix", "all"].forEach(function (tab) {
   TAB = tab;
@@ -53,6 +68,7 @@ var saved = live().find(function (i) { return i.title === "Первое наст
 T.ok("дело создаётся и сохраняется", !!saved);
 T.ok("и сразу попадает в предложения",
   todayItems().proposals.some(function (s) { return s.it === saved; }));
-S.items = S.items.filter(function (i) { return i.title !== "Первое настоящее дело"; });
+S.items = keep;
+T.reset();
 
 T.done();
