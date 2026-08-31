@@ -48,9 +48,14 @@ globalThis.T = {
         notes: "", forceImp: null, today: null, notToday: null,
       }, o);
     };
+    /* Виды дел — справочник пользователя, и «выбрать / купить» в
+       стартовом наборе больше нет. Проверки не должны от этого зависеть:
+       если вида с нужным поведением нет, заводим свой. */
     var kind = function (k) {
       var t = S.types.find(function (x) { return x.kind === k; });
-      return t ? t.key : defaultType();
+      if (!t) { t = { key: "test_" + k, name: "проверочный " + k, hint: "", kind: k };
+        S.types.push(t); }
+      return t.key;
     };
     S.items = [
       mk({ title: "Оплатить счёт", spheres: ["бюрократия"] }),

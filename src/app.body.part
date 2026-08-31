@@ -53,10 +53,12 @@ const daysUntil = iso => iso
      plain   — обычное дело с дедлайном
      choice  — решение: варианты и дата, до которой надо выбрать
      routine — повторяется по дням недели                            */
+/* Четыре вида, а не шесть. «Выбрать / купить» ушло: варианты решения
+   пишутся и в заметке, а у идеи список вариантов остался. «Сходить /
+   съездить» тоже — это обычное дело, у которого просто заполнено место.
+   Виды при этом остаются справочником: кому нужно — заведёт свои.   */
 const DEFAULT_TYPES = [
-  { key: "task",    name: "Сделать",            hint: "обычное дело с дедлайном",        kind: "plain" },
-  { key: "choice",  name: "выбрать / купить",   hint: "решение: варианты + дедлайн",     kind: "choice" },
-  { key: "errand",  name: "сходить / съездить", hint: "привязано к месту",               kind: "plain" },
+  { key: "task",    name: "дело",               hint: "обычное дело с дедлайном",        kind: "plain" },
   { key: "routine", name: "рутина",             hint: "повторяется, пропуск не страшен", kind: "routine" },
   { key: "appt",    name: "аппоинтмент",        hint: "точные дата и время",             kind: "appt" },
   { key: "idea",    name: "идея на будущее",    hint: "мысль без срока — ничего не требует", kind: "idea" },
@@ -121,7 +123,7 @@ const PEOPLE0  = ["Мама","Я","Йони","Нитай"];
 /* По одному делу каждого вида — как образец, а не как список задач. */
 function templateItems() {
   const t = (o) => Object.assign({
-    id: uid(), title: "", type: "errand", multi: false, spheres: [], place: null, person: null,
+    id: uid(), title: "", type: "task", multi: false, spheres: [], place: null, person: null,
     due: null, time: null, steps: [], options: [], routine: null,
     done: false, created: today(), notes: "", forceImp: null,
     today: null, notToday: null,
@@ -129,10 +131,10 @@ function templateItems() {
   return [
     t({ title: "Позвонить в банк", type: "task", spheres: ["бюрократия"],
         person: "Я", due: addDays(today(), 5) }),
-    t({ title: "Выбрать новый матрас", type: "choice", spheres: ["Быт"],
+    t({ title: "Выбрать новый матрас", type: "task", spheres: ["Быт"],
         place: "Амстердам", person: "Я", due: addDays(today(), 14),
         options: [{ text: "подешевле, но жёстче" }, { text: "подороже, с доставкой" }] }),
-    t({ title: "Забрать посылку на почте", type: "errand", spheres: ["другое"],
+    t({ title: "Забрать посылку на почте", type: "task", spheres: ["другое"],
         place: "Кипр", person: "Я", due: addDays(today(), 3), multi: true,
         steps: [{ text: "найти номер отправления", done: false },
                 { text: "съездить на почту", done: false }] }),
@@ -141,7 +143,7 @@ function templateItems() {
     t({ title: "Приём у стоматолога", type: "appt", spheres: ["здоровье физическое"],
         place: "Амстердам", person: "Я", due: addDays(today(), 7), time: "10:30",
         notes: "Кайзерсграхт 12, 2 этаж · +31 20 123 45 67 · взять страховку" }),
-    t({ title: "Отвезти маму на анализы", type: "errand", spheres: ["мама"],
+    t({ title: "Отвезти маму на анализы", type: "task", spheres: ["мама"],
         place: "Израиль", person: "Мама", due: addDays(today(), 6) }),
     t({ title: "Собрать документы в школу", type: "task", spheres: ["Йони"],
         person: "Йони", due: addDays(today(), 10), multi: true,
@@ -150,7 +152,7 @@ function templateItems() {
                 { text: "отнести в школу", done: false }] }),
     t({ title: "Читать 20 минут", type: "routine", spheres: ["развитие"],
         person: "Я", routine: { days: [0,1,2,3,4,5,6], history: [] } }),
-    t({ title: "Найти психолога", type: "choice", spheres: ["здоровье ментальное"],
+    t({ title: "Найти психолога", type: "task", spheres: ["здоровье ментальное"],
         person: "Я", due: addDays(today(), 21),
         options: [{ text: "по рекомендации" }, { text: "через платформу онлайн" }] }),
     t({ title: "Рассмотреть брекеты или инвизилайн", type: "idea",
@@ -350,6 +352,16 @@ if (!S.itemsCleared) {
   S.items = [];
   S.todayOrder = null;
   S.itemsCleared = true;
+  save();
+}
+/* «Сделать» переименовано в «дело» — 31 августа 2026, по просьбе Елены.
+   Меняем ТОЛЬКО подпись и только если она ещё стандартная: переименовал
+   человек сам — его слово важнее. Ни одного дела при этом не тронуто,
+   ключ вида прежний, так что все записи остаются на своих местах.   */
+if (!S.typeTaskRenamed) {
+  const t = S.types.find(x => x.key === "task" && x.name === "Сделать");
+  if (t) t.name = "дело";
+  S.typeTaskRenamed = true;
   save();
 }
 

@@ -12,10 +12,25 @@ T.ok("разовые правки отмечены пройденными",
   fresh.itemsCleared === true && fresh.reset2026_08 === true
   && fresh.apptTodayExample === true);
 T.ok("справочники на месте", fresh.spheres.length >= 8 && fresh.places.length >= 3);
+
+T.head("СТАРТОВЫЙ НАБОР ВИДОВ");
+var names = fresh.types.map(function (t) { return t.name; });
+T.ok("«выбрать / купить» больше нет", names.indexOf("выбрать / купить") < 0,
+  names.join(" · "));
+T.ok("обычное дело называется «дело»", names.indexOf("дело") >= 0);
+T.ok("а «Сделать» не осталось", names.indexOf("Сделать") < 0);
+T.ok("«сходить / съездить» тоже убрано — это обычное дело с местом",
+  names.indexOf("сходить / съездить") < 0);
+T.ok("остальные виды на месте",
+  ["рутина", "аппоинтмент", "идея на будущее"]
+    .every(function (n) { return names.indexOf(n) >= 0; }), names.join(" · "));
+T.ok("видов ровно четыре", fresh.types.length === 4, String(fresh.types.length));
+T.ok("варианты остаются у идеи",
+  fresh.types.some(function (t) { return t.kind === "idea"; }));
 var kinds = {};
 fresh.items.forEach(function (i) { kinds[typeDef(i.type).kind] = true; });
 T.ok("показаны все виды дел сразу",
-  ["plain", "choice", "routine", "appt", "idea"].every(function (k) { return kinds[k]; }),
+  ["plain", "routine", "appt", "idea"].every(function (k) { return kinds[k]; }),
   Object.keys(kinds).join(", "));
 
 T.head("НОВЫЕ ДЕЛА НЕ УДАЛЯЮТСЯ");
@@ -34,7 +49,7 @@ T.head("СПРАВОЧНИКИ И НАСТРОЙКИ СОХРАНЕНЫ");
 T.ok("сферы на месте", S.spheres.length >= 8, S.spheres.join(", "));
 T.ok("места на месте", S.places.length >= 3, S.places.join(", "));
 T.ok("люди на месте", S.people.length >= 4, S.people.join(", "));
-T.ok("виды дел на месте", S.types.length >= 6,
+T.ok("виды дел на месте", S.types.length >= 4,
   S.types.map(function (t) { return t.name; }).join(", "));
 T.ok("настройки не сброшены", S.cfg.todayCap > 0 && S.cfg.urgentDays > 0
   && (S.cfg.theme === "light" || S.cfg.theme === "dark"));
