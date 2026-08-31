@@ -1381,7 +1381,14 @@ function tryAddToToday(id) {
    «не сегодня» — отказ: дело уходит и из дня, и из предложений;
    «вытеснить»  — просто освободить место: дело возвращается в предложения. */
 const dropFromToday = it => { it.today = null; it.notToday = today(); };
-const unpickToday   = it => { it.today = null; };
+/* Дело со сроком сегодня стоит в дне не по выбору, а по сроку: обнулить
+   «взято» мало — оно вернётся тем же путём. Убрать его из дня значит
+   сказать «не сегодня»: сегодня не показываем, а завтра оно придёт в
+   предложения со своим прошедшим сроком.                            */
+const unpickToday   = it => { it.today = null;
+  if (dueTodayTask(it)) it.notToday = today(); };
+/* Дело в дне — либо вы его взяли, либо у него сегодня срок. */
+const inDay         = it => pickedToday(it) || dueTodayTask(it);
 const toggleToday  = it => { pickedToday(it) ? dropFromToday(it) : addToToday(it); };
 const inInbox = i => !i.spheres || !i.spheres.length;
 /* Заметка из одних пробелов или переводов строки — не заметка:
@@ -1614,9 +1621,16 @@ function cardHTML(it, opts) {
       ${it.done || isRoutine(it) || isAppt(it) ? ""
         /* У встреч этих кнопок нет вовсе: их день определяется датой,
            а не выбором. Сегодняшняя в дне сама, остальные ждут своего. */
-        : `${TAB === "today" || pickedToday(it)
-             ? `<button class="linkbtn danger" data-act="unpick" data-id="${it.id}"
-                  title="Убрать из дня. Дело вернётся в «Предлагаю» и его можно взять снова">в предложения</button>`
+        /* Подпись говорит, куда дело уйдёт на самом деле. Взятое вами
+           вернётся в «Предлагаю» — его можно взять снова. Дело со сроком
+           сегодня туда не вернётся: срок уже сегодня, предлагать нечего,
+           поэтому оно просто уходит из дня до завтра.                 */
+        : `${TAB === "today" || inDay(it)
+             ? (dueTodayTask(it) && !pickedToday(it)
+                ? `<button class="linkbtn danger" data-act="unpick" data-id="${it.id}"
+                     title="Убрать из дня. Срок остаётся — завтра дело придёт в предложения">не сегодня</button>`
+                : `<button class="linkbtn danger" data-act="unpick" data-id="${it.id}"
+                     title="Убрать из дня. Дело вернётся в «Предлагаю» и его можно взять снова">в предложения</button>`)
              : `<button class="linkbtn" data-act="pin" data-id="${it.id}">＋ в сегодня</button>`}`}
     </div>
 

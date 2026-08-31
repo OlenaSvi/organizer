@@ -117,11 +117,43 @@ T.ok("прошедший срок в день сам не идёт — реша�
   day.mine.indexOf(d3) < 0 && day.proposals.some(function (s) { return s.it === d3; }));
 T.ok("в колонке дел оно видно", T.card(d1.id).length > 0);
 
+T.head("КНОПКА ГОВОРИТ ПРАВДУ О ТОМ, КУДА ДЕЛО УЙДЁТ");
+/* Взятое вручную возвращается в «Предлагаю» — его можно взять снова.
+   Дело со сроком сегодня в предложения не вернётся: срок уже сегодня,
+   предлагать нечего. Поэтому и подпись у кнопки другая. */
+T.reset();
+var byDue = T.tasks()[0], byHand = T.tasks()[1];
+byDue.due = today();
+addToToday(byHand);
+render();
+/* T.card отдаёт хвост колонки от нужной карточки, поэтому по нему
+   нельзя судить об ОТСУТСТВИИ текста: дальше идут соседние карточки.
+   Смотрим саму кнопку этого дела. */
+function unpickBtn(id) {
+  var m = new RegExp('data-act="unpick" data-id="' + id
+    + '"([^>]*)>([^<]+)<').exec(view.innerHTML.replace(/\s+/g, " "));
+  return m ? { attrs: m[1], label: m[2].trim() } : null;
+}
+var bh = unpickBtn(byHand.id), bd = unpickBtn(byDue.id);
+T.ok("у взятого вручную — «в предложения»", bh && bh.label === "в предложения",
+  bh ? bh.label : "кнопки нет");
+T.ok("у дела со сроком — «не сегодня»", bd && bd.label === "не сегодня",
+  bd ? bd.label : "кнопки нет");
+T.ok("и сказано, что вернётся завтра", bd && /завтра/.test(bd.attrs), bd ? bd.attrs : "");
+/* В других ракурсах предлагать «＋ в сегодня» тому, что уже в дне,
+   нельзя — кнопка обещала бы то, что уже сделано. */
+TAB = "all"; ALLFILTER = "all"; ALLQUERY = ""; ALLPERIOD = "all"; render();
+var row = document.getElementById("allList").innerHTML;
+var at = row.indexOf('data-id="' + byDue.id + '"');
+T.ok("в списке не зовут добавить то, что уже в дне",
+  row.slice(at, at + 700).indexOf("в сегодня") < 0);
+TAB = "today"; byHand.today = null; render();
+
 T.head("УБРАТЬ ИЗ ДНЯ ВСЁ-ТАКИ МОЖНО");
 /* Отличие от встречи: встречу не отменить, а срок — ваш и двигается. */
-clickOn({ act: "skip", id: d1.id });
+clickOn({ act: "unpick", id: d1.id });
 day = todayItems();
-T.ok("ушло из дня", day.mine.indexOf(d1) < 0);
+T.ok("кнопка и правда уносит его из дня", day.mine.indexOf(d1) < 0);
 T.ok("и обратно в предложения не просится",
   !day.proposals.some(function (s) { return s.it === d1; }));
 d1.notToday = null;

@@ -138,9 +138,16 @@ function cardHTML(it, opts) {
       ${it.done || isRoutine(it) || isAppt(it) ? ""
         /* У встреч этих кнопок нет вовсе: их день определяется датой,
            а не выбором. Сегодняшняя в дне сама, остальные ждут своего. */
-        : `${TAB === "today" || pickedToday(it)
-             ? `<button class="linkbtn danger" data-act="unpick" data-id="${it.id}"
-                  title="Убрать из дня. Дело вернётся в «Предлагаю» и его можно взять снова">в предложения</button>`
+        /* Подпись говорит, куда дело уйдёт на самом деле. Взятое вами
+           вернётся в «Предлагаю» — его можно взять снова. Дело со сроком
+           сегодня туда не вернётся: срок уже сегодня, предлагать нечего,
+           поэтому оно просто уходит из дня до завтра.                 */
+        : `${TAB === "today" || inDay(it)
+             ? (dueTodayTask(it) && !pickedToday(it)
+                ? `<button class="linkbtn danger" data-act="unpick" data-id="${it.id}"
+                     title="Убрать из дня. Срок остаётся — завтра дело придёт в предложения">не сегодня</button>`
+                : `<button class="linkbtn danger" data-act="unpick" data-id="${it.id}"
+                     title="Убрать из дня. Дело вернётся в «Предлагаю» и его можно взять снова">в предложения</button>`)
              : `<button class="linkbtn" data-act="pin" data-id="${it.id}">＋ в сегодня</button>`}`}
     </div>
 
