@@ -30,7 +30,8 @@ T.ok("свой файл принимается", !applyImport(payload).error);
 T.head("НАСТРОЙКИ");
 DIRPAGE = null; DIREDIT = null; openSettings();
 var h = host.innerHTML;
-T.ok("четыре справочника строками", ["sphere", "place", "person", "type"]
+/* Видов дел среди них нет: они не правятся и справочником не являются. */
+T.ok("три справочника строками", ["sphere", "place", "person"]
   .every(function (k) { return h.indexOf('data-p="' + k + '"') >= 0; }));
 T.ok("«Применить изменения» в самом низу",
   h.indexOf("cfgapply") > h.indexOf("Загрузить из файла"));

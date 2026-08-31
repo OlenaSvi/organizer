@@ -334,6 +334,9 @@ function openSettings() {
   if (!cfgDraft) cfgDraft = JSON.parse(JSON.stringify(S.cfg));
   /* Второй уровень — тот же попап: заголовок меняется на «‹ Настройки |
      Сферы», содержимое — на список. Одно окно, две глубины.        */
+  /* Имя справочника могло остаться от прежней версии — тогда просто
+     показываем список, а не падаем на пустом описании. */
+  if (DIRPAGE && !DIRS[DIRPAGE]) DIRPAGE = null;
   if (DIRPAGE) {
     const d = DIRS[DIRPAGE];
     if (!dirBackup) dirBackup = dirSnapshot();

@@ -535,24 +535,6 @@ function removePerson(p) {
 /* ── виды дел ──────────────────────────────────────────────────── */
 const KINDNOTE = { choice: "со списком вариантов", routine: "по дням недели",
                    appt: "с датой и временем", idea: "без срока, не просится в «Сегодня»" };
-function removeType(key) {
-  /* Основные четыре не убираются: без них у дел пропало бы поведение,
-     а завести их заново нечем. */
-  if (DEFAULT_TYPES.some(t => t.key === key)) return;
-  if (S.types.length <= 1) return alert("Должен остаться хотя бы один вид дела.");
-  const d = typeDef(key);
-  const back = S.types.find(t => t.key !== key);
-  const used = S.items.filter(i => i.type === key).length;
-  const warn = d.kind === "routine" ? "\n\nУ этого вида дни недели — дела перестанут повторяться."
-             : d.kind === "choice"  ? "\n\nУ этого вида есть список вариантов — дела его потеряют."
-             : d.kind === "appt"    ? "\n\nУ этого вида есть точное время — дела его потеряют."
-             : d.kind === "idea"    ? "\n\nИдеи станут обычными делами и начнут просить внимания." : "";
-  if (!confirm("Убрать вид «" + d.name + "»?"
-    + (used ? "\n\n" + used + " дел станут «" + back.name + "»." : "") + warn)) return;
-  S.items.forEach(i => { if (i.type === key) i.type = back.key; });
-  S.types = S.types.filter(t => t.key !== key);
-  save(); render(); if (host.innerHTML) openSettings();
-}
 
 /* ── СПРАВОЧНИКИ ─────────────────────────────────────────────────────
    Живут в настройках: это то, что настраивают один раз и забывают.  */
@@ -573,24 +555,14 @@ const DIRS = {
     note: "Кого касается дело. Дела при убирании остаются на месте.",
     list: () => S.people,
     count: p => live().filter(i => i.person === p).length },
-  /* Виды дел — единственный справочник, который не правится. Их
-     поведение зашито в код (рутина повторяется, у встречи есть час),
-     и «добавить вид» всё равно давало обычное дело: рутину заново им
-     было не создать. Значит и убрать основные четыре нельзя — вернуть
-     их нечем. Остаётся одно: убрать вид, доставшийся с прежних времён. */
-  type: { title: "Виды дел", act: "typ", one: "вид", fixed: true,
-    note: "Четыре основных вида убрать нельзя: их поведение зашито в приложение, "
-        + "и завести заново их нечем. Виды из прежних времён убрать можно — "
-        + "дела перейдут в «дело».",
-    list: () => S.types.map(t => t.key), label: k => typeDef(k).name,
-    count: k => live().filter(i => i.type === k).length },
 };
 let DIRPAGE = null, DIREDIT = null;
 /* Справочник правится как форма: снимок при входе, «Сохранить изменения»
    закрепляет, крестик возвращает к снимку. Правки видны сразу — но не
    считаются принятыми, пока не нажата кнопка.                       */
 let dirBackup = null, dirSaved = false;
-const DIRFIELDS = ["spheres", "places", "people", "types", "items", "open", "hereNow"];
+/* Виды дел в снимок не входят: их больше нельзя править. */
+const DIRFIELDS = ["spheres", "places", "people", "items", "open", "hereNow"];
 function dirSnapshot() {
   const snap = {};
   DIRFIELDS.forEach(k => { snap[k] = JSON.parse(JSON.stringify(S[k])); });
@@ -641,17 +613,14 @@ function dirPageHTML() {
          <span class="nm">${esc(label(v))}</span>
          <span class="qs cnt">${d.count(v)} ${plural(d.count(v), "дело", "дела", "дел")}</span>
          <span class="acts">
-           ${d.fixed ? "" : `<button class="linkbtn" data-act="diredit"
-             data-v="${esc(v)}">переименовать</button>`}
-           ${d.fixed && DEFAULT_TYPES.some(t => t.key === v) ? ""
-             : `<button class="linkbtn danger" data-act="${d.act}del"
-                  data-v="${esc(v)}">убрать</button>`}
+           <button class="linkbtn" data-act="diredit" data-v="${esc(v)}">переименовать</button>
+           <button class="linkbtn danger" data-act="${d.act}del" data-v="${esc(v)}">убрать</button>
          </span>
        </div>`).join("")}
-    ${d.fixed ? "" : `<div class="diraddrow">
+    <div class="diraddrow">
       <input type="text" id="dirNew" autocomplete="off"
         placeholder="Добавить ${d.one} и нажать Enter">
-    </div>`}
+    </div>
   </div>
   <p class="qs" style="margin:14px 4px 0">${d.note}</p>
   <div class="row modalfoot">
