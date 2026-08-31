@@ -7,7 +7,9 @@ t[0].due = addDays(today(), 10); t[0].today = addDays(today(), -1);  // не у�
 t[1].due = addDays(today(), 1);  t[1].forceImp = true;               // важное+срочное
 t[2].due = addDays(today(), -1); t[2].forceImp = true;               // важное+срочное
 t[3].due = addDays(today(), 8);  t[3].forceImp = true;
-t[4].due = today();              t[4].forceImp = false;              // неважное, срок пришёл
+/* Срок завтра, а не сегодня: сегодняшний срок уносит дело прямо в день,
+   и в предложениях его уже не будет — проверять было бы нечего. */
+t[4].due = addDays(today(), 1);  t[4].forceImp = false;              // неважное, срок близко
 if (t[5]) t[5].due = null;
 render();
 var p = todayItems().proposals;
@@ -24,9 +26,13 @@ T.head("НЕВАЖНОЕ МОЛЧИТ, ПОКА СРОК ДАЛЕКО");
 T.reset();
 var b = t[0]; b.forceImp = false; b.due = addDays(today(), 20);
 T.ok("не предлагается", !todayItems().proposals.some(function (s) { return s.it === b; }));
-b.due = today();
-T.ok("срок пришёл — предлагается",
+b.due = addDays(today(), 1);
+T.ok("срок подошёл — предлагается",
   todayItems().proposals.some(function (s) { return s.it === b; }));
+b.due = today();
+T.ok("а сегодняшний срок уносит его сразу в день",
+  todayItems().mine.indexOf(b) >= 0
+  && !todayItems().proposals.some(function (s) { return s.it === b; }));
 b.due = addDays(today(), S.cfg.urgentDays);
 T.ok("на границе «горит за» — предлагается",
   todayItems().proposals.some(function (s) { return s.it === b; }));
@@ -92,6 +98,57 @@ T.tasks().forEach(function (i) { addToToday(i); });
 render();
 T.ok("сказано, почему предлагать нечего",
   /Предлагать нечего: .+/.test(T.visible(view.innerHTML)));
+T.reset();
+
+T.head("СРОК СЕГОДНЯ — ДЕЛО УЖЕ В ДНЕ");
+/* Раньше такое дело лежало в предложениях и его нужно было брать
+   руками. Но срок сегодня и означает «сделать сегодня» — выбирать
+   тут нечего, как и у встречи. */
+T.reset();
+var d1 = T.tasks()[0], d2 = T.tasks()[1], d3 = T.tasks()[2];
+d1.due = today(); d2.due = addDays(today(), 1); d3.due = addDays(today(), -4);
+render();
+var day = todayItems();
+T.ok("дело со сроком сегодня в дне", day.mine.indexOf(d1) >= 0);
+T.ok("и его нет среди предложений — не задваивается",
+  !day.proposals.some(function (s) { return s.it === d1; }));
+T.ok("завтрашнее в день не лезет", day.mine.indexOf(d2) < 0);
+T.ok("прошедший срок в день сам не идёт — решаете заново",
+  day.mine.indexOf(d3) < 0 && day.proposals.some(function (s) { return s.it === d3; }));
+T.ok("в колонке дел оно видно", T.card(d1.id).length > 0);
+
+T.head("УБРАТЬ ИЗ ДНЯ ВСЁ-ТАКИ МОЖНО");
+/* Отличие от встречи: встречу не отменить, а срок — ваш и двигается. */
+clickOn({ act: "skip", id: d1.id });
+day = todayItems();
+T.ok("ушло из дня", day.mine.indexOf(d1) < 0);
+T.ok("и обратно в предложения не просится",
+  !day.proposals.some(function (s) { return s.it === d1; }));
+d1.notToday = null;
+
+T.head("СЧЁТ ДНЯ УЧИТЫВАЕТ СРОКИ");
+T.reset();
+var due = T.tasks().slice(0, 3);
+due.forEach(function (i) { i.due = today(); });
+render();
+T.ok("счётчик считает дела со сроком",
+  /сделано 0 из 3/.test(T.visible(view.innerHTML)), T.visible(view.innerHTML).slice(0, 120));
+clickOn({ act: "toggle", id: due[0].id });
+T.ok("сделанное не выпадает из счёта",
+  /сделано 1 из 3/.test(T.visible(view.innerHTML)));
+clickOn({ act: "toggle", id: due[0].id });
+
+T.head("ПЕРЕГРУЖЕННЫЙ ДЕНЬ НАЗЫВАЕТСЯ СПОКОЙНО");
+T.reset();
+S.cfg.todayCap = 3;
+T.tasks().slice(0, 5).forEach(function (i) { i.due = today(); });
+render();
+var vis = T.visible(view.innerHTML);
+T.ok("про сроки сказано словами", vis.indexOf("со сроком") >= 0, vis.slice(0, 200));
+T.ok("и предложен выход, а не упрёк", vis.indexOf("сдвинуть") >= 0);
+T.ok("«взято больше» не пишем — вы этого не выбирали",
+  vis.indexOf("Взято больше") < 0);
+S.cfg.todayCap = 5;
 T.reset();
 
 T.done();

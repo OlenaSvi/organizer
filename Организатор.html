@@ -969,6 +969,14 @@ const schedDays = it => isRoutine(it) ? (it.routine && it.routine.days)
   : (it.repeat && it.repeat.days);
 
 const isTodayAppt = it => isAppt(it) && (it.due === today() || repeatOn(it, today()));
+/* Срок сегодня — это уже сегодняшнее дело, а не предложение: «сделать
+   не позже сегодня» и «сделать сегодня» здесь одно и то же, выбирать
+   нечего. Попадает в день само, как встреча. Отличие от встречи одно:
+   убрать можно — встречу не отменишь, а срок ваш и двигается.
+   Прошедший срок сюда не входит: там решение принимается заново, и
+   тащить такое дело в день без спроса — упрёк, а не помощь.        */
+const dueTodayTask = it => !isAppt(it) && !isIdea(it) && !isRoutine(it)
+  && it.due === today();
 /* Сортировка по сроку: у встреч учитываем ещё и время внутри дня. */
 const sortKey = i => (i.due || "9999") + "T" + (i.time || "23:59");
 
@@ -1662,14 +1670,21 @@ function todayItems() {
      смените дату. Поэтому «не сегодня» на неё не действует.        */
   /* Лимит — про то, сколько вы БЕРЁТЕ. Встречи в него не входят: их не
      выбирали и убрать нельзя, иначе получалось бы «8 из 5» без выхода. */
-  const mine = rest.filter(i => isTodayAppt(i) || (pickedToday(i) && !skippedToday(i)));
+  const mine = rest.filter(i => isTodayAppt(i)
+    || ((dueTodayTask(i) || pickedToday(i)) && !skippedToday(i)));
   const apptCount = mine.filter(isTodayAppt).length;
-  const chosenCount = mine.length - apptCount;
+  /* Три разные вещи в одном дне: встречи (час назначен), дела со сроком
+     (день назначен) и взятое вами. Лимит — только про последнее: его
+     вы выбирали, а остальное вам назначено, и «8 из 5» без выхода
+     было бы упрёком, а не реализмом.                                */
+  const dueCount = mine.filter(i => !isTodayAppt(i) && dueTodayTask(i)).length;
+  const chosenCount = mine.length - apptCount - dueCount;
   /* Дело без сферы предлагается наравне со всеми: «Разобрать» — место,
      где сферу можно проставить, а не карантин, из-за которого дело
      не показывается в дне.                                          */
   const offerable = i => !pickedToday(i) && !skippedToday(i) && !isIdea(i)
-    && !isAppt(i);                      // встречи не предлагаем никогда
+    && !isAppt(i)                       // встречи не предлагаем никогда
+    && !dueTodayTask(i);                // со сроком сегодня — уже в дне
   const visible = rest.filter(i => offerable(i) && reachable(i));
   /* Спрятанное из-за места считаем и называем: молчаливое исчезновение
      дел выглядит как «переключатель не работает» — или хуже, как потеря. */
@@ -1760,7 +1775,8 @@ function todayItems() {
   if (nAway) parts.push(nAway + " в других местах");
   const whyRest = parts.join(" · ");
   const whyEmpty = parts.length ? whyRest : "живых дел нет. Новые появятся здесь сами";
-  return { routines, routDone, mine, doneTasks, doneSteps, apptCount, chosenCount, away,
+  return { routines, routDone, mine, doneTasks, doneSteps, apptCount, chosenCount,
+           dueCount, away,
            queued, whyEmpty, whyRest, proposals };
 }
 
@@ -1922,12 +1938,16 @@ function suggestRowHTML(s) {
 
 function renderToday() {
   const { routines, routDone, mine, doneTasks, doneSteps, proposals,
-          apptCount, chosenCount, away, queued, whyEmpty, whyRest } = todayItems();
+          apptCount, chosenCount, dueCount, away, queued, whyEmpty, whyRest } = todayItems();
   const cap = S.cfg.todayCap;
   const tasks = mine.filter(i => !isTodayAppt(i));
   const appts = mine.filter(isTodayAppt);
+  /* «Взято больше» — только если вы сами набрали сверх лимита. Когда
+     день переполнен сроками и встречами, упрекать не за что: их не
+     выбирали. Тогда говорим, из чего сложился день, и называем выход. */
   const over = chosenCount > cap;
-  const heavy = !over && apptCount && (apptCount + chosenCount) > cap;
+  const heavy = !over && (apptCount + dueCount)
+    && (apptCount + dueCount + chosenCount) > cap;
   const anyRout = routines.length + routDone.length;
 
   /* Один экран без прокрутки страницы: дела — широкой левой колонкой,
@@ -1937,7 +1957,7 @@ function renderToday() {
      сделанное — полупрозрачным, сверх лимита — розовым. Сделанное не
      исчезает из счёта — день не пятится назад, а наполняется.       */
   const doneN = doneTasks.length + doneSteps.length;
-  const takenN = chosenCount + doneN;
+  const takenN = chosenCount + dueCount + doneN;
   const segs = Array.from({ length: Math.max(cap, takenN) }, (_, k) =>
     `<i class="${k < doneN ? "dn" : k < takenN ? "on" : ""}${k >= cap ? " ov" : ""}"></i>`).join("");
 
@@ -1949,10 +1969,12 @@ function renderToday() {
     `<div class="tscroll">` +
     awayNote(away) +
     (over ? `<div class="toomany">Взято больше, чем помещается в день.</div>` : "") +
-    (heavy ? `<div class="toomany">Сегодня ${apptCount} ${
-        plural(apptCount, "встреча", "встречи", "встреч")} и ${chosenCount} ${
-        plural(chosenCount, "дело", "дела", "дел")} — вместе это больше, чем помещается.
-      Встречи не отложить, так что реалистично тут только меньше брать.</div>` : "") +
+    (heavy ? `<div class="toomany">${[
+        apptCount ? apptCount + " " + plural(apptCount, "встреча", "встречи", "встреч") : "",
+        dueCount ? dueCount + " " + plural(dueCount, "дело", "дела", "дел") + " со сроком" : "",
+        chosenCount ? chosenCount + " взято" : ""].filter(Boolean).join(", ")
+      } — вместе это больше, чем помещается в день.
+      Встречу не отложить, а срок можно сдвинуть: откройте дело и поменяйте дату.</div>` : "") +
     (tasks.length
       ? tasks.map(i => cardHTML(i, { sortable: tasks.length > 1, chosen: true })).join("")
       : (proposals.length
