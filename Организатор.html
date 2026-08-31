@@ -2207,11 +2207,15 @@ function doneEntries() {
   const out = [];
   S.items.forEach(i => {
     if (i.draft) return;
-    /* byDay — отметка живёт в истории по дням: вернуть можно только
+    /* Рутины здесь нет намеренно: она отмечается каждый день, и за
+       месяц это сотня записей, под которыми тонет всё настоящее. Её
+       история и так видна в ней самой — недельные точки и карта
+       четырёх недель. Архив отвечает «что я сделала», а не «сколько
+       раз я почистила зубы».
+       byDay — отметка живёт в истории по дням: вернуть можно только
        сегодняшнюю, потому что галочка работает с сегодняшним днём. */
-    if (isRoutine(i) && i.routine) {
-      i.routine.history.forEach(d => out.push({ it: i, when: d, byDay: true }));
-    } else if (repeats(i)) {
+    if (isRoutine(i)) return;
+    if (repeats(i)) {
       i.repeat.history.forEach(d => out.push({ it: i, when: d, byDay: true }));
     } else if (i.done) {
       out.push({ it: i, when: i.doneAt || null, byDay: false });
@@ -2219,7 +2223,6 @@ function doneEntries() {
   });
   return out.sort((a, b) => String(b.when || "").localeCompare(String(a.when || "")));
 }
-const doneOn = d => doneEntries().filter(e => e.when === d);
 
 function doneRow(e, canUndo) {
   return `<div class="card mini done">
@@ -3360,8 +3363,8 @@ function openDone(id, when) {
         it.time ? " " + esc(it.time) : ""}</span>` : ""}
     </div>
 
-    ${rout && it.routine ? `<p class="lbl">В какие дни</p>
-      ${daysRowHTML(it.routine.days)}
+    ${(schedDays(it) || []).length ? `<p class="lbl">В какие дни</p>
+      ${daysRowHTML(schedDays(it))}
       <p class="qs" style="margin:-4px 0 16px">Сделано ${routineScore(it).hit}
         из ${routineScore(it).of} за последнюю неделю.</p>` : ""}
 

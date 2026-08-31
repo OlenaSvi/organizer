@@ -216,8 +216,8 @@ function openDone(id, when) {
         it.time ? " " + esc(it.time) : ""}</span>` : ""}
     </div>
 
-    ${rout && it.routine ? `<p class="lbl">В какие дни</p>
-      ${daysRowHTML(it.routine.days)}
+    ${(schedDays(it) || []).length ? `<p class="lbl">В какие дни</p>
+      ${daysRowHTML(schedDays(it))}
       <p class="qs" style="margin:-4px 0 16px">Сделано ${routineScore(it).hit}
         из ${routineScore(it).of} за последнюю неделю.</p>` : ""}
 

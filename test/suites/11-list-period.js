@@ -60,4 +60,34 @@ T.ok("сохранён вместе с остальным видом",
 ALLPERIOD = "all"; ALLFILTER = "all";
 T.reset();
 
+T.head("РУТИНА В «СДЕЛАННЫЕ» НЕ ПОПАДАЕТ");
+/* Отмечается каждый день — за месяц это сотня записей, под которыми
+   тонет всё настоящее. Её история и так видна в самой рутине:
+   недельные точки и карта четырёх недель. */
+T.reset();
+var r = T.routine();
+r.routine.history = [today(), addDays(today(), -1), addDays(today(), -2)];
+var task = T.tasks()[0];
+task.done = true; task.doneAt = today();
+var ap2 = T.appt();
+ap2.repeat = { days: [0, 1, 2, 3, 4, 5, 6], history: [today()] };
+ap2.due = null;
+TAB = "all"; ALLFILTER = "done"; ALLPERIOD = "all"; ALLQUERY = ""; render();
+var box2 = document.getElementById("allList").innerHTML;
+T.ok("рутины в архиве нет", box2.indexOf(esc(r.title)) < 0);
+T.ok("а сделанное дело — на месте", box2.indexOf(esc(task.title)) >= 0);
+T.ok("и состоявшаяся встреча тоже", box2.indexOf(esc(ap2.title)) >= 0);
+T.ok("счётчик рутину не считает",
+  document.getElementById("allCount").textContent.indexOf("2 ") === 0,
+  document.getElementById("allCount").textContent);
+
+T.head("НО В СВОЁМ ДНЕ ОНА ПО-ПРЕЖНЕМУ ВИДНА");
+/* Архив — это история. Панель дня — состояние сегодня, и отмеченная
+   рутина обязана быть в ней видна, иначе галочка выглядит впустую. */
+TAB = "today"; ALLFILTER = "all"; render();
+T.ok("отмеченная рутина в панели дня", T.visible(view.innerHTML).indexOf(r.title) >= 0);
+task.done = false; task.doneAt = null;
+ap2.repeat = null;
+T.reset();
+
 T.done();
