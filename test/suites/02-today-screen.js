@@ -155,16 +155,36 @@ T.ok("точки недели — ниже чипов",
 T.ok("название не обрезано", T.visible(line).indexOf("Стакан тёплой воды натощак") >= 0);
 
 T.head("РУТИНА: ТОЧКИ НЕДЕЛИ");
+/* От дня недели проверка зависеть не должна. Раньше из расписания
+   вычитался вторник — и во вторник рутина в панель не попадала, а
+   регулярка хватала точки соседней рутины. Теперь выкидываем день,
+   которым сегодня заведомо не является, и берём точки именно этой
+   строки, а не первой попавшейся. */
 T.reset();
 var r = T.routine();
 r.created = addDays(today(), -10);
 var s0 = startOfWeek(today());
-r.routine.days = [0, 1, 3, 4, 5, 6];          // без вторника
-r.routine.history = [addDays(s0, 2)];         // среда недели
+var wd = new Date(today() + "T12:00:00").getDay();
+var off = (wd + 3) % 7;                        // не сегодня
+r.routine.days = [0, 1, 2, 3, 4, 5, 6].filter(function (d) { return d !== off; });
+/* Отмечаем прошедший день недели, а не сегодня: отмеченная сегодня
+   рутина уезжает в зачёркнутую строку, где точек недели нет. */
+var mark = null;
+for (var k2 = 0; k2 < 7; k2++) {
+  var d2 = addDays(s0, k2);
+  if (new Date(d2 + "T12:00:00").getDay() !== off && d2 < today()) { mark = d2; break; }
+}
+if (!mark) for (var k3 = 0; k3 < 7; k3++) {
+  var d3 = addDays(s0, k3);
+  if (new Date(d3 + "T12:00:00").getDay() !== off && d3 !== today()) { mark = d3; break; }
+}
+r.routine.history = [mark];
 render();
-var seg2 = /class="rdots"[\s\S]*?<\/div>/.exec(view.innerHTML)[0];
+var line2 = view.innerHTML.slice(view.innerHTML.indexOf('data-drag="' + r.id + '"'));
+var seg2 = /class="rdots"[\s\S]*?<\/div>/.exec(line2)[0];
 T.ok("всегда 7 точек", (seg2.match(/<i /g) || []).length === 7);
-T.ok("день вне расписания — бледный", (seg2.match(/offday/g) || []).length === 1);
+T.ok("день вне расписания — бледный", (seg2.match(/offday/g) || []).length === 1,
+  "выкинут день " + off + ", сегодня " + wd);
 T.ok("сделанный день — синий", (seg2.match(/class="on/g) || []).length === 1);
 T.reset();
 

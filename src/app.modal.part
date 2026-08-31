@@ -458,7 +458,7 @@ function itemFormHTML(it, ids) {
      последним зияла бы пустая клетка.                               */
   const cell = (label, body, wide) => `<div class="cfgitem${wide ? " wide" : ""}">
       <p class="lbl">${label}</p>${body}</div>`;
-  const kindItem = cell("Вид дела", ddTypeHTML(it));
+  const kindItem = cell("Вид", ddTypeHTML(it));
   /* Семь плиток — самый широкий элемент формы. В половине строки они
      сжимались вдвое против того, как выглядят в просмотре.          */
   const daysItem = days => cell("В какие дни", daysRowHTML(days, it.id), true);
