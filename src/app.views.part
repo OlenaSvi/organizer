@@ -223,47 +223,31 @@ function todayItems() {
 
   const byDate = (a, b) => sortKey(a).localeCompare(sortKey(b));
 
-  /* Взятое в прошлые дни и не закрытое возвращается СЮДА, а не в список:
-     решение принимаете вы заново, без накопленных упрёков. Возвращается
-     любое, в том числе неважное: это уже был ваш выбор.              */
-  const carried = visible.filter(i => i.today && i.today < today())
-    .sort((a, b) => String(b.today).localeCompare(String(a.today)));
+  /* ── Три повода предложить дело, и больше никаких ────────────────
+     1. НЕ УСПЕЛИ — брали в прошлые дни и не закрыли. Возвращается
+        сюда, а не в список: решение принимаете заново, без упрёков.
+        Любое, в том числе неважное, — это уже был ваш выбор.
+     2. СКОРО СРОК — важное, до срока осталось не больше «горит за».
+        Сегодняшний срок сюда не попадает: такое дело уже в дне.
+     3. ДАВНО ЖДЁТ — важное вообще без срока. Именно оно не делается
+        годами, потому что его ничего не подпирает.
 
-  /* Важность — не выключатель, а «не отвлекай раньше времени». Неважное
-     молчит, пока до дедлайна далеко, и приходит вниз списка, когда срок
-     подошёл: иначе дело с сегодняшним сроком просто исчезало бы.     */
-  const fresh = visible.filter(i => carried.indexOf(i) < 0);
-  const pool  = fresh.filter(isImportant);
-  const later = fresh.filter(i => !isImportant(i) && urgency(i)).sort(byDate);
-
-  const notUrgent = pool.filter(i => !urgency(i));
-
-  /* «Важное, но не срочное» — то, у чего вообще нет дедлайна: именно оно
-     не делается годами, потому что его ничего не подпирает.          */
-  const heroRank = i => (i.due ? 2 : 0);
-  const hero = notUrgent.slice().sort((a, b) =>
-    heroRank(a) - heroRank(b) || String(a.created).localeCompare(String(b.created)))[0] || null;
-
-  const sugg = [], tail = [];
-  const seen = i => sugg.some(s => s.it === i) || tail.some(s => s.it === i);
-  const add = (i, why) => {
-    if (!i || seen(i)) return;
-    sugg.push({ it: i, why: why || "" });
-  };
-  /* Порядок: сначала важное и срочное — это клетка «делать сейчас» из
-     матрицы. Дальше то, что не успели в прошлые дни. Потом всё
-     остальное по числу дней до срока, бессрочное в конце.
-     «Почему предлагаю» пишем только когда причина не в дате.        */
+     Всё остальное молчит и придёт само в свой день. Раньше здесь была
+     ещё бронь мест под «неважное со сроком» — она существовала затем,
+     чтобы дело с сегодняшним сроком не исчезло из дня. Теперь оно
+     попадает в день само, и бронь стала не нужна.                   */
   const whyCarried = i => "не успели " + (i.today === addDays(today(), -1)
     ? "вчера" : formatDay(i.today));
-  const isCarried = i => carried.indexOf(i) >= 0;
-  const hot = pool.concat(carried).filter(i => isImportant(i) && urgency(i)).sort(byDate);
-  hot.forEach(i => add(i, isCarried(i) ? whyCarried(i) : ""));
-  carried.sort(byDate).forEach(i => add(i, whyCarried(i)));
-  pool.slice().sort(byDate).forEach(i => add(i, i === hero ? "важное, но не горит" : ""));
-  /* Слово нужно: дата у них близкая, а стоят они внизу — без пометки
-     это выглядело бы сбоем сортировки.                              */
-  later.forEach(i => { if (!seen(i)) tail.push({ it: i, why: "неважное", quiet: true }); });
+  const carried = visible.filter(i => i.today && i.today < today())
+    .sort((a, b) => String(b.today).localeCompare(String(a.today)));
+  const isNew = i => carried.indexOf(i) < 0;
+  const soon = visible.filter(i => isNew(i) && isImportant(i) && urgency(i)).sort(byDate);
+  const waiting = visible.filter(i => isNew(i) && isImportant(i) && !i.due)
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+
+  const pool = carried.map(i => ({ it: i, why: whyCarried(i) }))
+    .concat(soon.map(i => ({ it: i, why: "" })))
+    .concat(waiting.map(i => ({ it: i, why: "давно ждёт" })));
 
   /* По умолчанию встречи идут первыми и по времени — они привязаны к часу,
      всё остальное можно двигать вокруг них.                          */
@@ -278,16 +262,15 @@ function todayItems() {
     routDone.sort((a, b) => rank(a.id) - rank(b.id));
     doneTasks.sort((a, b) => rank(a.id) - rank(b.id));
   }
-  /* Два места держим за неважным-со-сроком, одно — за «важным, но не
-     горит»: без дедлайна оно всегда в хвосте и иначе не показывалось бы
-     никогда — а именно оно годами и не делается.                    */
-  const keep = tail.slice(0, 2);
-  let head = sugg.slice(0, 7 - keep.length);
-  const h = hero && sugg.find(s => s.it === hero);
-  if (h && !head.includes(h)) head = head.slice(0, -1).concat([h]);
+  let head = pool.slice(0, 7);
+  /* Одно место всегда за «давно ждёт»: без дедлайна оно вечно в хвосте
+     и иначе не показалось бы никогда — а именно оно и не делается
+     годами. Это единственная бронь, которая осталась.               */
+  const w = pool.find(s => s.why === "давно ждёт");
+  if (w && head.indexOf(w) < 0) head = head.slice(0, -1).concat([w]);
   /* Сколько ждёт за семёркой: видно, что «не сегодня» листает очередь. */
-  const queued = sugg.length + tail.length - head.length - keep.length;
-  const proposals = head.concat(keep);
+  const queued = pool.length - head.length;
+  const proposals = head;
 
   /* Почему предложений столько, сколько есть, — объясняем ВСЕГДА, а не
      только на пустом списке: «почему тут одно дело» — тот же вопрос,
@@ -296,13 +279,18 @@ function todayItems() {
   const parts = [];
   const nMine = cand.filter(i => pickedToday(i) && !skippedToday(i)).length;
   const nSkip = cand.filter(skippedToday).length;
-  const nQuiet = cand.filter(i => !pickedToday(i) && !skippedToday(i)
-    && reachable(i) && !isImportant(i) && !urgency(i)).length;
+  /* Молчащие делятся надвое, и причины разные: у одних срок ещё не
+     подошёл, другим подпирать нечем. Одной фразой это не сказать. */
+  const rests = cand.filter(i => !pickedToday(i) && !skippedToday(i) && !dueTodayTask(i)
+    && reachable(i) && !proposals.some(s => s.it === i));
+  const nLater = rests.filter(i => i.due).length;
+  const nQuiet = rests.length - nLater;
   const nAway = S.hereNow ? cand.filter(i => !pickedToday(i) && !skippedToday(i)
     && !reachable(i)).length : 0;
   if (nMine) parts.push(nMine + " уже в дне");
   if (nSkip) parts.push(nSkip + " " + plural(nSkip, "вернётся", "вернутся", "вернутся") + " завтра");
-  if (nQuiet) parts.push(nQuiet + " " + plural(nQuiet, "неважное молчит", "неважных молчат", "неважных молчат") + " до срока");
+  if (nLater) parts.push(nLater + " " + plural(nLater, "ждёт", "ждут", "ждут") + " своего срока");
+  if (nQuiet) parts.push(nQuiet + " " + plural(nQuiet, "молчит", "молчат", "молчат") + " без срока");
   if (nAway) parts.push(nAway + " в других местах");
   const whyRest = parts.join(" · ");
   const whyEmpty = parts.length ? whyRest : "живых дел нет. Новые появятся здесь сами";

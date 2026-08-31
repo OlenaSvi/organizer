@@ -2,43 +2,54 @@
 T.seed();
 var t = T.tasks();
 
-T.head("ПОРЯДОК: важное и срочное первым");
-t[0].due = addDays(today(), 10); t[0].today = addDays(today(), -1);  // не успели
-t[1].due = addDays(today(), 1);  t[1].forceImp = true;               // важное+срочное
-t[2].due = addDays(today(), -1); t[2].forceImp = true;               // важное+срочное
-t[3].due = addDays(today(), 8);  t[3].forceImp = true;
-/* Срок завтра, а не сегодня: сегодняшний срок уносит дело прямо в день,
-   и в предложениях его уже не будет — проверять было бы нечего. */
-t[4].due = addDays(today(), 1);  t[4].forceImp = false;              // неважное, срок близко
-if (t[5]) t[5].due = null;
-render();
-var p = todayItems().proposals;
-var first2 = p.slice(0, 2).map(function (s) { return s.it; });
-T.ok("первыми — важное и срочное",
-  first2.every(function (i) { return isImportant(i) && urgency(i); }));
-T.ok("внутри группы — по дате",
-  daysUntil(first2[0].due) <= daysUntil(first2[1].due));
-var carriedAt = p.findIndex(function (s) { return /не успели/.test(s.why); });
-T.ok("«не успели» после срочного важного", carriedAt >= 2, "место " + (carriedAt + 1));
-T.ok("неважное со сроком — в самом низу", p[p.length - 1].quiet === true);
-
-T.head("НЕВАЖНОЕ МОЛЧИТ, ПОКА СРОК ДАЛЕКО");
+T.head("ТРИ ПОВОДА — И БОЛЬШЕ НИКАКИХ");
+/* Предлагаем дело ровно по трём причинам: не успели, скоро срок,
+   давно ждёт. Всё остальное молчит — и придёт само в свой день,
+   потому что дело со сроком сегодня попадает в день без спроса. */
 T.reset();
-var b = t[0]; b.forceImp = false; b.due = addDays(today(), 20);
-T.ok("не предлагается", !todayItems().proposals.some(function (s) { return s.it === b; }));
-b.due = addDays(today(), 1);
-T.ok("срок подошёл — предлагается",
-  todayItems().proposals.some(function (s) { return s.it === b; }));
-b.due = today();
-T.ok("а сегодняшний срок уносит его сразу в день",
-  todayItems().mine.indexOf(b) >= 0
-  && !todayItems().proposals.some(function (s) { return s.it === b; }));
-b.due = addDays(today(), S.cfg.urgentDays);
-T.ok("на границе «горит за» — предлагается",
-  todayItems().proposals.some(function (s) { return s.it === b; }));
-b.due = addDays(today(), S.cfg.urgentDays + 1);
-T.ok("за границей — молчит",
-  !todayItems().proposals.some(function (s) { return s.it === b; }));
+var t = T.tasks();
+var late  = t[0]; late.today = addDays(today(), -1); late.due = null;
+var soon  = t[1]; soon.due = addDays(today(), 1); soon.forceImp = true;
+var wait  = t[2]; wait.due = null; wait.forceImp = true;
+var far   = t[3]; far.due = addDays(today(), 20); far.forceImp = true;
+var small = t[4]; small.due = addDays(today(), 1); small.forceImp = false;
+if (t[5]) { t[5].due = null; t[5].forceImp = false; }
+render();
+function why(it) {
+  var s2 = todayItems().proposals.find(function (x) { return x.it === it; });
+  return s2 ? (s2.why || "по сроку") : null;
+}
+T.ok("не успели — предлагается", /не успели/.test(why(late) || ""), String(why(late)));
+T.ok("скоро срок — предлагается", why(soon) === "по сроку", String(why(soon)));
+T.ok("давно ждёт — предлагается", why(wait) === "давно ждёт", String(why(wait)));
+T.ok("важное с дальним сроком молчит", why(far) === null);
+T.ok("неважное со сроком не предлагается вовсе", why(small) === null);
+T.ok("неважное без срока молчит", !t[5] || why(t[5]) === null);
+
+T.head("ПОРЯДОК: НЕ УСПЕЛИ, ПОТОМ СРОК, ПОТОМ ЖДУЩЕЕ");
+var order = todayItems().proposals.map(function (x) { return x.it; });
+T.ok("не успели впереди срочного",
+  order.indexOf(late) < order.indexOf(soon), order.length + " предложений");
+T.ok("ждущее — последним", order.indexOf(wait) === order.length - 1);
+
+T.head("МЕСТО ЗА «ДАВНО ЖДЁТ» ДЕРЖИТСЯ ВСЕГДА");
+/* Без дедлайна оно вечно в хвосте и иначе не показалось бы никогда —
+   а именно оно и не делается годами. */
+T.reset();
+var many = T.tasks();
+many.forEach(function (i, k) {
+  i.due = addDays(today(), 1); i.forceImp = true; i.today = addDays(today(), -1 - k);
+});
+var w2 = many[many.length - 1];
+w2.due = null; w2.today = null; w2.forceImp = true;
+w2.createdAt = 1;
+render();
+var pr = todayItems().proposals;
+T.ok("оно на экране, хотя очередь длинная",
+  pr.some(function (x) { return x.it === w2; }), pr.length + " показано");
+T.ok("и подписано, почему",
+  (pr.find(function (x) { return x.it === w2; }) || {}).why === "давно ждёт");
+T.reset();
 
 T.head("ЧТО НЕ ПРЕДЛАГАЕТСЯ НИКОГДА");
 T.reset();
@@ -64,7 +75,9 @@ T.head("ОЧЕРЕДЬ ПОДТЯГИВАЕТСЯ");
 T.reset();
 for (var k = 0; k < 6; k++) S.items.push({
   id: "q" + k, title: "дело очереди " + (k + 1), type: defaultType(),
-  spheres: ["Быт"], created: "2026-02-0" + (k + 1), due: addDays(today(), k + 5),
+  /* Срок в пределах «горит за» — иначе дело молчит и в очередь не
+     попадает: далёкий срок больше не повод предлагать. */
+  spheres: ["Быт"], created: "2026-02-0" + (k + 1), due: addDays(today(), 1 + k % 3),
   steps: [], done: false, multi: false, place: null, person: null, time: null,
   options: [], routine: null, notes: "", forceImp: null, today: null, notToday: null });
 render();
@@ -85,7 +98,9 @@ S.items = S.items.filter(function (i) { return String(i.id).indexOf("q") !== 0; 
 T.head("ЛИМИТ И ВСТРЕЧИ");
 T.reset();
 ap = T.appt(); ap.due = today();
-T.tasks().forEach(function (i, k2) { i.due = addDays(today(), k2); });
+/* Без срока и важные — значит «давно ждёт», значит в предложениях.
+   Со сроком сегодня они попали бы в день сами, и брать было бы нечего. */
+T.tasks().forEach(function (i) { i.due = null; i.forceImp = true; });
 clickOn({ act: "takeall" });
 var ti = todayItems();
 T.ok("«Взять всё» набирает дела до лимита, не считая встреч",
