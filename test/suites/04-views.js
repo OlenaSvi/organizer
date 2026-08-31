@@ -63,10 +63,16 @@ T.ok("нарисованы все дела ветки", leafRects.length === inB
 var xs = leafRects.map(function (b) { return Math.round(b.l); });
 T.ok("листья стоят одной колонкой", new Set(xs).size === 1,
   "разных левых краёв: " + new Set(xs).size);
-var ys = leafRects.map(function (b) { return b.t; }).sort(function (a, b) { return a - b; });
+/* Шаг больше не одинаковый: подпись переносится, и высота листа
+   зависит от числа строк. Требуем другого — чтобы они шли сверху вниз
+   и не наезжали друг на друга. */
+var sorted = leafRects.slice().sort(function (a, b) { return a.t - b.t; });
 var gaps = [];
-for (var g = 1; g < ys.length; g++) gaps.push(Math.round(ys[g] - ys[g - 1]));
-T.ok("шаг между ними одинаковый", new Set(gaps).size === 1, "шаги: " + gaps.join(","));
+for (var g = 1; g < sorted.length; g++) gaps.push(Math.round(sorted[g].t - sorted[g - 1].b));
+T.ok("листья не наезжают друг на друга",
+  gaps.every(function (x) { return x >= 0; }), "просветы: " + gaps.join(","));
+T.ok("и стоят вплотную, без провалов",
+  gaps.every(function (x) { return x <= 20; }), "просветы: " + gaps.join(","));
 var over2 = [];
 for (var a2 = 0; a2 < leafRects.length; a2++)
   for (var b2 = a2 + 1; b2 < leafRects.length; b2++) {
@@ -77,15 +83,44 @@ T.ok("не налезают друг на друга", over2.length === 0, over2
 S.items = S.items.filter(function (i) { return String(i.id).indexOf("col") !== 0; });
 S.open = [];
 
+T.head("НА КАРТЕ НАЗВАНИЕ ЦЕЛИКОМ");
+/* Подпись обрывалась на 24 знаках многоточием — по такому листу
+   нельзя было понять, что за дело. Теперь длинное имя переносится. */
+T.reset();
+var lg = T.tasks()[0];
+lg.title = "Собрать документы для продления вида на жительство";
+lg.spheres = ["Быт"];
+TAB = "map"; AXIS = "sphere"; S.open = ["Быт"]; render();
+function leafText(id) {
+  var h = view.innerHTML.replace(/\s+/g, " ");
+  var at = h.indexOf('data-drag-map="' + id + '"');
+  if (at < 0) return null;
+  var g = h.slice(at, h.indexOf("</g>", at));
+  var out = [], m, re = />([^<>]+)</g;
+  while ((m = re.exec(g))) out.push(m[1].trim());
+  return out.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+}
+T.ok("название показано целиком", leafText(lg.id) === lg.title, String(leafText(lg.id)));
+T.ok("многоточия нет", (leafText(lg.id) || "").indexOf("…") < 0);
+T.ok("подпись разбита на строки",
+  (view.innerHTML.slice(view.innerHTML.indexOf('data-drag-map="' + lg.id + '"'))
+    .slice(0, 900).match(/<tspan/g) || []).length >= 2);
+S.open = [];
+T.reset();
+
 T.head("КАРТА: РАСКРЫТЫ ВСЕ ВЕТКИ РАЗОМ");
 ["развитие", "Быт", "бюрократия"].forEach(function (sp, si) {
   for (var z = 0; z < 6 + si * 2; z++) S.items.push({
-    id: "z" + si + "_" + z, title: "Дело " + sp + " номер " + (z + 1),
+    /* Каждое третье — длинное: раскладка обязана держать перенос,
+       а не только короткие подписи. */
+    id: "z" + si + "_" + z, title: z % 3 === 2
+      ? "Собрать документы для продления вида на жительство " + sp
+      : "Дело " + sp + " номер " + (z + 1),
     type: defaultType(), spheres: [sp], created: today(), due: null, steps: [],
     done: false, multi: false, place: null, person: null, time: null, options: [],
     routine: null, notes: "", forceImp: null, today: null, notToday: null });
 });
-AXIS = "sphere"; S.open = S.spheres.slice(); render();
+TAB = "map"; AXIS = "sphere"; S.open = S.spheres.slice(); render();
 var svg3 = view.innerHTML.slice(view.innerHTML.indexOf('id="mapG"'),
                                 view.innerHTML.indexOf("</svg>"));
 var all3 = [], m3, gre3 = /<g class="(branch|leaf)"[\s\S]*?<rect x="([-\d.e]+)" y="([-\d.e]+)" width="([\d.e]+)" height="([\d.e]+)"/g;

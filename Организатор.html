@@ -2516,6 +2516,26 @@ function wrapLabel(t, max) {
   return out.slice(0, 3);
 }
 
+/* Раскладка столбца листьев. Считается в ОДНОМ месте: и когда меряем,
+   сколько ветке нужно места по кругу, и когда рисуем. Разъедься эти два
+   счёта — ветки начнут налезать друг на друга.
+   Длинное название переносится на две-три строки, а не обрезается
+   многоточием: по обрубку «Собрать документы для п…» не понять, что за
+   дело, а ради этого карта и нужна.                                 */
+const LEAF_LINE = 22;      // знаков в строке подписи
+const LEAF_LH = 14;        // высота строки
+const LEAF_GAP = 9;        // просвет между листьями
+function leafLayout(items) {
+  const rows = items.map(it => {
+    const lines = wrapLabel(it.title, LEAF_LINE);
+    return { it, lines, h: Math.max(22, lines.length * LEAF_LH + 8) };
+  });
+  const chars = rows.reduce((m, r) =>
+    Math.max(m, r.lines.reduce((n, l) => Math.max(n, l.length), 0)), 9);
+  return { rows, w: chars * 7 + 22,
+           h: rows.reduce((a, r) => a + r.h, 0) + LEAF_GAP * Math.max(0, rows.length - 1) };
+}
+
 /* Масштаб и сдвиг. Карта рисуется вокруг точки (0,0), поэтому
    scale() увеличивает ровно от центра — как и ожидаешь.            */
 let ZOOM = 1, PAN = { x: 0, y: 0 };
@@ -2535,7 +2555,6 @@ function renderMap() {
      соседей приходится раздвигать — иначе столбцы налезают друг на
      друга. Считаем «вес» каждой ветки, распределяем 360° по весам и
      подбираем радиус так, чтобы всё поместилось.                   */
-  const stepY = 30;
   /* Ширина пилюли ветки — та же формула, что при отрисовке ниже. */
   const pillW = v => Math.max((axisLabel(v) + " · " + itemsIn(v).length).length * 7.6 + 28, 58);
   const need = vals.map(v => {
@@ -2544,13 +2563,11 @@ function renderMap() {
        постоянным весом соседи снизу круга слипались.               */
     const base = pillW(v) + 48;
     if (!isOpen(v)) return base;
-    const items = itemsIn(v);
-    const maxLw = items.reduce((w, it) => Math.max(w,
-      Math.min(it.title.length, 24) * 7 + 22), 60);
+    const lay = leafLayout(itemsIn(v));
     /* Блок раскрытой ветки занимает место и в высоту (столбец), и вбок
        (ширина подписей): вбок он задевает соседей, стоящих рядом по
        кругу, поэтому ширина входит в вес с долей, а не игнорируется. */
-    return Math.max(base, items.length * stepY + 60 + Math.min(maxLw, 220) * 0.45);
+    return Math.max(base, lay.h + 60 + Math.min(lay.w, 260) * 0.45);
   });
   const total = need.reduce((a, b) => a + b, 0);
   const R = Math.max(155 + Math.min(n, 12) * 9, total / (2 * Math.PI) + 30);
@@ -2609,37 +2626,38 @@ function renderMap() {
          вдоль неё, — а от шины к каждому листу короткий отвод.       */
       const side = x >= 0 ? 1 : -1;                 // столбец наружу от центра
       const busX = x + side * (pw / 2 + 44);        // где стоит вертикаль
-      const stepY = 30;
-      const topY = y - (items.length - 1) * stepY / 2;
-      const botY = topY + (items.length - 1) * stepY;
+      /* Высота строк разная — подпись переносится, — поэтому идём
+         сверху вниз с накоплением, а не шагом одной величины.      */
+      const lay = leafLayout(items);
+      const colW = Math.max(lay.w, 90);
+      let cy = y - lay.h / 2;
+      const centers = lay.rows.map(r => { const c = cy + r.h / 2;
+        cy += r.h + LEAF_GAP; return c; });
 
       links += `<path d="M${x + side * pw / 2} ${y} H${busX}"
         style="fill:none;stroke:var(--dash);stroke-width:1.2"/>`;
       if (items.length > 1)
-        links += `<path d="M${busX} ${topY} V${botY}"
+        links += `<path d="M${busX} ${centers[0]} V${centers[centers.length - 1]}"
           style="fill:none;stroke:var(--dash);stroke-width:1.2"/>`;
 
       /* Все пилюли столбца одной ширины — по самой длинной подписи:
          иначе у левого столбца рваным выглядит внешний край.        */
-      const colW = items.reduce((w, it) => Math.max(w,
-        Math.min(it.title.length, 24) * 7 + 22), 90);
-      items.forEach((it, j) => {
-        const ly = topY + j * stepY;
-        const label = it.title.length > 24 ? it.title.slice(0, 23) + "…" : it.title;
-        const lw = colW;
-        const gap = 12;
+      lay.rows.forEach((r, j) => {
+        const ly = centers[j], lw = colW, gap = 12, h = r.h;
         const px0 = side > 0 ? busX + gap : busX - gap - lw;
         links += `<path d="M${busX} ${ly} H${side > 0 ? px0 : px0 + lw}"
           style="fill:none;stroke:var(--dash);stroke-width:1.2;stroke-dasharray:3 4"/>`;
-        svg += `<g class="leaf" data-drag-map="${it.id}" data-from="${esc(v)}">
-            <rect x="${px0}" y="${ly - 11}" width="${lw}" height="22" rx="11"
+        const y0 = ly - (r.lines.length - 1) * LEAF_LH / 2 + 4;
+        svg += `<g class="leaf" data-drag-map="${r.it.id}" data-from="${esc(v)}">
+            <rect x="${px0}" y="${ly - h / 2}" width="${lw}" height="${h}" rx="11"
               style="fill:color-mix(in srgb, ${col} 22%, transparent)"
-              data-act="open" data-id="${it.id}"></rect>
-            <text x="${px0 + lw / 2}" y="${ly + 4}" font-size="12"
+              data-act="open" data-id="${r.it.id}"></rect>
+            <text x="${px0 + lw / 2}" y="${y0}" font-size="12"
               text-anchor="middle" style="fill:${col}" font-weight="600"
-              data-act="open" data-id="${it.id}">${esc(label)}</text>
+              data-act="open" data-id="${r.it.id}">${r.lines.map((l, k) =>
+                `<tspan x="${px0 + lw / 2}" dy="${k ? LEAF_LH : 0}">${esc(l)}</tspan>`).join("")}</text>
           </g>`;
-        grow(px0 - 4, ly - 15, px0 + lw + 4, ly + 15);
+        grow(px0 - 4, ly - h / 2 - 4, px0 + lw + 4, ly + h / 2 + 4);
       });
     }
 
