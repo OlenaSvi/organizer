@@ -101,11 +101,20 @@ ap = T.appt(); ap.due = today();
 /* Без срока и важные — значит «давно ждёт», значит в предложениях.
    Со сроком сегодня они попали бы в день сами, и брать было бы нечего. */
 T.tasks().forEach(function (i) { i.due = null; i.forceImp = true; });
-clickOn({ act: "takeall" });
+render();
+todayItems().proposals.slice(0, 3).forEach(function (s2) {
+  clickOn({ act: "takeone", id: s2.it.id });
+});
 var ti = todayItems();
-T.ok("«Взять всё» набирает дела до лимита, не считая встреч",
-  ti.chosenCount === Math.min(S.cfg.todayCap, T.tasks().length),
-  ti.chosenCount + " из " + S.cfg.todayCap + ", встреч рядом " + ti.apptCount);
+T.ok("взятое считается, встреча в лимит не идёт",
+  ti.chosenCount === 3 && ti.apptCount === 1,
+  ti.chosenCount + " взято, встреч рядом " + ti.apptCount);
+
+T.head("КНОПКИ «ВЗЯТЬ ВСЁ» НЕТ");
+/* Она показывала семь предложений и брала пять — сколько помещалось.
+   Объяснить это в двух словах было нельзя, а брать дела по одному
+   и так недолго: выбор — смысл предложений, а не помеха. */
+T.ok("в разметке её не осталось", view.innerHTML.indexOf("takeall") < 0);
 
 T.head("ПУСТОТА ОБЪЯСНЯЕТСЯ");
 T.reset();

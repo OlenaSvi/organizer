@@ -251,12 +251,6 @@ document.addEventListener("click", e => {
                       if (host.innerHTML) (editBackup && editBackup.id === id ? openEdit : openItem)(id); } break;
     case "takeone": tryAddToToday(id); break;
     case "suggfold": S.suggCollapsed = !S.suggCollapsed; save(); render(); break;
-    case "takeall": { const p = todayItems();
-                      /* Лимит — про взятое; встречи в него не входят нигде,
-                         значит и здесь место не занимают.           */
-                      let room = S.cfg.todayCap - p.chosenCount;
-                      p.proposals.forEach(s => { if (room > 0) { addToToday(s.it); room--; } });
-                      save(); render(); } break;
     case "swap":    { const out = S.items.find(x => x.id === el.dataset.out);
                       if (out) unpickToday(out);      // вытеснено, а не отвергнуто
                       if (it) addToToday(it);

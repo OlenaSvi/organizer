@@ -517,7 +517,6 @@ function renderToday() {
         ${S.suggCollapsed ? "" : queued ? `<span class="qs" style="margin:0 0 0 auto"
           title="«не сегодня» показывает следующее">в очереди ещё ${queued} ${
           plural(queued, "дело", "дела", "дел")}</span>` : `<span class="spacer"></span>`}
-        ${S.suggCollapsed ? "" : `<button class="btn ghost" data-act="takeall">Взять всё</button>`}
       </div>
       ${S.suggCollapsed ? "" : proposals.map(suggestRowHTML).join("")
         + (whyRest ? `<p class="qs" style="margin:10px 2px 0">Остальное сейчас не предлагается: ${
