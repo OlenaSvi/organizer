@@ -412,8 +412,14 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
   .mhead{display:none}
   .mside{justify-content:flex-start;text-align:left;margin-top:8px}
 }
+/* Потолок высоты стоит на КЛЕТКЕ, а список внутри тянется на всё, что
+   осталось. Раньше потолок был на списке — жёсткие 340px, — и когда
+   соседняя клетка растягивала строку, список обрывался заметно выше
+   собственного края: обрез посреди карточки, а под ним пустота.    */
 .quad{background:var(--panel);border:1px solid var(--line);border-radius:12px;
-  padding:16px;min-height:180px;box-shadow:none;--quadbg:var(--panel)}
+  padding:16px;min-height:180px;max-height:470px;box-shadow:none;
+  display:flex;flex-direction:column;--quadbg:var(--panel)}
+.quad h3,.quad .qs{flex:none}
 /* Главная клетка выделяется только подписью в описании — обводка
    спорила с рамками соседних клеток.                               */
 .quad.hero{background:var(--hero-bg);--quadbg:var(--hero-bg)}
@@ -430,7 +436,7 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
    содержимым (local) и в крайних положениях закрывают собой тени,
    которые прибиты к самой клетке (scroll).                          */
 .quad ul{margin:0;padding:0 4px 0 0;list-style:none;
-  max-height:340px;overflow-y:auto;scrollbar-width:thin;
+  flex:1 1 auto;min-height:0;overflow-y:auto;scrollbar-width:thin;
   background:
     linear-gradient(var(--quadbg) 40%, transparent) top    / 100% 20px no-repeat local,
     linear-gradient(transparent, var(--quadbg) 60%) bottom / 100% 20px no-repeat local,
