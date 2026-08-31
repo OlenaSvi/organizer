@@ -124,6 +124,11 @@ var missing = many.filter(function (i) { return mh.indexOf(esc(i.title)) < 0; })
 T.ok("видны все двадцать", missing.length === 0,
   missing.length ? "не хватает " + missing.length : "");
 T.ok("тупикового «и ещё» больше нет", mh.indexOf("и ещё") < 0);
+T.ok("у обреза есть тень — видно, что снизу ещё есть дела",
+  /\.quad ul\{[^}]*background:[^}]*radial-gradient/.test(MCSS),
+  "иначе карточка выглядит просто срезанной");
+T.ok("тень гаснет, когда список докручен до конца",
+  /\.quad ul\{[^}]*no-repeat local/.test(MCSS));
 T.ok("длинный список прокручивается внутри клетки",
   /\.quad ul\{[^}]*overflow-y:auto/.test(MCSS),
   "иначе одна клетка растянула бы всю строку матрицы");

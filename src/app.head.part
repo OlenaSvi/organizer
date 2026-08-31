@@ -413,18 +413,31 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
   .mside{justify-content:flex-start;text-align:left;margin-top:8px}
 }
 .quad{background:var(--panel);border:1px solid var(--line);border-radius:12px;
-  padding:16px;min-height:180px;box-shadow:none}
+  padding:16px;min-height:180px;box-shadow:none;--quadbg:var(--panel)}
 /* Главная клетка выделяется только подписью в описании — обводка
    спорила с рамками соседних клеток.                               */
-.quad.hero{background:var(--hero-bg)}
+.quad.hero{background:var(--hero-bg);--quadbg:var(--hero-bg)}
 .quad h3{margin:0 0 3px;font-size:15px;font-weight:700}
 .quad.hero h3{color:var(--accent)}
 .heromark{color:var(--accent);font-weight:700}
 .quad .qs{font-size:12.5px;color:var(--dim);margin:0 0 13px}
 /* Клетка показывает все свои дела: длинный список крутится внутри,
-   а не обрывается. Потолок держит строку матрицы от растягивания. */
+   а не обрывается. Потолок держит строку матрицы от растягивания.
+   У края — мягкая тень, и появляется она ровно тогда, когда снизу
+   (или сверху) ещё что-то есть: без неё срез посреди карточки читался
+   как поломка вёрстки, а не как «прокрутите».
+   Как это работает: две заливки цветом фона прокручиваются вместе с
+   содержимым (local) и в крайних положениях закрывают собой тени,
+   которые прибиты к самой клетке (scroll).                          */
 .quad ul{margin:0;padding:0 4px 0 0;list-style:none;
-  max-height:340px;overflow-y:auto;scrollbar-width:thin}
+  max-height:340px;overflow-y:auto;scrollbar-width:thin;
+  background:
+    linear-gradient(var(--quadbg) 40%, transparent) top    / 100% 20px no-repeat local,
+    linear-gradient(transparent, var(--quadbg) 60%) bottom / 100% 20px no-repeat local,
+    radial-gradient(farthest-side at 50% 0,
+      color-mix(in srgb, var(--ink) 16%, transparent), transparent) top    / 100% 9px no-repeat,
+    radial-gradient(farthest-side at 50% 100%,
+      color-mix(in srgb, var(--ink) 16%, transparent), transparent) bottom / 100% 9px no-repeat}
 .quad li{padding:8px 10px;border-top:0;border-radius:9px;background:var(--bg);
   font-size:14px;margin-bottom:5px}
 /* Пустая клетка говорит словами, а не серым «пусто» на плашке. */
