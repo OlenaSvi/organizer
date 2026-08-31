@@ -535,22 +535,10 @@ function removePerson(p) {
 /* ── виды дел ──────────────────────────────────────────────────── */
 const KINDNOTE = { choice: "со списком вариантов", routine: "по дням недели",
                    appt: "с датой и временем", idea: "без срока, не просится в «Сегодня»" };
-function addType(el) {
-  const inp = fieldOf(el, "dirNew");
-  const t = (inp && inp.value ? inp.value : "").trim();
-  if (!t) return nudge(inp);
-  if (dup(S.types.map(x => x.name), t)) return alert("Такой вид уже есть.");
-  S.types.push({ key: uid(), name: t, hint: "", kind: "plain" });
-  inp.value = ""; save(); render(); if (host.innerHTML) openSettings();
-}
-function renameType(key) {
-  const d = typeDef(key);
-  const t = (prompt("Новое название вида:", d.name) || "").trim();
-  if (!t || t === d.name) return;
-  if (dup(S.types.map(x => x.name), t, d.name)) return alert("Такой вид уже есть.");
-  d.name = t; save(); render(); if (host.innerHTML) openSettings();                 // ключ не меняется — дела не трогаем
-}
 function removeType(key) {
+  /* Основные четыре не убираются: без них у дел пропало бы поведение,
+     а завести их заново нечем. */
+  if (DEFAULT_TYPES.some(t => t.key === key)) return;
   if (S.types.length <= 1) return alert("Должен остаться хотя бы один вид дела.");
   const d = typeDef(key);
   const back = S.types.find(t => t.key !== key);
@@ -585,8 +573,15 @@ const DIRS = {
     note: "Кого касается дело. Дела при убирании остаются на месте.",
     list: () => S.people,
     count: p => live().filter(i => i.person === p).length },
-  type: { title: "Виды дел", act: "typ", one: "вид",
-    note: "Это «что это» у дела. Переименование не трогает сами дела.",
+  /* Виды дел — единственный справочник, который не правится. Их
+     поведение зашито в код (рутина повторяется, у встречи есть час),
+     и «добавить вид» всё равно давало обычное дело: рутину заново им
+     было не создать. Значит и убрать основные четыре нельзя — вернуть
+     их нечем. Остаётся одно: убрать вид, доставшийся с прежних времён. */
+  type: { title: "Виды дел", act: "typ", one: "вид", fixed: true,
+    note: "Четыре основных вида убрать нельзя: их поведение зашито в приложение, "
+        + "и завести заново их нечем. Виды из прежних времён убрать можно — "
+        + "дела перейдут в «дело».",
     list: () => S.types.map(t => t.key), label: k => typeDef(k).name,
     count: k => live().filter(i => i.type === k).length },
 };
@@ -646,14 +641,17 @@ function dirPageHTML() {
          <span class="nm">${esc(label(v))}</span>
          <span class="qs cnt">${d.count(v)} ${plural(d.count(v), "дело", "дела", "дел")}</span>
          <span class="acts">
-           <button class="linkbtn" data-act="diredit" data-v="${esc(v)}">переименовать</button>
-           <button class="linkbtn danger" data-act="${d.act}del" data-v="${esc(v)}">убрать</button>
+           ${d.fixed ? "" : `<button class="linkbtn" data-act="diredit"
+             data-v="${esc(v)}">переименовать</button>`}
+           ${d.fixed && DEFAULT_TYPES.some(t => t.key === v) ? ""
+             : `<button class="linkbtn danger" data-act="${d.act}del"
+                  data-v="${esc(v)}">убрать</button>`}
          </span>
        </div>`).join("")}
-    <div class="diraddrow">
+    ${d.fixed ? "" : `<div class="diraddrow">
       <input type="text" id="dirNew" autocomplete="off"
         placeholder="Добавить ${d.one} и нажать Enter">
-    </div>
+    </div>`}
   </div>
   <p class="qs" style="margin:14px 4px 0">${d.note}</p>
   <div class="row modalfoot">
@@ -668,13 +666,15 @@ function wireDirectories() {
   if (nm && nm.addEventListener) {
     nm.addEventListener("keydown", e => { if (e.key === "Enter") {
       const d = DIRS[DIRPAGE];
-      ({ sph: renameSphere, place: renamePlace, per: renamePerson, typ: renameType })[d.act](DIREDIT);
+      /* Виды дел сюда не попадают: строку вида не открыть на правку. */
+      ({ sph: renameSphere, place: renamePlace, per: renamePerson })[d.act](DIREDIT);
     } });
     if (nm.focus) nm.focus();
   }
   const nw = document.getElementById("dirNew");
   if (nw && nw.addEventListener) nw.addEventListener("keydown", e => { if (e.key === "Enter") {
     const d = DIRS[DIRPAGE];
-    ({ sph: addSphere, place: addPlace, per: addPerson, typ: addType })[d.act](nw);
+    /* Виды дел сюда не попадают: у них поля ввода нет вовсе. */
+    ({ sph: addSphere, place: addPlace, per: addPerson })[d.act](nw);
   } });
 }

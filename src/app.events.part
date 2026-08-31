@@ -242,9 +242,7 @@ document.addEventListener("click", e => {
     case "peradd": addPerson(el); break;
     case "perdel":   removePerson(v); break;
     case "perren":   renamePerson(v); break;
-    case "typadd": addType(el); break;
     case "typdel":   removeType(v); break;
-    case "typren":   renameType(v); break;
     case "pin":     if (it) { if (pickedToday(it)) { dropFromToday(it); save(); render(); }
                       else tryAddToToday(id);
                       /* Нажали из правки — остаёмся в правке, из просмотра — в просмотре. */

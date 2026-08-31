@@ -71,4 +71,30 @@ T.ok("после сохранения удаление остаётся", S.sphe
 S.spheres = S.spheres.map(function (x) { return x === "Дом" ? "Быт" : x; });
 save();
 
+T.head("ВИДЫ ДЕЛ НЕ ЗАВОДЯТСЯ И НЕ ПЕРЕИМЕНОВЫВАЮТСЯ");
+/* Заводить новые виды было нечестно: новый всегда получался обычным
+   делом, и рутину заново им создать было нельзя. Осталось одно —
+   убрать лишний вид, доставшийся с прежних времён. */
+DIRPAGE = "type"; DIREDIT = null; dirBackup = null; openSettings();
+var th = host.innerHTML;
+T.ok("поля «добавить вид» нет", th.indexOf('id="dirNew"') < 0);
+T.ok("и переименования нет", th.indexOf('data-act="diredit"') < 0);
+T.ok("сказано, почему", th.indexOf("завести заново") >= 0, th.slice(-400));
+
+T.head("ОСНОВНЫЕ ЧЕТЫРЕ УБРАТЬ НЕЛЬЗЯ");
+/* Иначе можно остаться без рутины навсегда: вернуть её нечем. */
+["task", "routine", "appt", "idea"].forEach(function (k) {
+  T.ok(esc(typeDef(k).name) + " — без кнопки «убрать»",
+    !new RegExp('data-act="typdel" data-v="' + k + '"').test(th));
+});
+
+T.head("СВОЙ ЛИШНИЙ ВИД УБРАТЬ МОЖНО");
+S.types.push({ key: "old_choice", name: "выбрать / купить", hint: "", kind: "choice" });
+openSettings();
+T.ok("у него кнопка есть",
+  /data-act="typdel" data-v="old_choice"/.test(host.innerHTML.replace(/\s+/g, " ")));
+S.types = S.types.filter(function (t) { return t.key !== "old_choice"; });
+DIRPAGE = null; dirBackup = null; closeModal();
+T.reset();
+
 T.done();
