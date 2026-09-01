@@ -154,6 +154,38 @@ T.ok("точки недели — ниже чипов",
   line.indexOf('class="rdots"') > line.indexOf('class="rmeta"'));
 T.ok("название не обрезано", T.visible(line).indexOf("Стакан тёплой воды натощак") >= 0);
 
+T.head("ОТМЕЧЕННАЯ ВСТРЕЧА ОСТАЁТСЯ НА МЕСТЕ");
+/* Как сделанное дело и отмеченная рутина: зачёркнута, но на виду.
+   Раньше она пропадала из панели встреч и всплывала в колонке дел —
+   выглядело так, будто встреча куда-то делась. */
+T.reset();
+var a3 = T.appt(); a3.due = today(); a3.time = "10:30";
+TAB = "today"; render();
+var panel = /class="apptbox"[\s\S]*?<\/div><\/div>/.exec(view.innerHTML);
+T.ok("до галочки встреча в панели", T.visible(panel[0]).indexOf(a3.title) >= 0);
+clickOn({ act: "toggle", id: a3.id });
+panel = /class="apptbox"[\s\S]*?<\/div><\/div>/.exec(view.innerHTML);
+T.ok("после галочки — там же", T.visible(panel[0]).indexOf(a3.title) >= 0);
+T.ok("и помечена состоявшейся", /class="aline done"/.test(view.innerHTML));
+T.ok("в колонке дел её нет",
+  T.visible(view.innerHTML.slice(0, view.innerHTML.indexOf("apptbox")))
+    .indexOf(a3.title) < 0);
+T.ok("в счёт дня не идёт — встреча не дело",
+  /сделано 0 из/.test(T.visible(view.innerHTML))
+  || T.visible(view.innerHTML).indexOf("сделано") < 0,
+  T.visible(view.innerHTML).slice(0, 90));
+clickOn({ act: "toggle", id: a3.id });
+T.ok("галочка возвращает в работу", !a3.done);
+T.ok("и метка снята", view.innerHTML.indexOf('class="aline done"') < 0);
+
+T.head("ВЧЕРАШНЯЯ СОСТОЯВШАЯСЯ В ПАНЕЛИ НЕ ВИСИТ");
+a3.due = addDays(today(), -1); a3.done = true; a3.doneAt = addDays(today(), -1);
+render();
+panel = /class="apptbox"[\s\S]*?<\/div><\/div>/.exec(view.innerHTML);
+T.ok("панель её не показывает", T.visible(panel[0]).indexOf(a3.title) < 0);
+a3.done = false; a3.doneAt = null; a3.due = today(); delete a3.autoDone;
+T.reset();
+
 T.head("РУТИНА: ТОЧКИ НЕДЕЛИ");
 /* От дня недели проверка зависеть не должна. Раньше из расписания
    вычитался вторник — и во вторник рутина в панель не попадала, а

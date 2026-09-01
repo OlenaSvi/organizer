@@ -183,7 +183,13 @@ function todayItems() {
   const routines = allRout.filter(i => !routineDoneToday(i));
   const routDone = allRout.filter(routineDoneToday);
   const rest = all.filter(i => !isRoutine(i));
+  /* Встречи в «сделанном» среди дел не показываем: они остаются в своей
+     панели зачёркнутыми — как отмеченная рутина в своей. Исчезнуть из
+     панели и всплыть в колонке дел выглядело так, будто встреча куда-то
+     делась.                                                          */
   const doneTasks = S.items.filter(i => i.done && !i.draft && !isRoutine(i)
+    && !isAppt(i) && i.doneAt === today());
+  const apptDone = S.items.filter(i => !i.draft && isAppt(i) && i.done
     && i.doneAt === today());
   /* Шаги, закрытые сегодня у ещё живых дел: дело продолжается, но
      сделанное за день это тоже. У законченного дела шаги не дублируем —
@@ -294,8 +300,8 @@ function todayItems() {
   if (nAway) parts.push(nAway + " в других местах");
   const whyRest = parts.join(" · ");
   const whyEmpty = parts.length ? whyRest : "живых дел нет. Новые появятся здесь сами";
-  return { routines, routDone, mine, doneTasks, doneSteps, apptCount, chosenCount,
-           dueCount, away,
+  return { routines, routDone, mine, doneTasks, doneSteps, apptDone,
+           apptCount, chosenCount, dueCount, away,
            queued, whyEmpty, whyRest, proposals };
 }
 
@@ -456,11 +462,13 @@ function suggestRowHTML(s) {
 }
 
 function renderToday() {
-  const { routines, routDone, mine, doneTasks, doneSteps, proposals,
+  const { routines, routDone, mine, doneTasks, doneSteps, proposals, apptDone,
           apptCount, chosenCount, dueCount, away, queued, whyEmpty, whyRest } = todayItems();
   const cap = S.cfg.todayCap;
   const tasks = mine.filter(i => !isTodayAppt(i));
-  const appts = mine.filter(isTodayAppt);
+  /* Состоявшиеся сегодня встречи стоят там же, в конце: день не пятится
+     назад, а наполняется. */
+  const appts = mine.filter(isTodayAppt).concat(apptDone);
   /* «Взято больше» — только если вы сами набрали сверх лимита. Когда
      день переполнен сроками и встречами, упрекать не за что: их не
      выбирали. Тогда говорим, из чего сложился день, и называем выход. */
@@ -548,7 +556,7 @@ function apptRowHTML(i) {
   /* Разовая встреча после галочки уходит из панели сама. Повторяющаяся
      остаётся — значит, обязана выглядеть отмеченной, иначе кажется,
      что галочка не сработала.                                       */
-  const done = repeatDone(i, today());
+  const done = repeatDone(i, today()) || (i.done && i.doneAt === today());
   return `<div class="aline${done ? " done" : ""}">
     <button class="tick" data-act="toggle" data-id="${i.id}" title="Состоялась"></button>
     <div class="amain">
