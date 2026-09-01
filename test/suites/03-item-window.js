@@ -75,6 +75,32 @@ openItem(x.id); clickOn({ act: "edit", id: x.id });
 clickOn({ act: "dd", k: "type:" + x.id });
 clickOn({ act: "ddset", f: "type", id: x.id, v: ideaKey });
 T.ok("идея теряет срок", x.due === null);
+
+/* Время и расписание повторов — свойства встречи. Оставшись на обычном
+   деле, время всплывало в подписях («5 ноября 10:00»), хотя поля для
+   него в форме нет; расписание же ломало галочку — она отмечала день
+   в истории повторов вместо того, чтобы закрыть дело. */
+var apKey = S.types.find(function (t2) { return t2.kind === "appt"; }).key;
+var taskKey = S.types.find(function (t2) { return t2.kind === "plain"; }).key;
+clickOn({ act: "dd", k: "type:" + x.id });
+clickOn({ act: "ddset", f: "type", id: x.id, v: apKey });
+x.due = addDays(today(), 3); x.time = "10:00";
+x.repeat = { days: [1, 3], history: [] };
+clickOn({ act: "dd", k: "type:" + x.id });
+clickOn({ act: "ddset", f: "type", id: x.id, v: taskKey });
+T.ok("дело теряет время", x.time === null, String(x.time));
+T.ok("и расписание повторов", !x.repeat);
+T.ok("а дедлайн остаётся", x.due === addDays(today(), 3));
+
+T.head("САМОПОЧИНКА УБИРАЕТ ЧУЖИЕ ПОЛЯ");
+/* Записи, испорченные прежней версией, чинятся при загрузке. */
+x.time = "09:15"; x.repeat = { days: [2], history: [] };
+normalizeItems();
+T.ok("время у обычного дела стёрто", x.time === null);
+T.ok("расписание тоже", !x.repeat);
+var ap4 = T.appt(); ap4.due = addDays(today(), 2); ap4.time = "14:00";
+normalizeItems();
+T.ok("а у встречи время не трогаем", ap4.time === "14:00");
 clickOn({ act: "ecancel", id: x.id }); closeModal();
 T.reset();
 

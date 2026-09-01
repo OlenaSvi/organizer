@@ -1480,6 +1480,12 @@ function normalizeItems() {
     /* Расписание и одна дата — взаимоисключающие ответы на «когда».
        Оставь обе, и встреча стояла бы и по расписанию, и в свою дату. */
     if (repeats(i) && i.due) { i.due = null; touched = true; }
+    /* Время и расписание бывают только у встречи. Сменили вид — они
+       остаются в записи и вредят молча: время всплывает в подписях, а
+       расписание уводит галочку в историю повторов вместо закрытия. */
+    if (!isAppt(i) && (i.time || i.repeat)) {
+      i.time = null; i.repeat = null; touched = true;
+    }
     /* Остаток убранной кнопки «завтра»: выбор на будущее число больше
        не существует — список каждого дня собирается в этот день.    */
     if (i.today && i.today > today()) { i.today = null; touched = true; }
@@ -4228,6 +4234,12 @@ document.addEventListener("click", e => {
                       if (f === "type") { it.type = v2;
                         if (isRoutine(it) && !it.routine) it.routine = { days:[0,1,2,3,4,5,6], history:[] };
                         if (isIdea(it) || isRoutine(it)) { it.due = null; it.time = null; }
+                        /* Время и расписание повторов — свойства встречи.
+                           На обычном деле время всплывало в подписях, а
+                           поля для него в форме нет; расписание ломало
+                           галочку — она писала день в историю повторов
+                           вместо того, чтобы закрыть дело.            */
+                        if (!isAppt(it)) { it.time = null; it.repeat = null; }
                       } else if (f === "mins") it.mins = v2 ? +v2 : null;
                       else it[f] = v2;
                       DD = null; DDM = null; DDADD = false;
