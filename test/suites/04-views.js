@@ -255,6 +255,14 @@ T.ok("срез «все» первым и по умолчанию",
 T.ok("показано всё живое",
   (document.getElementById("allList").innerHTML.match(/class="allrow"/g) || []).length
     === live().length);
+/* Срез «дела» значил «всё, кроме рутины, встреч и идей». Плоский вид
+   остался один — «дело», — и два соседних пункта стали означать ровно
+   одно и то же. Из двух одинаковых остаётся тот, что назван видом. */
+T.ok("«дела» и «дело» не стоят рядом двумя пунктами",
+  allFilters().filter(function (f) { return /^дел[оа]$/.test(f[1]); }).length === 1,
+  allFilters().map(function (f) { return f[1]; }).join(" · "));
+T.ok("срез по виду «дело» на месте",
+  allFilters().some(function (f) { return f[1] === "дело"; }));
 T.ok("сортировка есть", h.indexOf('data-k="allsort"') >= 0);
 T.ok("счётчик стоит над списком, а не у заголовка",
   h.indexOf('id="allCount"') > h.indexOf('class="allbar"')
