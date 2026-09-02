@@ -230,13 +230,24 @@ document.addEventListener("click", e => {
     /* Одна дата или расписание — взаимоисключающий выбор у встречи. */
     case "arepeat": if (it) {
                       if (el.dataset.v === "days") {
-                        if (!it.repeat) it.repeat = { days: [], history: [] };
+                        if (!it.repeat) it.repeat = { every: "week", days: [], history: [] };
                         it.due = null;
                       } else it.repeat = null;
                       save(); refreshEdit(id); } break;
+    /* Смена вида повтора: недостающие поля заводим со значениями по
+       умолчанию, чтобы расписание сразу было заполненным.          */
+    case "rmode":   if (it) { const e = el.dataset.v;
+                      if (!it.repeat) it.repeat = { history: [] };
+                      it.repeat.every = e;
+                      if (e === "week" && !it.repeat.days) it.repeat.days = [];
+                      if (e !== "week" && !it.repeat.day) it.repeat.day = 1;
+                      if (e === "year" && it.repeat.month == null) it.repeat.month = 0;
+                      save(); refreshEdit(id); } break;
+    case "rdate":   if (it && it.repeat) { it.repeat[el.dataset.f] = +el.dataset.v;
+                      DD = null; save(); refreshEdit(id); } break;
     case "rpart":   if (it) { it.partOfDay = el.dataset.v || null;
                       save(); refreshEdit(id); } break;
-    case "rday":    if (it) { const d = schedDays(it), i = d.indexOf(+el.dataset.i);
+    case "rday":    if (it && schedDays(it)) { const d = schedDays(it), i = d.indexOf(+el.dataset.i);
                       if (i >= 0) d.splice(i, 1); else d.push(+el.dataset.i);
                       save(); refreshEdit(id); } break;
     case "placeadd": addPlace(el); break;

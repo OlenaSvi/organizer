@@ -85,10 +85,38 @@ const isIdea    = it => kindOf(it) === "idea";
    там время, другой человек и договорённость. Поэтому у встречи нет ни
    счёта «сделано из запланированного», ни разговоров про долю.
    Повторяется бессрочно, пока её не удалят: срока окончания нет.     */
-const repeats = it => !!(it.repeat && (it.repeat.days || []).length);
-const repeatOn = (it, d) => repeats(it)
-  && it.repeat.days.indexOf(new Date(d + "T12:00:00").getDay()) >= 0
-  && (!it.created || d >= it.created);
+/* Четыре вида повтора. Неделя — дни недели; месяц и квартал — число;
+   год — день и месяц (это про дни рождения). Квартал считается от
+   месяца, в котором запись появилась.                              */
+const REPEATS = [["week", "по дням недели"], ["month", "каждый месяц"],
+                 ["quarter", "раз в квартал"], ["year", "каждый год"]];
+const everyOf = it => (it.repeat && it.repeat.every) || "week";
+const daysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
+const repeats = it => {
+  const r = it && it.repeat; if (!r) return false;
+  const e = r.every || "week";
+  if (e === "year") return r.day > 0 && r.month >= 0;
+  if (e === "month" || e === "quarter") return r.day > 0;
+  return (r.days || []).length > 0;
+};
+function repeatOn(it, d) {
+  if (!repeats(it)) return false;
+  if (it.created && d < it.created) return false;
+  const r = it.repeat, dt = new Date(d + "T12:00:00");
+  const y = dt.getFullYear(), m = dt.getMonth();
+  /* Число длиннее месяца сдвигается на последний день: пропустить
+     февраль у «каждого 31-го» выглядело бы как поломка.            */
+  const hits = () => dt.getDate() === Math.min(r.day, daysInMonth(y, m));
+  if (r.every === "year") return m === r.month && hits();
+  if (r.every === "month") return hits();
+  if (r.every === "quarter") {
+    if (!hits()) return false;
+    const s0 = new Date((it.created || d) + "T12:00:00");
+    const k = (y - s0.getFullYear()) * 12 + (m - s0.getMonth());
+    return k >= 0 && k % 3 === 0;
+  }
+  return (r.days || []).indexOf(dt.getDay()) >= 0;
+}
 const repeatDone = (it, d) => !!(it.repeat && it.repeat.history.indexOf(d) >= 0);
 /* Дни расписания живут в разных полях у рутины и у встречи. */
 const schedDays = it => isRoutine(it) ? (it.routine && it.routine.days)
@@ -585,6 +613,8 @@ function normalizeItems() {
     /* Расписание и одна дата — взаимоисключающие ответы на «когда».
        Оставь обе, и встреча стояла бы и по расписанию, и в свою дату. */
     if (repeats(i) && i.due) { i.due = null; touched = true; }
+    /* Записи из прежних версий знают только дни недели. */
+    if (i.repeat && !i.repeat.every) { i.repeat.every = "week"; touched = true; }
     /* Время и расписание бывают только у встречи. Сменили вид — они
        остаются в записи и вредят молча: время всплывает в подписях, а
        расписание уводит галочку в историю повторов вместо закрытия. */

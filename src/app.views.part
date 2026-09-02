@@ -97,8 +97,14 @@ function dateLabel(it) {
   if (isRoutine(it)) return dueToday(it) ? "сегодня" : "";
   /* У встречи по расписанию нет одной даты — «когда» отвечает само
      расписание. Формулировка всё равно одна и живёт здесь.          */
-  if (repeats(it)) return "по " + wdOrder().filter(d => it.repeat.days.indexOf(d) >= 0)
-    .map(d => WD_BY_DAY[d]).join(", ") + (it.time ? " · " + esc(it.time) : "");
+  if (repeats(it)) {
+    const r = it.repeat, clock = it.time ? " · " + esc(it.time) : "";
+    if (r.every === "year")    return r.day + " " + MONTHS[r.month] + " каждый год" + clock;
+    if (r.every === "month")   return r.day + "-го каждый месяц" + clock;
+    if (r.every === "quarter") return r.day + "-го раз в квартал" + clock;
+    return "по " + wdOrder().filter(d => (r.days || []).indexOf(d) >= 0)
+      .map(d => WD_BY_DAY[d]).join(", ") + clock;
+  }
   const n = daysUntil(it.due);
   if (n === null) return "";
   const clock = it.time ? " " + esc(it.time) : "";

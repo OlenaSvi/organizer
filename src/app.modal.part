@@ -79,6 +79,23 @@ function ddTimeHTML(it) {
     ${part("tm:" + it.id, MINS5, cur.slice(3, 5), "мин", "m")}</div>`;
 }
 
+/* Число месяца и месяц — теми же списками, что часы и минуты.
+   Значение может быть нулём (январь), поэтому «выбрано ли» проверяем
+   отдельно, а не на правдивость.                                   */
+function ddNumHTML(it, key, list, cur, label, f) {
+  const k = key + ":" + it.id, has = cur !== null && cur !== undefined;
+  return `<div class="ddwrap" data-ddwrap>
+    <button class="ddbtn ${has ? "" : "dim"}" data-act="dd" data-k="${k}"><span>${
+      has ? label(cur) : "выбрать"}</span><i class="caret">▾</i></button>
+    ${DD === k ? `<div class="dd inline" style="max-height:232px;overflow-y:auto">
+      ${list.map(v => `<button class="ddrow ${v === cur ? "on" : ""}" data-act="rdate"
+          data-f="${f}" data-id="${it.id}" data-v="${v}"><span>${label(v)}</span>${
+          v === cur ? ddCheck : ""}</button>`).join("")}
+    </div>` : ""}</div>`;
+}
+const NUMS31 = Array.from({ length: 31 }, (_, i) => i + 1);
+const MONTHNUMS = Array.from({ length: 12 }, (_, i) => i);
+
 function ddMinsHTML(it) {
   const key = "mins:" + it.id, open = DD === key;
   return `<div class="ddwrap" data-ddwrap>
@@ -480,7 +497,20 @@ function itemFormHTML(it, ids) {
         + daysItem(it.routine && it.routine.days) + partItem
     : isAppt(it)
       ? whenSwitch + (it.repeat
-          ? daysItem(it.repeat.days) + cell("Время", ddTimeHTML(it), true)
+          ? cell("Как часто", `<div class="seg">${REPEATS.map(([k, L]) =>
+              `<button data-act="rmode" data-id="${it.id}" data-v="${k}"
+                class="${everyOf(it) === k ? "on" : ""}">${L}</button>`).join("")}</div>`, true)
+            + (everyOf(it) === "week" ? daysItem(it.repeat.days)
+               : everyOf(it) === "year"
+                 ? cell("День", ddNumHTML(it, "rnum", NUMS31, it.repeat.day, v => v, "day"))
+                   + cell("Месяц", ddNumHTML(it, "rmon", MONTHNUMS, it.repeat.month,
+                       v => MONTHS_NOM[v], "month"))
+                 : cell("Число месяца",
+                     ddNumHTML(it, "rnum", NUMS31, it.repeat.day, v => v + "-го", "day")))
+            /* Время занимает строку целиком только там, где иначе рядом
+               осталась бы пустая клетка: при выборе числа месяца оно
+               встаёт с ним в пару.                                    */
+            + cell("Время", ddTimeHTML(it), everyOf(it) !== "month" && everyOf(it) !== "quarter")
           /* Дата, часы и минуты стоят в одну линию — втроём в половину
              строки они не помещаются: кнопка даты сжималась до одной
              буквы, а мини-календарь вылезал за край окна.          */
@@ -789,8 +819,8 @@ function openItem(id) {
       const hist = (it.repeat.history || []).slice().sort();
       const last = hist[hist.length - 1];
       const n = hist.length;
-      return `<p class="lbl">В какие дни</p>
-      ${daysRowHTML(it.repeat.days)}
+      return `${everyOf(it) === "week" ? `<p class="lbl">В какие дни</p>
+      ${daysRowHTML(it.repeat.days)}` : ""}
       <p class="qs" style="margin:11px 0 0">${n
         ? `Состоялась ${n} ${plural(n, "раз", "раза", "раз")}, последний раз — ${formatDay(last)}`
         : "Пока не состоялась ни разу"}. Повторяется бессрочно, пока не удалите.</p>`; })() : "")
