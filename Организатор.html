@@ -223,7 +223,9 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .capseg i{width:16px;height:4px;border-radius:999px;background:var(--dot-off)}
 .capseg i.on{background:color-mix(in srgb, var(--accent) 45%, transparent)}
 .capseg i.dn{background:var(--accent)}
-.capseg i.ov{background:var(--warm)}
+/* Где проходит лимит дня — просветом, а не цветом: взять больше
+   обычного не провинность, и краснеть тут нечему. */
+.capseg i.edge{margin-left:9px}
 .mineno{font-weight:700;color:var(--ink);text-transform:none;letter-spacing:0;
   margin-left:10px;font-size:13px;font-variant-numeric:tabular-nums}
 .mineno b{color:var(--ink)}
@@ -2005,8 +2007,11 @@ function renderToday() {
      исчезает из счёта — день не пятится назад, а наполняется.       */
   const doneN = doneTasks.length + doneSteps.length;
   const takenN = chosenCount + dueCount + doneN;
+  /* Штрихи сверх лимита ничем не выделены цветом: красный как упрёк не
+     используется нигде, а «взяли больше обычного» — не провинность.
+     Где проходит лимит, видно по просвету перед первым лишним штрихом. */
   const segs = Array.from({ length: Math.max(cap, takenN) }, (_, k) =>
-    `<i class="${k < doneN ? "dn" : k < takenN ? "on" : ""}${k >= cap ? " ov" : ""}"></i>`).join("");
+    `<i class="${k < doneN ? "dn" : k < takenN ? "on" : ""}${k === cap ? " edge" : ""}"></i>`).join("");
 
   view.innerHTML = `<div class="tgrid"><div class="tcol">` +
     `<div class="todayhead"><h2>Дела</h2>

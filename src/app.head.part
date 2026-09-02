@@ -223,7 +223,9 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .capseg i{width:16px;height:4px;border-radius:999px;background:var(--dot-off)}
 .capseg i.on{background:color-mix(in srgb, var(--accent) 45%, transparent)}
 .capseg i.dn{background:var(--accent)}
-.capseg i.ov{background:var(--warm)}
+/* Где проходит лимит дня — просветом, а не цветом: взять больше
+   обычного не провинность, и краснеть тут нечему. */
+.capseg i.edge{margin-left:9px}
 .mineno{font-weight:700;color:var(--ink);text-transform:none;letter-spacing:0;
   margin-left:10px;font-size:13px;font-variant-numeric:tabular-nums}
 .mineno b{color:var(--ink)}

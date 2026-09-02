@@ -154,6 +154,32 @@ T.ok("точки недели — ниже чипов",
   line.indexOf('class="rdots"') > line.indexOf('class="rmeta"'));
 T.ok("название не обрезано", T.visible(line).indexOf("Стакан тёплой воды натощак") >= 0);
 
+T.head("ШТРИХИ ДНЯ БЕЗ ТРЕВОЖНОГО ЦВЕТА");
+/* Взяли больше лимита — штрихи сверх него краснели. Красный как упрёк
+   мы не используем нигде: место лимита показываем просветом. */
+var SCSS = (function () {
+  try { ObjC.import("Foundation");
+    return $.NSString.stringWithContentsOfFileEncodingError(
+      "Организатор.html", 4, null).js.replace(/\s+/g, " ");
+  } catch (e) { return ""; }
+})();
+T.ok("тёплого цвета у штрихов нет", !/\.capseg i\.ov\{/.test(SCSS));
+T.ok("место лимита отмечено просветом", /\.capseg i\.edge\{[^}]*margin-left/.test(SCSS));
+T.reset();
+S.cfg.todayCap = 3;
+T.tasks().slice(0, 5).forEach(function (i) { addToToday(i); });
+render();
+var seg3 = /class="capseg"[\s\S]*?<\/span>/.exec(view.innerHTML)[0];
+T.ok("штрихов столько, сколько взято", (seg3.match(/<i /g) || []).length === 5,
+  String((seg3.match(/<i /g) || []).length));
+T.ok("просвет ровно один", (seg3.match(/edge/g) || []).length === 1);
+/* Делим по началу штриха: нулевой кусок — то, что перед первым.
+   Значит номер штриха с просветом равен индексу куска. */
+var idx = seg3.split("<i ").findIndex(function (c) { return c.indexOf("edge") >= 0; });
+T.ok("и он на четвёртом — сразу за лимитом в три", idx === 4, "штрих № " + idx);
+S.cfg.todayCap = 5;
+T.reset();
+
 T.head("ОТМЕЧЕННАЯ ВСТРЕЧА ОСТАЁТСЯ НА МЕСТЕ");
 /* Как сделанное дело и отмеченная рутина: зачёркнута, но на виду.
    Раньше она пропадала из панели встреч и всплывала в колонке дел —
