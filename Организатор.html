@@ -2713,7 +2713,16 @@ function renderMap() {
       <text x="${px + b.pw / 2}" y="${b.cy + 4.5}" font-size="13.5" font-weight="700"
         text-anchor="middle" style="fill:#fff" pointer-events="none">${esc(b.label)}</text>
     </g>`;
-    MAPNODES.push({ val: b.v, x: px + b.pw / 2, y: b.cy, r: Math.max(b.pw / 2, 24) });
+    /* Цель для броска — вся полоса ветки, от стойки до конца её дел, а
+       не одна плашка. Плашки стоят своей колонкой, дела уходят далеко
+       наружу, и целиться в узкую полоску вдалеке от руки неудобно.
+       Ширину полосы дозаполняем ниже, когда станет известна длина
+       самой длинной подписи.                                        */
+    const zone = { val: b.v, x0: 0, x1: 0,
+                   y0: b.cy - b.h / 2, y1: b.cy + b.h / 2 };
+    const near = dir * M_TRUNK, far0 = outer + dir * 30;
+    zone.x0 = Math.min(near, far0); zone.x1 = Math.max(near, far0);
+    MAPNODES.push(zone);
     grow(px - 4, b.cy - M_PILL_H / 2 - 4, px + b.pw + 4, b.cy + M_PILL_H / 2 + 4);
 
     if (!b.open) return;
@@ -2739,6 +2748,9 @@ function renderMap() {
       </g>`;
       grow(Math.min(tx, tx + dir * (w + 14)), ly - 15,
            Math.max(tx, tx + dir * (w + 14)), ly + 15);
+      /* Полоса ветки дотягивается до конца её самой длинной подписи. */
+      zone.x0 = Math.min(zone.x0, tx, tx + dir * (w + 14));
+      zone.x1 = Math.max(zone.x1, tx, tx + dir * (w + 14));
     });
   });
 
@@ -2871,8 +2883,10 @@ function wireMap(vbWidth, vbHeight) {
     const ly = (cy - (r.top + r.height / 2)) / k;
     return { x: (lx - PAN.x) / ZOOM, y: (ly - PAN.y) / ZOOM };
   };
+  /* Попадание — прямоугольником по полосе ветки, с небольшим запасом
+     по вертикали: между полосами нет зазора, и попасть «между» нельзя. */
   const branchAt = p => p && MAPNODES.find(nd =>
-    Math.hypot(nd.x - p.x, nd.y - p.y) <= nd.r + 14);
+    p.x >= nd.x0 - 12 && p.x <= nd.x1 + 12 && p.y >= nd.y0 && p.y <= nd.y1);
   /* Подсветка ветки, над которой держат дело. Ищем плашку: кружков у
      веток нет с тех пор, как карта стала деревом, и подсветка молча
      перестала работать — перенос выглядел неисправным.              */
