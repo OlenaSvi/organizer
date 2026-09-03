@@ -23,8 +23,17 @@
   --check:#cfd6e4; --dash:#d7dde9; --hairline:#f1f2f6; --faint:#a7aebd;
   --chip-ink:#59647c; --dot-off:#dfe4ee; --pin:#b5605c; --hero-bg:#fbfcff;
   --veil:rgba(16,33,74,.28);
-  --sph-1:#bf7a35; --sph-2:#4a6fb5; --sph-3:#8a72ab; --sph-4:#b1746f;
-  --sph-5:#7d9a6f; --sph-6:#7c8794; --sph-7:#9c6183; --sph-8:#4f8fa0;
+  /* Палитра карты — схема, выбранная Еленой: коралловый, оранжевый,
+     жёлтый, лаймовый, зелёный, сине-зелёный. Шести не хватало на восемь
+     сфер — добавлены фиолетовый и орхидея того же склада: к холодному
+     концу насыщенность падает, как и в самой схеме.
+     Порядок чередует тёплые и холодные — соседние ветки на карте так не
+     сливаются даже боковым зрением.                                 */
+  --sph-1:#e8556b; --sph-2:#4a93b0; --sph-3:#eed35c; --sph-4:#8b7fc8;
+  --sph-5:#4fc08b; --sph-6:#f08a5d; --sph-7:#c278b8; --sph-8:#c4d95e;
+  /* Провода карты и её корень. Корень нарочно вне восьмёрки: любой
+     сферный цвет превратил бы его в девятую сферу.                  */
+  --wire:#aab2c0; --maproot:#55504b;
   --kind-appt:#1f5cff; --kind-go:#4f8fa0; --kind-buy:#a08a4a;
   --kind-idea:#8a72ab; --kind-routine:#7d9a6f; --kind-do:#7c8794;
   --cal-timed-bg:var(--accent-soft); --cal-due-bg:#f0f2f8;
@@ -39,8 +48,11 @@
   --check:#3a4560; --dash:#3a4560; --hairline:#222b40; --faint:#5d6780;
   --chip-ink:#aab4c8; --dot-off:#2c3650; --pin:#d98984; --hero-bg:#1a2338;
   --veil:rgba(0,0,0,.55);
-  --sph-1:#d99a55; --sph-2:#7499d6; --sph-3:#a98fd0; --sph-4:#d09490;
-  --sph-5:#9cbb8e; --sph-6:#98a3b2; --sph-7:#c78fab; --sph-8:#74aebf;
+  --sph-1:#ef7183; --sph-2:#6aabc6; --sph-3:#f2dc7e; --sph-4:#a49ada;
+  --sph-5:#6fd0a4; --sph-6:#f4a37c; --sph-7:#d194ca; --sph-8:#d2e37e;
+  /* В тёмной теме корень наоборот светлее панели — иначе плашка тонет
+     в фоне. Белый текст на нём по-прежнему читается.               */
+  --wire:#5b6577; --maproot:#6f675f;
   --kind-appt:#5b8aff; --kind-go:#74aebf; --kind-buy:#c0a968;
   --kind-idea:#a98fd0; --kind-routine:#9cbb8e; --kind-do:#98a3b2;
   --cal-timed-bg:rgba(91,138,255,.18); --cal-due-bg:#212a3e;

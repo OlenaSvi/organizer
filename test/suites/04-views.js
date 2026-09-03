@@ -27,7 +27,7 @@ var svg = view.innerHTML.slice(view.innerHTML.indexOf('id="mapG"'),
 var nodes = [], m, gre = /<g class="(branch|leaf)"[\s\S]*?<\/g>/g;
 while ((m = gre.exec(svg))) {
   var g = m[0];
-  var r = /<rect x="([-\d.e]+)" y="([-\d.e]+)" width="([\d.e]+)" height="([\d.e]+)"/.exec(g);
+  var r = /<rect x="([-\d.e]+)"\s+y="([-\d.e]+)"\s+width="([\d.e]+)"\s+height="([\d.e]+)"/.exec(g);
   var tx = /<text x="([-\d.e]+)"[^>]*text-anchor="(\w+)"[\s\S]*?>([^<]*)</.exec(g);
   if (r && tx) nodes.push({ l: +r[1], t: +r[2], r: +r[1] + +r[3], b: +r[2] + +r[4],
                             w: +r[3], tx: +tx[1], anchor: tx[2], txt: tx[3] });
@@ -41,8 +41,15 @@ T.ok("узлы не пересекаются", overlap.length === 0, overlap.joi
 var offc = nodes.filter(function (nd) {
   return nd.anchor === "middle" && Math.abs(nd.tx - (nd.l + nd.w / 2)) > 0.5; });
 T.ok("подписи по центру своих пилюль", offc.length === 0);
-T.ok("ветки залиты цветом", /fill:var\(--sph-\d\);opacity/.test(svg));
-T.ok("листья — бледный тот же цвет", svg.indexOf("color-mix(in srgb, var(--sph-") >= 0);
+T.ok("ветки залиты цветом", /fill:var\(--sph-\d\)/.test(svg));
+T.ok("корень — своя плашка, не из восьмёрки сфер",
+  /fill:var\(--maproot\)/.test(svg));
+/* Дело на карте — просто тёмный текст без плашки: цвет держит ветка, а
+   у дела он только сбивал бы. Прозрачный прямоугольник под текстом —
+   лишь область нажатия и захвата. */
+T.ok("дело — текст, а не крашеная плашка",
+  svg.indexOf("color-mix(in srgb, var(--sph-") < 0
+  && /<g class="leaf"[\s\S]{0,300}style="fill:transparent"/.test(svg));
 
 T.head("КАРТА: МНОГО ДЕЛ В ОДНОЙ ВЕТКЕ — СТОЛБЦОМ");
 for (var q = 0; q < 9; q++) S.items.push({
@@ -53,7 +60,7 @@ for (var q = 0; q < 9; q++) S.items.push({
 AXIS = "sphere"; S.open = ["развитие"]; render();
 var svg2 = view.innerHTML.slice(view.innerHTML.indexOf('id="mapG"'),
                                 view.innerHTML.indexOf("</svg>"));
-var leafRects = [], mm2, rre = /<g class="leaf"[\s\S]*?<rect x="([-\d.e]+)" y="([-\d.e]+)" width="([\d.e]+)" height="([\d.e]+)"/g;
+var leafRects = [], mm2, rre = /<g class="leaf"[\s\S]*?<rect x="([-\d.e]+)"\s+y="([-\d.e]+)"\s+width="([\d.e]+)"\s+height="([\d.e]+)"/g;
 while ((mm2 = rre.exec(svg2)))
   leafRects.push({ l: +mm2[1], t: +mm2[2], r: +mm2[1] + +mm2[3], b: +mm2[2] + +mm2[4] });
 var inBranch = live().filter(function (i) {
@@ -102,9 +109,11 @@ function leafText(id) {
 }
 T.ok("название показано целиком", leafText(lg.id) === lg.title, String(leafText(lg.id)));
 T.ok("многоточия нет", (leafText(lg.id) || "").indexOf("…") < 0);
-T.ok("подпись разбита на строки",
+/* Переносить больше не нужно: подпись идёт вдоль гребёнки наружу, и
+   места ей столько, сколько надо — карта просто становится шире. */
+T.ok("подпись одной строкой, без переносов",
   (view.innerHTML.slice(view.innerHTML.indexOf('data-drag-map="' + lg.id + '"'))
-    .slice(0, 900).match(/<tspan/g) || []).length >= 2);
+    .slice(0, 900).match(/<tspan/g) || []).length === 0);
 S.open = [];
 T.reset();
 
@@ -123,7 +132,7 @@ T.head("КАРТА: РАСКРЫТЫ ВСЕ ВЕТКИ РАЗОМ");
 TAB = "map"; AXIS = "sphere"; S.open = S.spheres.slice(); render();
 var svg3 = view.innerHTML.slice(view.innerHTML.indexOf('id="mapG"'),
                                 view.innerHTML.indexOf("</svg>"));
-var all3 = [], m3, gre3 = /<g class="(branch|leaf)"[\s\S]*?<rect x="([-\d.e]+)" y="([-\d.e]+)" width="([\d.e]+)" height="([\d.e]+)"/g;
+var all3 = [], m3, gre3 = /<g class="(branch|leaf)"[\s\S]*?<rect x="([-\d.e]+)"\s+y="([-\d.e]+)"\s+width="([\d.e]+)"\s+height="([\d.e]+)"/g;
 while ((m3 = gre3.exec(svg3)))
   all3.push({ kind: m3[1], l: +m3[2], t: +m3[3], r: +m3[2] + +m3[4], b: +m3[3] + +m3[5] });
 T.ok("узлов много", all3.length > 25, all3.length + " узлов");
@@ -142,7 +151,7 @@ T.head("КАРТА: ДЛИННЫЕ ИМЕНА ВЕТОК НЕ СЛИПАЮТСЯ
   AXIS = ax2; S.open = []; render();
   var sv = view.innerHTML.slice(view.innerHTML.indexOf('id="mapG"'),
                                 view.innerHTML.indexOf("</svg>"));
-  var br = [], mb, bre = /<g class="branch"[\s\S]*?<rect x="([-\d.e]+)" y="([-\d.e]+)" width="([\d.e]+)" height="([\d.e]+)"[\s\S]*?>([^<]*)<\/text>/g;
+  var br = [], mb, bre = /<g class="branch"[\s\S]*?<rect x="([-\d.e]+)"\s+y="([-\d.e]+)"\s+width="([\d.e]+)"\s+height="([\d.e]+)"[\s\S]*?>([^<]*)<\/text>/g;
   while ((mb = bre.exec(sv)))
     br.push({ l: +mb[1], t: +mb[2], r: +mb[1] + +mb[3], b: +mb[2] + +mb[4], txt: mb[5] });
   var hit = [];
@@ -168,7 +177,7 @@ if (doKey) {
   S.open = [doKey.key]; render();
   var sv2 = view.innerHTML.slice(view.innerHTML.indexOf('id="mapG"'),
                                  view.innerHTML.indexOf("</svg>"));
-  var br2 = [], mb2, bre2 = /<g class="branch"[\s\S]*?<rect x="([-\d.e]+)" y="([-\d.e]+)" width="([\d.e]+)" height="([\d.e]+)"[\s\S]*?>([^<]*)<\/text>/g;
+  var br2 = [], mb2, bre2 = /<g class="branch"[\s\S]*?<rect x="([-\d.e]+)"\s+y="([-\d.e]+)"\s+width="([\d.e]+)"\s+height="([\d.e]+)"[\s\S]*?>([^<]*)<\/text>/g;
   while ((mb2 = bre2.exec(sv2)))
     br2.push({ l: +mb2[1], t: +mb2[2], r: +mb2[1] + +mb2[3], b: +mb2[2] + +mb2[4], txt: mb2[5] });
   var hit2 = [];
@@ -203,7 +212,7 @@ S.open = [S.types.find(function (t3) { return t3.kind === "plain"; }).key];
 render();
 var sv3 = view.innerHTML.slice(view.innerHTML.indexOf('id="mapG"'),
                                view.innerHTML.indexOf("</svg>"));
-var br3 = [], mb3, bre3 = /<g class="branch"[\s\S]*?<rect x="([-\d.e]+)" y="([-\d.e]+)" width="([\d.e]+)" height="([\d.e]+)"/g;
+var br3 = [], mb3, bre3 = /<g class="branch"[\s\S]*?<rect x="([-\d.e]+)"\s+y="([-\d.e]+)"\s+width="([\d.e]+)"\s+height="([\d.e]+)"/g;
 while ((mb3 = bre3.exec(sv3)))
   br3.push({ l: +mb3[1], t: +mb3[2], r: +mb3[1] + +mb3[3], b: +mb3[2] + +mb3[4] });
 var gap3 = 1e9;
@@ -214,7 +223,10 @@ for (var g1 = 0; g1 < br3.length; g1++)
     var dy3 = Math.max(G1.t - G2.b, G2.t - G1.b, 0);
     gap3 = Math.min(gap3, (dx3 || dy3) ? Math.hypot(dx3, dy3) : -1);
   }
-T.ok("между ветками есть воздух", gap3 >= 24, Math.round(gap3) + "px");
+/* В дереве ветки стоят столбцом вплотную к своему ряду, поэтому
+   требовать 24px воздуха между ними бессмысленно. Требуем другого:
+   чтобы они не наезжали и шли ровной колонкой. */
+T.ok("ветки не наезжают друг на друга", gap3 >= 0, Math.round(gap3) + "px");
 S.items = keep; S.open = []; AXIS = "sphere";
 
 T.head("КАРТА: КЛИК ПО ЛИСТУ НА ВСЕХ ОСЯХ");

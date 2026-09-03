@@ -22,35 +22,30 @@ const inAxis = (it, v) => AXIS === "place" ? (it.place || NOPLACE) === v
    человек у него есть. Прячет его только ось сфер — прятать больше нечего. */
 const itemsIn = v => here().filter(i => inAxis(i, v));
 
-function wrapLabel(t, max) {
-  const w = String(t).split(" "), out = []; let cur = "";
-  w.forEach(x => {
-    if ((cur + " " + x).trim().length > max && cur) { out.push(cur); cur = x; }
-    else cur = (cur + " " + x).trim();
-  });
-  if (cur) out.push(cur);
-  return out.slice(0, 3);
+/* Ширина подписи. В браузере меряем настоящим шрифтом, в проверках
+   холста нет — там оцениваем по числу знаков. Раскладка карты держится
+   на этих числах, поэтому важно, чтобы способ был один и тот же.    */
+const MEASURE = (() => {
+  try {
+    const c = document.createElement("canvas");
+    const g = c && c.getContext && c.getContext("2d");
+    return g && g.measureText ? g : null;
+  } catch (e) { return null; }
+})();
+function textW(t, size, weight) {
+  const s = String(t == null ? "" : t);
+  if (!MEASURE) return s.length * size * 0.56;
+  MEASURE.font = weight + " " + size + "px Manrope, sans-serif";
+  return MEASURE.measureText(s).width;
 }
 
-/* Раскладка столбца листьев. Считается в ОДНОМ месте: и когда меряем,
-   сколько ветке нужно места по кругу, и когда рисуем. Разъедься эти два
-   счёта — ветки начнут налезать друг на друга.
-   Длинное название переносится на две-три строки, а не обрезается
-   многоточием: по обрубку «Собрать документы для п…» не понять, что за
-   дело, а ради этого карта и нужна.                                 */
-const LEAF_LINE = 22;      // знаков в строке подписи
-const LEAF_LH = 14;        // высота строки
-const LEAF_GAP = 9;        // просвет между листьями
-function leafLayout(items) {
-  const rows = items.map(it => {
-    const lines = wrapLabel(it.title, LEAF_LINE);
-    return { it, lines, h: Math.max(22, lines.length * LEAF_LH + 8) };
-  });
-  const chars = rows.reduce((m, r) =>
-    Math.max(m, r.lines.reduce((n, l) => Math.max(n, l.length), 0)), 9);
-  return { rows, w: chars * 7 + 22,
-           h: rows.reduce((a, r) => a + r.h, 0) + LEAF_GAP * Math.max(0, rows.length - 1) };
-}
+/* Разметка карты. Числа собраны в одном месте: раскладка считается
+   дважды — при замере и при отрисовке, — и разъехаться им нельзя. */
+const M_PILL_H = 34, M_PADX = 17, M_LEAF_H = 30, M_BR_MIN = 52;
+const M_COL = 236, M_TRUNK = 152, M_COMB = 34, M_TXT = 22;
+const mwire = (d, dot) => `<path d="${d}" style="fill:none;stroke:var(--wire);`
+  + `stroke-width:${dot ? 1.8 : 1.6};stroke-linecap:round`
+  + `${dot ? ";stroke-dasharray:1.6 5" : ""}"/>`;
 
 /* Масштаб и сдвиг. Карта рисуется вокруг точки (0,0), поэтому
    scale() увеличивает ровно от центра — как и ожидаешь.            */
@@ -63,138 +58,104 @@ function renderMap() {
   /* Пустые ветки тоже видны — чтобы было куда положить первое дело.
      Прячется только пустое «без места»: это не ветка, а остаток.    */
   const vals = axisValues(AXIS).filter(v => v !== NOPLACE || itemsIn(v).length);
-  const n = Math.max(vals.length, 1);
   MAPNODES = [];
 
-  /* Ветки стоят по кругу не поровну, а по месту, которое им нужно:
-     раскрытая ветка с десятью делами занимает столбец в 300px, и
-     соседей приходится раздвигать — иначе столбцы налезают друг на
-     друга. Считаем «вес» каждой ветки, распределяем 360° по весам и
-     подбираем радиус так, чтобы всё поместилось.                   */
-  /* Ширина пилюли ветки — та же формула, что при отрисовке ниже. */
-  const pillW = v => Math.max((axisLabel(v) + " · " + itemsIn(v).length).length * 7.6 + 28, 58);
-  const need = vals.map(v => {
-    /* Даже закрытой ветке нужно место по своей ширине: у видов дел
-       названия длинные («сходить / съездить · 1» — под 190px), и с
-       постоянным весом соседи снизу круга слипались.               */
-    const base = pillW(v) + 48;
-    if (!isOpen(v)) return base;
-    const lay = leafLayout(itemsIn(v));
-    /* Блок раскрытой ветки занимает место и в высоту (столбец), и вбок
-       (ширина подписей): вбок он задевает соседей, стоящих рядом по
-       кругу, поэтому ширина входит в вес с долей, а не игнорируется. */
-    return Math.max(base, lay.h + 60 + Math.min(lay.w, 260) * 0.45);
+  /* Дерево влево-вправо, а не круг. Круг упирался в себя: десять дел в
+     ветке раздвигали соседей по окружности, и карта расползалась вширь.
+     У дерева много дел — это просто длиннее столбец.
+     Стороны набираем по очереди, кладя следующую ветку туда, где пока
+     ниже: иначе один бок свисает намного дальше другого.            */
+  const rows = vals.map(v => {
+    const items = itemsIn(v);
+    const label = axisLabel(v) + " (" + items.length + ")";
+    const open = isOpen(v);
+    return { v, items, label, open,
+      pw: textW(label, 13.5, 700) + M_PADX * 2,
+      h: open ? Math.max(M_BR_MIN, items.length * M_LEAF_H + 16) : M_BR_MIN };
   });
-  const total = need.reduce((a, b) => a + b, 0);
-  const R = Math.max(155 + Math.min(n, 12) * 9, total / (2 * Math.PI) + 30);
-  const angles = [];
-  let acc = 0;
-  need.forEach(w => { angles.push((acc + w / 2) / total * Math.PI * 2 - Math.PI / 2); acc += w; });
+  const bySide = { r: [], l: [] }, hsum = { r: 0, l: 0 };
+  rows.forEach(b => { const k = hsum.r <= hsum.l ? "r" : "l";
+    bySide[k].push(b); hsum[k] += b.h; });
+  ["r", "l"].forEach(k => { let y = -hsum[k] / 2;
+    bySide[k].forEach(b => { b.dir = k === "r" ? 1 : -1; b.cy = y + b.h / 2; y += b.h; }); });
 
   /* Считаем реальные границы всего нарисованного, включая подписи.
      Раньше поле было фиксированным, и длинные названия уезжали за край. */
-  const bb = { x0: -70, y0: -70, x1: 70, y1: 70 };
+  const bb = { x0: 0, y0: 0, x1: 0, y1: 0 };
   const grow = (x0, y0, x1, y1) => {
     bb.x0 = Math.min(bb.x0, x0); bb.y0 = Math.min(bb.y0, y0);
     bb.x1 = Math.max(bb.x1, x1); bb.y1 = Math.max(bb.y1, y1);
   };
-  const growText = (x, y, txt, fs, anchor) => {
-    const w = String(txt).length * fs * 0.58;
-    const x0 = anchor === "end" ? x - w : anchor === "middle" ? x - w / 2 : x;
-    grow(x0, y - fs, x0 + w, y + fs * 0.45);
-  };
 
-  /* Связи собираем отдельно и выводим ПЕРВЫМИ: узлы полупрозрачные,
-     и линия, дорисованная поверх, просвечивала бы сквозь пилюлю.   */
+  const rootLabel = AXES[AXIS];
+  const rSide = Math.max(textW(rootLabel, 17, 800) + 46, 104), rHalf = rSide / 2;
+  grow(-rHalf, -rHalf, rHalf, rHalf);
+
+  /* Связи собираем отдельно и выводим ПЕРВЫМИ: иначе линия, дорисованная
+     поверх, просвечивала бы сквозь плашку.                          */
   let links = "", svg = "";
-  /* Где луч под углом `a` покидает прямоугольник (полуразмеры hw, hh) —
-     чтобы линия упиралась в край пилюли, а не шла в её центр.       */
-  /* Где луч под углом `a` покидает прямоугольник (полуразмеры hw, hh) —
-     чтобы линия упиралась в край пилюли, а не шла в её центр.       */
-  const edge = (cx, cy, a, hw, hh) => {
-    const ca = Math.abs(Math.cos(a)), sa = Math.abs(Math.sin(a));
-    const t = Math.min(ca > 1e-6 ? hw / ca : 1e9, sa > 1e-6 ? hh / sa : 1e9);
-    return { x: cx - Math.cos(a) * t, y: cy - Math.sin(a) * t };
-  };
-  vals.forEach((v, k) => {
-    const ang = angles[k];
-    const x = Math.cos(ang) * R, y = Math.sin(ang) * R;
-    const items = itemsIn(v);
-    /* Все оси цветные: ветка залита своим цветом целиком, её дела —
-       тем же цветом, но бледным. Цвета кладём в style: var() в
-       SVG-атрибутах не работает.                                    */
-    const col = colorOf(AXIS, v);
-    const sel = isOpen(v);
-    const bLabel = axisLabel(v) + " · " + items.length;
-    const pw = Math.max(bLabel.length * 7.6 + 28, 58), ph = 34;
 
-    /* От края центрального «Я» до края пилюли ветки. */
-    const cOut = edge(0, 0, ang + Math.PI, 26, 22);
-    const bIn = edge(x, y, ang, pw / 2, ph / 2);
-    links += `<path d="M${cOut.x} ${cOut.y} Q${Math.cos(ang) * R * .55} ${
-      Math.sin(ang) * R * .55} ${bIn.x} ${bIn.y}"
-      style="fill:none;stroke:var(--dash);stroke-width:1.5" opacity=".9"/>`;
-
-    if (sel) {
-      /* Листья стоят ровным столбцом сбоку от ветки, а не веером: при
-         девяти делах веер превращался в кашу из пересекающихся нитей.
-         От ветки идёт одна «шина» — горизонталь до колонки и вертикаль
-         вдоль неё, — а от шины к каждому листу короткий отвод.       */
-      const side = x >= 0 ? 1 : -1;                 // столбец наружу от центра
-      const busX = x + side * (pw / 2 + 44);        // где стоит вертикаль
-      /* Высота строк разная — подпись переносится, — поэтому идём
-         сверху вниз с накоплением, а не шагом одной величины.      */
-      const lay = leafLayout(items);
-      const colW = Math.max(lay.w, 90);
-      let cy = y - lay.h / 2;
-      const centers = lay.rows.map(r => { const c = cy + r.h / 2;
-        cy += r.h + LEAF_GAP; return c; });
-
-      links += `<path d="M${x + side * pw / 2} ${y} H${busX}"
-        style="fill:none;stroke:var(--dash);stroke-width:1.2"/>`;
-      if (items.length > 1)
-        links += `<path d="M${busX} ${centers[0]} V${centers[centers.length - 1]}"
-          style="fill:none;stroke:var(--dash);stroke-width:1.2"/>`;
-
-      /* Все пилюли столбца одной ширины — по самой длинной подписи:
-         иначе у левого столбца рваным выглядит внешний край.        */
-      lay.rows.forEach((r, j) => {
-        const ly = centers[j], lw = colW, gap = 12, h = r.h;
-        const px0 = side > 0 ? busX + gap : busX - gap - lw;
-        links += `<path d="M${busX} ${ly} H${side > 0 ? px0 : px0 + lw}"
-          style="fill:none;stroke:var(--dash);stroke-width:1.2;stroke-dasharray:3 4"/>`;
-        const y0 = ly - (r.lines.length - 1) * LEAF_LH / 2 + 4;
-        svg += `<g class="leaf" data-drag-map="${r.it.id}" data-from="${esc(v)}">
-            <rect x="${px0}" y="${ly - h / 2}" width="${lw}" height="${h}" rx="11"
-              style="fill:color-mix(in srgb, ${col} 22%, transparent)"
-              data-act="open" data-id="${r.it.id}"></rect>
-            <text x="${px0 + lw / 2}" y="${y0}" font-size="12"
-              text-anchor="middle" style="fill:${col}" font-weight="600"
-              data-act="open" data-id="${r.it.id}">${r.lines.map((l, k) =>
-                `<tspan x="${px0 + lw / 2}" dy="${k ? LEAF_LH : 0}">${esc(l)}</tspan>`).join("")}</text>
-          </g>`;
-        grow(px0 - 4, ly - h / 2 - 4, px0 + lw + 4, ly + h / 2 + 4);
-      });
-    }
-
-    /* Ветка всегда залита своим цветом целиком — она главная. Раскрытая
-       чуть плотнее по тени, закрытая просто спокойнее.              */
-    const bFill = `fill:${col}`;
-    const bText = "fill:#fff";
-    svg += `<g class="branch" data-act="branch" data-val="${esc(v)}">
-      <rect x="${x - pw / 2}" y="${y - ph / 2}" width="${pw}" height="${ph}" rx="${ph / 2}"
-        style="${bFill};opacity:${sel ? 1 : .82}"></rect>
-      <text x="${x}" y="${y + 4.5}" font-size="13.5" font-weight="600" text-anchor="middle"
-        style="${bText}" pointer-events="none">${esc(bLabel)}</text>
-    </g>`;
-    MAPNODES.push({ val: v, x: x, y: y, r: Math.max(pw / 2, 22) });
-    grow(x - pw / 2 - 4, y - ph / 2 - 4, x + pw / 2 + 4, y + ph / 2 + 4);
+  /* От центра к веткам — та же гребёнка, что от ветки к делам: ствол до
+     общей стойки, стойка, отвод. Одна конструкция на обоих уровнях. */
+  [1, -1].forEach(dir => {
+    const on = rows.filter(b => b.dir === dir);
+    if (!on.length) return;
+    const sx = dir * M_TRUNK, ys = on.map(b => b.cy);
+    links += mwire(`M${dir * rHalf} 0 H${sx}`);
+    if (on.length > 1)
+      links += mwire(`M${sx} ${Math.min.apply(null, ys)} V${Math.max.apply(null, ys)}`);
+    on.forEach(b => { links += mwire(`M${sx} ${b.cy} H${dir * M_COL}`); });
   });
 
-  svg = links + svg;
-  svg += `<rect x="-26" y="-22" width="52" height="44" rx="14" style="fill:var(--accent)"></rect>
-    <text x="0" y="6" font-size="17" font-weight="700" text-anchor="middle"
-      style="fill:#fff">Я</text>`;
+  rows.forEach(b => {
+    const dir = b.dir, col = colorOf(AXIS, b.v);
+    const inner = dir * M_COL, outer = inner + dir * b.pw;
+    const px = dir > 0 ? inner : outer;
+    /* Ветка — плашка с заливкой и белой подписью, число дел в скобках.
+       Цвет кладём в style: var() в SVG-атрибутах не работает.        */
+    svg += `<g class="branch" data-act="branch" data-val="${esc(b.v)}">
+      <rect x="${px}" y="${b.cy - M_PILL_H / 2}" width="${b.pw}" height="${M_PILL_H}" rx="${
+        M_PILL_H / 2}" style="fill:${col}"></rect>
+      <text x="${px + b.pw / 2}" y="${b.cy + 4.5}" font-size="13.5" font-weight="700"
+        text-anchor="middle" style="fill:#fff" pointer-events="none">${esc(b.label)}</text>
+    </g>`;
+    MAPNODES.push({ val: b.v, x: px + b.pw / 2, y: b.cy, r: Math.max(b.pw / 2, 24) });
+    grow(px - 4, b.cy - M_PILL_H / 2 - 4, px + b.pw + 4, b.cy + M_PILL_H / 2 + 4);
+
+    if (!b.open) return;
+
+    const spine = outer + dir * M_COMB;
+    const y0 = b.cy - b.items.length * M_LEAF_H / 2 + M_LEAF_H / 2;
+    const y1 = y0 + (b.items.length - 1) * M_LEAF_H;
+    links += mwire(`M${outer} ${b.cy} H${spine}`, true);
+    if (b.items.length > 1) links += mwire(`M${spine} ${y0} V${y1}`, true);
+
+    b.items.forEach((it, k) => {
+      const ly = y0 + k * M_LEAF_H, tx = spine + dir * M_TXT;
+      const w = textW(it.title, 13, 500);
+      links += mwire(`M${spine} ${ly} H${tx - dir * 4}`, true);
+      /* Прозрачный прямоугольник — только чтобы было куда нажать и за
+         что взяться: сам лист это просто текст, без рамки.          */
+      svg += `<g class="leaf" data-drag-map="${it.id}" data-from="${esc(b.v)}">
+        <rect x="${dir > 0 ? tx - 6 : tx - w - 6}" y="${ly - 13}" width="${w + 12}" height="26"
+          rx="7" style="fill:transparent" data-act="open" data-id="${it.id}"></rect>
+        <text x="${tx}" y="${ly + 4.5}" font-size="13" font-weight="500"
+          text-anchor="${dir > 0 ? "start" : "end"}" style="fill:var(--ink)"
+          data-act="open" data-id="${it.id}">${esc(it.title)}</text>
+      </g>`;
+      grow(Math.min(tx, tx + dir * (w + 14)), ly - 15,
+           Math.max(tx, tx + dir * (w + 14)), ly + 15);
+    });
+  });
+
+  /* Корень — такая же плашка, что и ветки, только квадратная и того же
+     радиуса углов. Цвет вне восьмёрки сфер: любой сферный превратил бы
+     его в девятую сферу.                                            */
+  svg = links + svg
+    + `<rect x="${-rHalf}" y="${-rHalf}" width="${rSide}" height="${rSide}"
+        rx="${M_PILL_H / 2}" style="fill:var(--maproot)"></rect>
+      <text x="0" y="6" font-size="17" font-weight="800" text-anchor="middle"
+        style="fill:#fff" pointer-events="none">${esc(rootLabel)}</text>`;
 
   /* Симметричное поле вокруг центра — чтобы увеличение шло от середины */
   const halfW = Math.max(Math.abs(bb.x0), Math.abs(bb.x1)) + 26;
