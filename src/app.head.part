@@ -256,6 +256,12 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
   color:var(--dim);font-weight:500;display:flex;align-items:center}
 .axis button.on{background:var(--seg-active);color:var(--ink);font-weight:600;
   box-shadow:0 1px 3px rgba(16,33,74,.10)}
+/* Развёрнутая карта: обёртка занимает всё окно поверх остального, а
+   оси и кнопки едут вместе с ней — иначе ими не воспользоваться. */
+.mapstage.full{position:fixed;inset:0;z-index:90;background:var(--bg);
+  padding:14px 16px 16px;display:flex;flex-direction:column}
+.mapstage.full .maprow{margin-bottom:12px}
+.mapstage.full #map{flex:1;height:auto;min-height:0}
 #map{width:100%;height:min(70vh,640px);display:block;background:var(--panel);
   border:0;border-radius:var(--r);box-shadow:var(--shadow);
   touch-action:none;cursor:grab}

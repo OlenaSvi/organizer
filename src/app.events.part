@@ -142,6 +142,9 @@ document.addEventListener("click", e => {
     case "zoom":    if (el.dataset.d === "fit") { ZOOM = 1; PAN = { x: 0, y: 0 }; }
                     else ZOOM = clamp(ZOOM * (el.dataset.d === "in" ? 1.25 : .8), 0.35, 4);
                     applyMapTransform(); break;
+    /* Разворот не трогает саму карту — только отдаёт ей всё окно.
+       Масштаб и сдвиг остаются как были.                          */
+    case "mapfull": MAPFULL = !MAPFULL; render(); break;
     case "calmode": CALMODE = el.dataset.m; render(); break;
     case "calnav":  { const d = el.dataset.d, back = d === "prev" ? -1 : 1;
                       if (d === "today") CALANCHOR = null;
@@ -468,6 +471,10 @@ function saveView() {
 
 function render() {
   normalizeItems();
+  /* Разворот карты живёт только пока карта на экране. Снимаем его здесь,
+     а не в обработчике вкладки: уйти с карты можно и иначе — через
+     восстановление вида при загрузке, например.                     */
+  if (TAB !== "map") MAPFULL = false;
   saveView();
   /* Экран перерисовывается целиком, и страница прыгала: списки меняют
      высоту, когда дело переезжает из «Предлагаю» в «Мой день».

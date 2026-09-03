@@ -50,6 +50,10 @@ const mwire = (d, dot) => `<path d="${d}" style="fill:none;stroke:var(--wire);`
 /* Масштаб и сдвиг. Карта рисуется вокруг точки (0,0), поэтому
    scale() увеличивает ровно от центра — как и ожидаешь.            */
 let ZOOM = 1, PAN = { x: 0, y: 0 };
+/* Развёрнута ли карта во весь экран. Нарочно не запоминается между
+   заходами: вернувшись через день, находишь карту на весь экран и не
+   понимаешь, что случилось.                                        */
+let MAPFULL = false;
 /* Где сейчас нарисованы ветки — нужно, чтобы понять, куда бросили. */
 let MAPNODES = [];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -167,19 +171,24 @@ function renderMap() {
       можно раскрыть все сразу и увидеть картину целиком.</p>
     ${awayNote(awayAll())}
     <p class="draghint">Дело можно перетащить с ветки на ветку — метка переедет вместе с ним.</p>
-    <div class="maprow">
-      <div class="axis">${Object.keys(AXES).map(a =>
-        `<button data-act="axis" data-a="${a}" class="${AXIS === a ? "on" : ""}">${AXES[a]}</button>`).join("")}</div>
-      <div class="maptools">
-        <button data-act="openall" data-v="all" class="wide">раскрыть все</button>
-        <button data-act="openall" data-v="none" class="wide">свернуть все</button>
-        <button data-act="zoom" data-d="out" title="Отдалить">−</button>
-        <button data-act="zoom" data-d="in" title="Приблизить">+</button>
-        <button data-act="zoom" data-d="fit" class="wide" title="Показать всё">уместить</button>
+    <div class="mapstage${MAPFULL ? " full" : ""}">
+      <div class="maprow">
+        <div class="axis">${Object.keys(AXES).map(a =>
+          `<button data-act="axis" data-a="${a}" class="${AXIS === a ? "on" : ""}">${AXES[a]}</button>`).join("")}</div>
+        <div class="maptools">
+          <button data-act="openall" data-v="all" class="wide">раскрыть все</button>
+          <button data-act="openall" data-v="none" class="wide">свернуть все</button>
+          <button data-act="zoom" data-d="out" title="Отдалить">−</button>
+          <button data-act="zoom" data-d="in" title="Приблизить">+</button>
+          <button data-act="zoom" data-d="fit" class="wide" title="Показать всё">уместить</button>
+          <button data-act="mapfull" class="wide" title="${MAPFULL
+            ? "Вернуть карту в страницу" : "Отдать карте всё окно"}">${
+            MAPFULL ? "свернуть" : "во весь экран"}</button>
+        </div>
       </div>
+      <svg id="map" viewBox="${-halfW} ${-halfH} ${halfW * 2} ${halfH * 2}"
+           preserveAspectRatio="xMidYMid meet"><g id="mapG">${svg}</g></svg>
     </div>
-    <svg id="map" viewBox="${-halfW} ${-halfH} ${halfW * 2} ${halfH * 2}"
-         preserveAspectRatio="xMidYMid meet"><g id="mapG">${svg}</g></svg>
     ${openVals.map(v => {
       const list = itemsIn(v);
       const attr = AXIS === "place" ? `data-place="${esc(v)}"`

@@ -256,6 +256,12 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
   color:var(--dim);font-weight:500;display:flex;align-items:center}
 .axis button.on{background:var(--seg-active);color:var(--ink);font-weight:600;
   box-shadow:0 1px 3px rgba(16,33,74,.10)}
+/* Развёрнутая карта: обёртка занимает всё окно поверх остального, а
+   оси и кнопки едут вместе с ней — иначе ими не воспользоваться. */
+.mapstage.full{position:fixed;inset:0;z-index:90;background:var(--bg);
+  padding:14px 16px 16px;display:flex;flex-direction:column}
+.mapstage.full .maprow{margin-bottom:12px}
+.mapstage.full #map{flex:1;height:auto;min-height:0}
 #map{width:100%;height:min(70vh,640px);display:block;background:var(--panel);
   border:0;border-radius:var(--r);box-shadow:var(--shadow);
   touch-action:none;cursor:grab}
@@ -2635,6 +2641,10 @@ const mwire = (d, dot) => `<path d="${d}" style="fill:none;stroke:var(--wire);`
 /* Масштаб и сдвиг. Карта рисуется вокруг точки (0,0), поэтому
    scale() увеличивает ровно от центра — как и ожидаешь.            */
 let ZOOM = 1, PAN = { x: 0, y: 0 };
+/* Развёрнута ли карта во весь экран. Нарочно не запоминается между
+   заходами: вернувшись через день, находишь карту на весь экран и не
+   понимаешь, что случилось.                                        */
+let MAPFULL = false;
 /* Где сейчас нарисованы ветки — нужно, чтобы понять, куда бросили. */
 let MAPNODES = [];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -2752,19 +2762,24 @@ function renderMap() {
       можно раскрыть все сразу и увидеть картину целиком.</p>
     ${awayNote(awayAll())}
     <p class="draghint">Дело можно перетащить с ветки на ветку — метка переедет вместе с ним.</p>
-    <div class="maprow">
-      <div class="axis">${Object.keys(AXES).map(a =>
-        `<button data-act="axis" data-a="${a}" class="${AXIS === a ? "on" : ""}">${AXES[a]}</button>`).join("")}</div>
-      <div class="maptools">
-        <button data-act="openall" data-v="all" class="wide">раскрыть все</button>
-        <button data-act="openall" data-v="none" class="wide">свернуть все</button>
-        <button data-act="zoom" data-d="out" title="Отдалить">−</button>
-        <button data-act="zoom" data-d="in" title="Приблизить">+</button>
-        <button data-act="zoom" data-d="fit" class="wide" title="Показать всё">уместить</button>
+    <div class="mapstage${MAPFULL ? " full" : ""}">
+      <div class="maprow">
+        <div class="axis">${Object.keys(AXES).map(a =>
+          `<button data-act="axis" data-a="${a}" class="${AXIS === a ? "on" : ""}">${AXES[a]}</button>`).join("")}</div>
+        <div class="maptools">
+          <button data-act="openall" data-v="all" class="wide">раскрыть все</button>
+          <button data-act="openall" data-v="none" class="wide">свернуть все</button>
+          <button data-act="zoom" data-d="out" title="Отдалить">−</button>
+          <button data-act="zoom" data-d="in" title="Приблизить">+</button>
+          <button data-act="zoom" data-d="fit" class="wide" title="Показать всё">уместить</button>
+          <button data-act="mapfull" class="wide" title="${MAPFULL
+            ? "Вернуть карту в страницу" : "Отдать карте всё окно"}">${
+            MAPFULL ? "свернуть" : "во весь экран"}</button>
+        </div>
       </div>
+      <svg id="map" viewBox="${-halfW} ${-halfH} ${halfW * 2} ${halfH * 2}"
+           preserveAspectRatio="xMidYMid meet"><g id="mapG">${svg}</g></svg>
     </div>
-    <svg id="map" viewBox="${-halfW} ${-halfH} ${halfW * 2} ${halfH * 2}"
-         preserveAspectRatio="xMidYMid meet"><g id="mapG">${svg}</g></svg>
     ${openVals.map(v => {
       const list = itemsIn(v);
       const attr = AXIS === "place" ? `data-place="${esc(v)}"`
@@ -4253,6 +4268,9 @@ document.addEventListener("click", e => {
     case "zoom":    if (el.dataset.d === "fit") { ZOOM = 1; PAN = { x: 0, y: 0 }; }
                     else ZOOM = clamp(ZOOM * (el.dataset.d === "in" ? 1.25 : .8), 0.35, 4);
                     applyMapTransform(); break;
+    /* Разворот не трогает саму карту — только отдаёт ей всё окно.
+       Масштаб и сдвиг остаются как были.                          */
+    case "mapfull": MAPFULL = !MAPFULL; render(); break;
     case "calmode": CALMODE = el.dataset.m; render(); break;
     case "calnav":  { const d = el.dataset.d, back = d === "prev" ? -1 : 1;
                       if (d === "today") CALANCHOR = null;
@@ -4579,6 +4597,10 @@ function saveView() {
 
 function render() {
   normalizeItems();
+  /* Разворот карты живёт только пока карта на экране. Снимаем его здесь,
+     а не в обработчике вкладки: уйти с карты можно и иначе — через
+     восстановление вида при загрузке, например.                     */
+  if (TAB !== "map") MAPFULL = false;
   saveView();
   /* Экран перерисовывается целиком, и страница прыгала: списки меняют
      высоту, когда дело переезжает из «Предлагаю» в «Мой день».

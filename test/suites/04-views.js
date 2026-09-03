@@ -322,4 +322,34 @@ T.ok("это не алфавит", fresh.join() !== "Аня,Боря,Яна");
 ALLSORT = "due";
 T.reset();
 
+T.head("КАРТА НА ВЕСЬ ЭКРАН");
+/* Карта — единственный экран, где не хватает места по-настоящему:
+   раскрытые ветки уходят за края. Разворот не меняет саму карту, он
+   только отдаёт ей всё окно. */
+T.reset();
+TAB = "map"; AXIS = "sphere"; render();
+T.ok("кнопка разворота есть", view.innerHTML.indexOf('data-act="mapfull"') >= 0);
+T.ok("пока свёрнута — обёртка обычная",
+  /class="mapstage"/.test(view.innerHTML), "класс full не должен стоять");
+clickOn({ act: "mapfull" });
+T.ok("развернулась", /class="mapstage full"/.test(view.innerHTML));
+T.ok("подпись кнопки сменилась",
+  view.innerHTML.indexOf("свернуть") >= 0);
+T.ok("оси и кнопки остались внутри — иначе ими не воспользоваться",
+  view.innerHTML.indexOf('class="mapstage full"') <
+  view.innerHTML.indexOf('data-act="axis"'));
+clickOn({ act: "mapfull" });
+T.ok("свернулась обратно", /class="mapstage"/.test(view.innerHTML)
+  && view.innerHTML.indexOf('class="mapstage full"') < 0);
+
+T.head("РАЗВОРОТ НЕ ПЕРЕЖИВАЕТ УХОД С КАРТЫ");
+/* Иначе, вернувшись на карту через день, находишь её на весь экран и
+   не понимаешь, что случилось. */
+clickOn({ act: "mapfull" });
+TAB = "today"; render();
+TAB = "map"; render();
+T.ok("вернулись — карта обычного размера",
+  view.innerHTML.indexOf('class="mapstage full"') < 0);
+T.reset();
+
 T.done();
