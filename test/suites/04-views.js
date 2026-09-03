@@ -100,7 +100,7 @@ lg.spheres = ["Быт"];
 TAB = "map"; AXIS = "sphere"; S.open = ["Быт"]; render();
 function leafText(id) {
   var h = view.innerHTML.replace(/\s+/g, " ");
-  var at = h.indexOf('data-drag-map="' + id + '"');
+  var at = h.indexOf('data-act="open" data-id="' + id + '"');
   if (at < 0) return null;
   var g = h.slice(at, h.indexOf("</g>", at));
   var out = [], m, re = />([^<>]+)</g;
@@ -112,7 +112,7 @@ T.ok("многоточия нет", (leafText(lg.id) || "").indexOf("…") < 0);
 /* Переносить больше не нужно: подпись идёт вдоль гребёнки наружу, и
    места ей столько, сколько надо — карта просто становится шире. */
 T.ok("подпись одной строкой, без переносов",
-  (view.innerHTML.slice(view.innerHTML.indexOf('data-drag-map="' + lg.id + '"'))
+  (view.innerHTML.slice(view.innerHTML.indexOf('data-act="open" data-id="' + lg.id + '"'))
     .slice(0, 900).match(/<tspan/g) || []).length === 0);
 S.open = [];
 T.reset();
@@ -230,18 +230,18 @@ T.ok("ветки не наезжают друг на друга", gap3 >= 0, Mat
 S.items = keep; S.open = []; AXIS = "sphere";
 
 T.head("КАРТА: КЛИК ПО ЛИСТУ НА ВСЕХ ОСЯХ");
+/* Раньше открытие шло особым путём — карта сама ловила нажатие, потому
+   что тот же жест мог оказаться переносом. Переноса больше нет, и лист
+   открывается обычным делегированным нажатием, как всё остальное. */
 ["sphere", "place", "person", "type"].forEach(function (ax) {
   AXIS = ax; S.open = axisValues(ax).slice(); render();
-  var mapEl = document.getElementById("map");
   var one = live()[0];
-  var lf = { dataset: { dragMap: one.id, from: "x" },
-             classList: { add: function () {}, remove: function () {} },
-             setAttribute: function () {}, removeAttribute: function () {} };
   closeModal();
-  (mapEl._l.pointerdown || []).slice(-1).forEach(function (f) {
-    f({ target: { closest: function (s) { return s === "[data-drag-map]" ? lf : null; } },
-        clientX: 100, clientY: 100 }); });
-  (window._l.pointerup || []).slice(-1).forEach(function (f) { f({ clientX: 100, clientY: 100 }); });
+  T.ok("ось «" + AXES[ax] + "»: у листа есть чем открыться",
+    new RegExp('<g class="leaf">[\\s\\S]{0,200}data-act="open" data-id="' + one.id + '"')
+      .test(view.innerHTML.replace(/\s+/g, " ")) ||
+    view.innerHTML.indexOf('data-act="open" data-id="' + one.id + '"') >= 0);
+  clickOn({ act: "open", id: one.id });
   T.ok("ось «" + AXES[ax] + "»: клик открывает просмотр",
     host.innerHTML.indexOf("Редактировать") >= 0);
   closeModal();
@@ -322,7 +322,7 @@ T.ok("это не алфавит", fresh.join() !== "Аня,Боря,Яна");
 ALLSORT = "due";
 T.reset();
 
-T.head("ПЕРЕТАСКИВАНИЕ ПО КАРТЕ ЧЕСТНОЕ");
+T.head("ПЕРЕТАСКИВАНИЯ ДЕЛ ПО КАРТЕ НЕТ");
 /* Подсветка цели искала у ветки кружок — а ветки давно плашки, и
    перенос выглядел неработающим: лист ездит, а ничего не отзывается. */
 var MC = (function () {
@@ -331,11 +331,12 @@ var MC = (function () {
       "Организатор.html", 4, null).js.replace(/\s+/g, " ");
   } catch (e) { return ""; }
 })();
-T.ok("подсветка цели ищет плашку, а не кружок",
-  MC.indexOf(".branch circle") < 0 && MC.indexOf('.branch rect') >= 0);
-T.ok("лист не трогается с места от дрожания руки",
-  /moved > DRAG_MIN/.test(MC) || /moved > 5/.test(MC),
-  "иначе клик выглядит как неудавшийся перенос");
+T.ok("дела с карты не перетаскиваются вовсе",
+  MC.indexOf("data-drag-map") < 0 && MC.indexOf("moveToBranch") < 0,
+  "перенос убран: он читался как основное действие, а нужен был редко");
+T.ok("а сама карта по-прежнему двигается",
+  /grabbing/.test(MC) && /applyMapTransform/.test(MC));
+T.ok("подсказки про перенос тоже нет", view.innerHTML.indexOf("перетащить с ветки") < 0);
 
 T.head("КАРТА НА ВЕСЬ ЭКРАН");
 /* Карта — единственный экран, где не хватает места по-настоящему:

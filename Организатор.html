@@ -2644,15 +2644,12 @@ let ZOOM = 1, PAN = { x: 0, y: 0 };
    заходами: вернувшись через день, находишь карту на весь экран и не
    понимаешь, что случилось.                                        */
 let MAPFULL = false;
-/* Где сейчас нарисованы ветки — нужно, чтобы понять, куда бросили. */
-let MAPNODES = [];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 function renderMap() {
   /* Пустые ветки тоже видны — чтобы было куда положить первое дело.
      Прячется только пустое «без места»: это не ветка, а остаток.    */
   const vals = axisValues(AXIS).filter(v => v !== NOPLACE || itemsIn(v).length);
-  MAPNODES = [];
 
   /* Дерево влево-вправо, а не круг. Круг упирался в себя: десять дел в
      ветке раздвигали соседей по окружности, и карта расползалась вширь.
@@ -2713,16 +2710,6 @@ function renderMap() {
       <text x="${px + b.pw / 2}" y="${b.cy + 4.5}" font-size="13.5" font-weight="700"
         text-anchor="middle" style="fill:#fff" pointer-events="none">${esc(b.label)}</text>
     </g>`;
-    /* Цель для броска — вся полоса ветки, от стойки до конца её дел, а
-       не одна плашка. Плашки стоят своей колонкой, дела уходят далеко
-       наружу, и целиться в узкую полоску вдалеке от руки неудобно.
-       Ширину полосы дозаполняем ниже, когда станет известна длина
-       самой длинной подписи.                                        */
-    const zone = { val: b.v, x0: 0, x1: 0,
-                   y0: b.cy - b.h / 2, y1: b.cy + b.h / 2 };
-    const near = dir * M_TRUNK, far0 = outer + dir * 30;
-    zone.x0 = Math.min(near, far0); zone.x1 = Math.max(near, far0);
-    MAPNODES.push(zone);
     grow(px - 4, b.cy - M_PILL_H / 2 - 4, px + b.pw + 4, b.cy + M_PILL_H / 2 + 4);
 
     if (!b.open) return;
@@ -2739,7 +2726,7 @@ function renderMap() {
       links += mwire(`M${spine} ${ly} H${tx - dir * 4}`, true);
       /* Прозрачный прямоугольник — только чтобы было куда нажать и за
          что взяться: сам лист это просто текст, без рамки.          */
-      svg += `<g class="leaf" data-drag-map="${it.id}" data-from="${esc(b.v)}">
+      svg += `<g class="leaf">
         <rect x="${dir > 0 ? tx - 6 : tx - w - 6}" y="${ly - 13}" width="${w + 12}" height="26"
           rx="7" style="fill:transparent" data-act="open" data-id="${it.id}"></rect>
         <text x="${tx}" y="${ly + 4.5}" font-size="13" font-weight="500"
@@ -2748,9 +2735,6 @@ function renderMap() {
       </g>`;
       grow(Math.min(tx, tx + dir * (w + 14)), ly - 15,
            Math.max(tx, tx + dir * (w + 14)), ly + 15);
-      /* Полоса ветки дотягивается до конца её самой длинной подписи. */
-      zone.x0 = Math.min(zone.x0, tx, tx + dir * (w + 14));
-      zone.x1 = Math.max(zone.x1, tx, tx + dir * (w + 14));
     });
   });
 
@@ -2772,7 +2756,6 @@ function renderMap() {
     <p class="sub">Здесь ничего не теряется. Раскрытые ветки такими и остаются —
       можно раскрыть все сразу и увидеть картину целиком.</p>
     ${awayNote(awayAll())}
-    <p class="draghint">Дело можно перетащить с ветки на ветку — метка переедет вместе с ним.</p>
     <div class="mapstage${MAPFULL ? " full" : ""}">
       <div class="maprow">
         <div class="axis">${Object.keys(AXES).map(a =>
@@ -2836,26 +2819,6 @@ function mapRowHTML(i) {
   </div>`;
 }
 
-function moveToBranch(id, target, from) {
-  const it = S.items.find(x => x.id === id);
-  if (!it || target === from) return false;
-  if (AXIS === "place")       it.place = (target === NOPLACE ? null : target);
-  else if (AXIS === "person") it.person = target;
-  else if (AXIS === "type") {
-    /* Перенос между видами — та же смена «что это», что и в редакторе,
-       с теми же последствиями: рутине — расписание, у идеи и рутины
-       срок стирается, чтобы не висеть в календаре.                  */
-    it.type = target;
-    if (isRoutine(it) && !it.routine) it.routine = { days: [0,1,2,3,4,5,6], history: [] };
-    if (isIdea(it) || isRoutine(it)) { it.due = null; it.time = null; }
-  }
-  else {
-    it.spheres = (it.spheres || []).filter(s => s !== from);
-    if (it.spheres.indexOf(target) < 0) it.spheres.push(target);
-  }
-  save();
-  return true;
-}
 
 function wireMap(vbWidth, vbHeight) {
   const el = document.getElementById("map");
@@ -2873,65 +2836,16 @@ function wireMap(vbWidth, vbHeight) {
      НЕ через setPointerCapture: захват указателя переносит цель
      последующего клика на саму карту, и нажатия по веткам перестают
      доходить до обработчика.                                        */
-  /* Экранная точка -> координаты карты. Поле симметрично относительно
-     нуля, поэтому центр элемента и есть начало координат.            */
-  const toLocal = (cx, cy) => {
-    const r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
-    if (!r || !r.width) return null;
-    const k = Math.min(r.width / vbWidth, r.height / vbHeight);
-    const lx = (cx - (r.left + r.width / 2)) / k;
-    const ly = (cy - (r.top + r.height / 2)) / k;
-    return { x: (lx - PAN.x) / ZOOM, y: (ly - PAN.y) / ZOOM };
-  };
-  /* Попадание — прямоугольником по полосе ветки, с небольшим запасом
-     по вертикали: между полосами нет зазора, и попасть «между» нельзя. */
-  const branchAt = p => p && MAPNODES.find(nd =>
-    p.x >= nd.x0 - 12 && p.x <= nd.x1 + 12 && p.y >= nd.y0 && p.y <= nd.y1);
-  /* Подсветка ветки, над которой держат дело. Ищем плашку: кружков у
-     веток нет с тех пор, как карта стала деревом, и подсветка молча
-     перестала работать — перенос выглядел неисправным.              */
-  const paintTarget = val => {
-    if (!el.querySelectorAll) return;
-    el.querySelectorAll(".branch rect").forEach(c => {
-      c.setAttribute("stroke", "none"); c.setAttribute("stroke-width", "0");
-    });
-    if (!val) return;
-    const g = el.querySelector('.branch[data-val="' + String(val).replace(/"/g, '\\"') + '"] rect');
-    if (g) { g.setAttribute("stroke", "var(--ink)"); g.setAttribute("stroke-width", "3"); }
-  };
-
-  /* Ниже этого порога движение считается дрожанием руки, а не
-     переносом: иначе лист съезжал от простого нажатия и клик выглядел
-     как неудавшееся перетаскивание.                                 */
-  const DRAG_MIN = 5;
-  let drag = null, moved = 0, item = null;
+  /* На карте таскают только саму карту. Перенос дел с ветки на ветку
+     убран: он читался как основное действие, а нужен был редко — метку
+     проще сменить в самом деле. Дело на карте теперь только
+     открывается, и никаких целей для броска считать не надо.       */
+  let drag = null, moved = 0;
   const onDown = e => {
-    const leaf = e.target && e.target.closest ? e.target.closest("[data-drag-map]") : null;
-    if (leaf) {                       // тащим дело, а не карту
-      item = { id: leaf.dataset.dragMap, from: leaf.dataset.from, node: leaf,
-               x: e.clientX, y: e.clientY };
-      moved = 0;
-      return;
-    }
     drag = { x: e.clientX, y: e.clientY, px: PAN.x, py: PAN.y };
     moved = 0; el.classList.add("grabbing");
   };
   const onMove = e => {
-    if (item) {
-      const dx = e.clientX - item.x, dy = e.clientY - item.y;
-      moved = Math.max(moved, Math.abs(dx) + Math.abs(dy));
-      if (moved <= DRAG_MIN) return;          // ещё не перенос, а дрожание
-      if (item.node.classList) item.node.classList.add("dragging");
-      const r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
-      if (r && r.width) {
-        const k = Math.min(r.width / vbWidth, r.height / vbHeight) * ZOOM;
-        if (item.node.setAttribute)
-          item.node.setAttribute("transform", `translate(${dx / k} ${dy / k})`);
-      }
-      const hit = branchAt(toLocal(e.clientX, e.clientY));
-      paintTarget(hit && hit.val !== item.from ? hit.val : null);
-      return;
-    }
     if (!drag) return;
     const ratio = vbWidth / (el.clientWidth || vbWidth);   // пиксели → единицы карты
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
@@ -2939,31 +2853,7 @@ function wireMap(vbWidth, vbHeight) {
     PAN.x = drag.px + dx * ratio; PAN.y = drag.py + dy * ratio;
     applyMapTransform();
   };
-  const onUp = e => {
-    if (item) {
-      const node = item.node;
-      if (node.classList) node.classList.remove("dragging");
-      paintTarget(null);
-      /* Нажали и отпустили, не двигая, — это клик по делу, а не перенос.
-         Карту НЕ перерисовываем: click прилетает после pointerup, и
-         после render() он попал бы в выброшенный элемент — просмотр
-         не открывался бы никогда.                                   */
-      if (moved <= DRAG_MIN) {
-        /* Нажали и отпустили, не двигая, — открываем дело САМИ, не
-           надеясь на всплытие click: на некоторых осях оно до делегата
-           не доходило, и карта выглядела «только для перетаскивания». */
-        if (node.removeAttribute) node.removeAttribute("transform");
-        const openId = item.id;
-        item = null;
-        if (openId) openItem(openId);
-        return;
-      }
-      const hit = e ? branchAt(toLocal(e.clientX, e.clientY)) : null;
-      if (hit) moveToBranch(item.id, hit.val, item.from);
-      item = null;
-      render();          // и при переносе, и при броске мимо — лист встаёт на место
-      return;
-    }
+  const onUp = () => {
     if (drag) { drag = null; el.classList.remove("grabbing"); }
   };
   /* если карту тащили — отпускание не считается нажатием на ветку */
