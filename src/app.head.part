@@ -278,7 +278,6 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 #map text{font-family:inherit;-webkit-user-select:none;user-select:none}
 .branch{cursor:pointer}
 .branch:hover rect{filter:brightness(1.05)}
-.branch:hover circle{filter:brightness(1.05)}
 
 /* ── список и календарь ───────────────────────────────── */
 /* Черта отделяет регуляторы от списка. Итог недели и заголовки дней
