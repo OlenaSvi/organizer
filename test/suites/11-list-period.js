@@ -90,4 +90,27 @@ task.done = false; task.doneAt = null;
 ap2.repeat = null;
 T.reset();
 
+T.head("РУТИНА В СПИСКЕ ОТМЕЧАЕТСЯ");
+/* Кружок у рутины был нарисован, но ничего не делал: приглушённая
+   заглушка без действия. Нажимаешь — ничего. Либо он работает, либо
+   его быть не должно. */
+T.reset();
+var rr = T.routine();
+rr.routine.days = [0, 1, 2, 3, 4, 5, 6];
+rr.routine.history = [];
+TAB = "all"; ALLFILTER = "all"; ALLQUERY = ""; ALLPERIOD = "all"; render();
+var row = document.getElementById("allList").innerHTML.replace(/\s+/g, " ");
+T.ok("кружок у рутины — кнопка, а не заглушка",
+  new RegExp('<button class="tick[^"]*" data-act="toggle" data-id="' + rr.id + '"').test(row),
+  row.slice(row.indexOf(rr.id) - 160, row.indexOf(rr.id) + 40));
+clickOn({ act: "toggle", id: rr.id });
+T.ok("отметилась сегодняшним днём", rr.routine.history.indexOf(today()) >= 0);
+render();
+row = document.getElementById("allList").innerHTML.replace(/\s+/g, " ");
+T.ok("и это видно в строке",
+  new RegExp('class="tick on"[^>]*data-id="' + rr.id + '"').test(row));
+clickOn({ act: "toggle", id: rr.id });
+T.ok("повторное нажатие снимает", rr.routine.history.indexOf(today()) < 0);
+T.reset();
+
 T.done();
