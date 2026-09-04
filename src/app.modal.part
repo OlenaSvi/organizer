@@ -495,7 +495,7 @@ function itemFormHTML(it, ids) {
     isRoutine(it)
       ? cell("Сколько занимает", ddMinsHTML(it))
         + daysItem(it.routine && it.routine.days) + partItem
-    : isAppt(it)
+    : isAppt(it) || isRemind(it)
       ? whenSwitch + (it.repeat
           ? cell("Как часто", `<div class="seg">${REPEATS.map(([k, L]) =>
               `<button data-act="rmode" data-id="${it.id}" data-v="${k}"
@@ -510,7 +510,9 @@ function itemFormHTML(it, ids) {
             /* Время занимает строку целиком только там, где иначе рядом
                осталась бы пустая клетка: при выборе числа месяца оно
                встаёт с ним в пару.                                    */
-            + cell("Время", ddTimeHTML(it), everyOf(it) !== "month" && everyOf(it) !== "quarter")
+            /* У напоминания времени нет: оно про день, а не про час. */
+            + (isRemind(it) ? "" : cell("Время", ddTimeHTML(it),
+                everyOf(it) !== "month" && everyOf(it) !== "quarter"))
           /* Дата, часы и минуты стоят в одну линию — втроём в половину
              строки они не помещаются: кнопка даты сжималась до одной
              буквы, а мини-календарь вылезал за край окна.          */
@@ -537,7 +539,7 @@ function itemFormHTML(it, ids) {
       <div class="cfgitem"><p class="lbl">Человек</p>${ddPickHTML(it, "person")}</div>
     </div>
 
-    ${isRoutine(it) || isIdea(it) ? "" : `<p class="lbl">Важность</p>
+    ${isRoutine(it) || isIdea(it) || isRemind(it) ? "" : `<p class="lbl">Важность</p>
       <div class="chips">${[["imp", "важное"], ["not", "неважное"]].map(([k, L]) =>
         `<button class="chip ${(isImportant(it) ? "imp" : "not") === k ? "on" : ""}"
           data-act="equad" data-id="${it.id}" data-q="${k}">${L}</button>`).join("")}</div>
@@ -682,6 +684,9 @@ function whenFieldsHTML(it, dateId, timeId) {
   if (isRoutine(it)) return "";
   if (isIdea(it)) return `<p class="qs" style="margin:24px 0 0">Идея ничего не требует
     и сама в «Сегодня» не просится. Захотите взяться — смените вид.</p>`;
+  if (isRemind(it)) return `<p class="lbl">Когда</p>${ddDueHTML(it)}
+    <p class="qs" style="margin:8px 0 0">Напоминание ничего не требует: придёт
+      в свой день и просто скажет.</p>`;
   if (isAppt(it)) return `<p class="lbl">Дата и время</p>
     <div style="display:flex;gap:8px;align-items:center">
       <div style="flex:1;min-width:0">${ddDueHTML(it)}</div>
@@ -848,7 +853,7 @@ function openItem(id) {
       ${it.place ? placeTag(it.place) : ""}
       ${it.person && it.person !== "Я" ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(it.person)}</span>` : ""}
       ${dateLabel(it) && !isRoutine(it) ? `<span class="tag when">${sandFor(it)}${dateLabel(it)}</span>` : ""}
-      ${!isRoutine(it) && !isIdea(it)
+      ${!isRoutine(it) && !isIdea(it) && !isRemind(it)
         ? `<span class="tag quadtag" title="Клетка матрицы: срочность из дедлайна, важность — ваша">${
           esc(QUADS[quadrant(it)])}</span>` : ""}
     </div>
@@ -857,7 +862,7 @@ function openItem(id) {
     <div class="row modalfoot">
       <button class="btn link" data-act="edit" data-id="${it.id}">Редактировать</button>
       <div class="spacer"></div>
-      ${isRoutine(it) || isAppt(it) || isIdea(it) ? "" : `<button class="btn ${
+      ${isRoutine(it) || isAppt(it) || isIdea(it) || isRemind(it) ? "" : `<button class="btn ${
         pickedToday(it) ? "link" : "primary"}" data-act="pin" data-id="${it.id}">${
         pickedToday(it) ? "Убрать из сегодня" : "Сделать сегодня"}</button>`}
     </div>`, "view:" + it.id, { act: "close", title: "Закрыть" });

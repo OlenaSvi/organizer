@@ -36,6 +36,7 @@
   --wire:#aab2c0; --maproot:#55504b;
   --kind-appt:#1f5cff; --kind-go:#4f8fa0; --kind-buy:#a08a4a;
   --kind-idea:#8a72ab; --kind-routine:#7d9a6f; --kind-do:#7c8794;
+  --kind-remind:#a3568f;
   --cal-timed-bg:var(--accent-soft); --cal-due-bg:#f0f2f8;
 }
 :root[data-theme="dark"]{
@@ -55,6 +56,7 @@
   --wire:#5b6577; --maproot:#6f675f;
   --kind-appt:#5b8aff; --kind-go:#74aebf; --kind-buy:#c0a968;
   --kind-idea:#a98fd0; --kind-routine:#9cbb8e; --kind-do:#98a3b2;
+  --kind-remind:#c98ab8;
   --cal-timed-bg:rgba(91,138,255,.18); --cal-due-bg:#212a3e;
 }
 *{box-sizing:border-box}
@@ -976,6 +978,9 @@ const DEFAULT_TYPES = [
   { key: "routine", name: "рутина",             hint: "повторяется, пропуск не страшен", kind: "routine" },
   { key: "appt",    name: "аппоинтмент",        hint: "точные дата и время",             kind: "appt" },
   { key: "idea",    name: "идея на будущее",    hint: "мысль без срока — ничего не требует", kind: "idea" },
+  /* Напоминание — не дело: его не делают, про него помнят. День
+     рождения, посылка в пути, «привезут шкаф в среду».             */
+  { key: "remind",  name: "напоминание",        hint: "не делать — помнить: дата, о которой нельзя забыть", kind: "remind" },
 ];
 /* Вид по умолчанию — обычный, а не первый в списке: если первым окажется
    «выбрать / купить», новое дело зря получало бы его логику.        */
@@ -986,6 +991,9 @@ const kindOf    = it => typeDef(it.type).kind;
 const isRoutine = it => kindOf(it) === "routine";
 const isChoice  = it => kindOf(it) === "choice";
 const isAppt    = it => kindOf(it) === "appt";   // дата + час: врач, встреча
+/* Напоминание ничего не требует: не предлагается, не входит в лимит
+   дня, не попадает в матрицу. Только приходит в свой день и говорит. */
+const isRemind  = it => kindOf(it) === "remind";
 /* Идея — мысль без срока. Она видна на карте и не теряется, но сама
    в «Сегодня» не просится и в матрице не участвует: это ещё не
    обязательство. Взять её в работу можно только руками.             */
@@ -1036,6 +1044,10 @@ const repeatDone = (it, d) => !!(it.repeat && it.repeat.history.indexOf(d) >= 0)
 const schedDays = it => isRoutine(it) ? (it.routine && it.routine.days)
   : (it.repeat && it.repeat.days);
 
+/* Что происходит сегодня само, без вашего решения: встречи и
+   напоминания. Обе живут в одной панели и в лимит дня не входят. */
+const isTodayEvent = it => (isAppt(it) || isRemind(it))
+  && (it.due === today() || repeatOn(it, today()));
 const isTodayAppt = it => isAppt(it) && (it.due === today() || repeatOn(it, today()));
 /* Срок сегодня — это уже сегодняшнее дело, а не предложение: «сделать
    не позже сегодня» и «сделать сегодня» здесь одно и то же, выбирать
@@ -1044,7 +1056,7 @@ const isTodayAppt = it => isAppt(it) && (it.due === today() || repeatOn(it, toda
    Прошедший срок сюда не входит: там решение принимается заново, и
    тащить такое дело в день без спроса — упрёк, а не помощь.        */
 const dueTodayTask = it => !isAppt(it) && !isIdea(it) && !isRoutine(it)
-  && it.due === today();
+  && !isRemind(it) && it.due === today();
 /* Сортировка по сроку: у встреч учитываем ещё и время внутри дня. */
 const sortKey = i => (i.due || "9999") + "T" + (i.time || "23:59");
 
@@ -1296,6 +1308,26 @@ if (!S.itemsCleared) {
   S.itemsCleared = true;
   save();
 }
+/* Напоминания — 4 сентября 2026. Вид добавляется тем, у кого его ещё
+   нет: он появился позже, а справочник видов больше не правится руками.
+   Заодно два примера, о которых просила Елена. Ничего не удаляем и не
+   переписываем — только добавляем.                                  */
+if (!S.remindAdded) {
+  if (!S.types.some(t => t.kind === "remind"))
+    S.types.push({ key: "remind", name: "напоминание",
+      hint: "не делать — помнить: дата, о которой нельзя забыть", kind: "remind" });
+  const mk = o => Object.assign({
+    id: uid(), title: "", type: "remind", multi: false, spheres: [], place: null,
+    person: null, due: null, time: null, steps: [], options: [], routine: null,
+    repeat: null, done: false, created: today(), createdAt: stamp(), notes: "",
+    forceImp: null, today: null, notToday: null,
+  }, o);
+  S.items.push(mk({ title: "Мой день рождения", spheres: ["Семья"],
+    repeat: { every: "year", day: 26, month: 8, history: [] } }));
+  S.items.push(mk({ title: "Привезут машину", due: today() }));
+  S.remindAdded = true;
+  save();
+}
 /* «Сделать» переименовано в «дело» — 31 августа 2026, по просьбе Елены.
    Меняем ТОЛЬКО подпись и только если она ещё стандартная: переименовал
    человек сам — его слово важнее. Ни одного дела при этом не тронуто,
@@ -1529,12 +1561,13 @@ function normalizeItems() {
     if (repeats(i) && i.due) { i.due = null; touched = true; }
     /* Записи из прежних версий знают только дни недели. */
     if (i.repeat && !i.repeat.every) { i.repeat.every = "week"; touched = true; }
-    /* Время и расписание бывают только у встречи. Сменили вид — они
-       остаются в записи и вредят молча: время всплывает в подписях, а
-       расписание уводит галочку в историю повторов вместо закрытия. */
-    if (!isAppt(i) && (i.time || i.repeat)) {
-      i.time = null; i.repeat = null; touched = true;
-    }
+    /* Время бывает только у встречи: напоминание про день, а не про
+       час. Расписание — у встречи и у напоминания. Сменили вид — чужие
+       поля остаются в записи и вредят молча: время всплывает в
+       подписях, а расписание уводит галочку в историю повторов вместо
+       закрытия.                                                     */
+    if (!isAppt(i) && i.time) { i.time = null; touched = true; }
+    if (!isAppt(i) && !isRemind(i) && i.repeat) { i.repeat = null; touched = true; }
     /* Остаток убранной кнопки «завтра»: выбор на будущее число больше
        не существует — список каждого дня собирается в этот день.    */
     if (i.today && i.today > today()) { i.today = null; touched = true; }
@@ -1617,6 +1650,8 @@ const ICONS = {
   buy: '<rect x="2" y="4" width="12" height="8.5" rx="2"/><path d="M14 7.4h-3.2a1.7 1.7 0 000 3.4H14"/>',
   idea: '<path d="M5.2 10.2a4.4 4.4 0 115.6 0c-.7.6-1 1.2-1 2H6.2c0-.8-.3-1.4-1-2z"/><path d="M6.8 14.5h2.4"/>',
   routine: '<rect x="4.9" y="2" width="6.2" height="12" rx="3.1" transform="rotate(45 8 8)"/><path d="M4.9 8h6.2" transform="rotate(45 8 8)"/>',
+  /* Колокольчик: напоминание не про действие, а про «не забудь». */
+  remind: '<path d="M4.4 11.2h7.2l-1.1-1.8V7.1a2.5 2.5 0 10-5 0v2.3z"/><path d="M6.7 13.1a1.3 1.3 0 002.6 0"/>',
   "do": '<path d="M9.8 4.2a.67.67 0 000 .93l1.07 1.07a.67.67 0 00.93 0l2.51-2.51a4 4 0 01-5.29 5.29l-4.61 4.61a1.41 1.41 0 11-2-2l4.61-4.61a4 4 0 015.29-5.29L9.8 4.2z"/>',
   pin: '<path d="M8 14.5c3-3.3 4.5-5.8 4.5-7.9a4.5 4.5 0 10-9 0c0 2.1 1.5 4.6 4.5 7.9z"/><circle cx="8" cy="6.5" r="1.8"/>',
   sand: '<path d="M4.5 2h7"/><path d="M4.5 14h7"/><path d="M5 2c0 4.2 3 4.6 3 6c0 1.4 -3 1.8 -3 6"/><path d="M11 2c0 4.2 -3 4.6 -3 6c0 1.4 3 1.8 3 6"/>',
@@ -1627,7 +1662,8 @@ const iconSVG = (name, color) => `<svg class="ic" viewBox="0 0 16 16" fill="none
 /* Токен вида: сходить/съездить и Сделать различаем по ключу, свои
    виды пользователя падают на токен их поведения (kind).            */
 const kindToken = def => def.key === "errand" ? "go" : def.key === "task" ? "do"
-  : ({ appt: "appt", choice: "buy", idea: "idea", routine: "routine", plain: "do" }[def.kind] || "do");
+  : ({ appt: "appt", choice: "buy", idea: "idea", routine: "routine",
+       remind: "remind", plain: "do" }[def.kind] || "do");
 const kindColor = it => `var(--kind-${kindToken(typeDef(it.type))})`;
 /* Вид дела показывается ОДНОЙ иконкой перед названием — без текстового
    чипа: меток на строке и так много. Название вида — в подсказке при
@@ -1764,8 +1800,8 @@ function todayItems() {
      делась.                                                          */
   const doneTasks = S.items.filter(i => i.done && !i.draft && !isRoutine(i)
     && !isAppt(i) && i.doneAt === today());
-  const apptDone = S.items.filter(i => !i.draft && isAppt(i) && i.done
-    && i.doneAt === today());
+  const apptDone = S.items.filter(i => !i.draft && (isAppt(i) || isRemind(i))
+    && i.done && i.doneAt === today());
   /* Шаги, закрытые сегодня у ещё живых дел: дело продолжается, но
      сделанное за день это тоже. У законченного дела шаги не дублируем —
      показываем само дело.                                            */
@@ -1782,20 +1818,22 @@ function todayItems() {
      смените дату. Поэтому «не сегодня» на неё не действует.        */
   /* Лимит — про то, сколько вы БЕРЁТЕ. Встречи в него не входят: их не
      выбирали и убрать нельзя, иначе получалось бы «8 из 5» без выхода. */
-  const mine = rest.filter(i => isTodayAppt(i)
+  const mine = rest.filter(i => isTodayEvent(i)
     || ((dueTodayTask(i) || pickedToday(i)) && !skippedToday(i)));
+  /* В лимит считаем только встречи: напоминание не занимает времени —
+     это факт дня, а не занятие.                                     */
   const apptCount = mine.filter(isTodayAppt).length;
   /* Три разные вещи в одном дне: встречи (час назначен), дела со сроком
      (день назначен) и взятое вами. Лимит — только про последнее: его
      вы выбирали, а остальное вам назначено, и «8 из 5» без выхода
      было бы упрёком, а не реализмом.                                */
-  const dueCount = mine.filter(i => !isTodayAppt(i) && dueTodayTask(i)).length;
-  const chosenCount = mine.length - apptCount - dueCount;
+  const dueCount = mine.filter(i => !isTodayEvent(i) && dueTodayTask(i)).length;
+  const chosenCount = mine.filter(i => !isTodayEvent(i) && !dueTodayTask(i)).length;
   /* Дело без сферы предлагается наравне со всеми: «Разобрать» — место,
      где сферу можно проставить, а не карантин, из-за которого дело
      не показывается в дне.                                          */
   const offerable = i => !pickedToday(i) && !skippedToday(i) && !isIdea(i)
-    && !isAppt(i)                       // встречи не предлагаем никогда
+    && !isAppt(i) && !isRemind(i)       // встречи и напоминания не предлагаем
     && !dueTodayTask(i);                // со сроком сегодня — уже в дне
   const visible = rest.filter(i => offerable(i) && reachable(i));
   /* Спрятанное из-за места считаем и называем: молчаливое исчезновение
@@ -1832,7 +1870,7 @@ function todayItems() {
 
   /* По умолчанию встречи идут первыми и по времени — они привязаны к часу,
      всё остальное можно двигать вокруг них.                          */
-  mine.sort((a, b) => (isTodayAppt(b) ? 1 : 0) - (isTodayAppt(a) ? 1 : 0)
+  mine.sort((a, b) => (isTodayEvent(b) ? 1 : 0) - (isTodayEvent(a) ? 1 : 0)
     || sortKey(a).localeCompare(sortKey(b)));
 
   if (S.todayOrder && S.todayOrder.date === today()) {
@@ -2040,10 +2078,10 @@ function renderToday() {
   const { routines, routDone, mine, doneTasks, doneSteps, proposals, apptDone,
           apptCount, chosenCount, dueCount, away, queued, whyEmpty, whyRest } = todayItems();
   const cap = S.cfg.todayCap;
-  const tasks = mine.filter(i => !isTodayAppt(i));
+  const tasks = mine.filter(i => !isTodayEvent(i));
   /* Состоявшиеся сегодня встречи стоят там же, в конце: день не пятится
      назад, а наполняется. */
-  const appts = mine.filter(isTodayAppt).concat(apptDone);
+  const appts = mine.filter(isTodayEvent).concat(apptDone);
   /* «Взято больше» — только если вы сами набрали сверх лимита. Когда
      день переполнен сроками и встречами, упрекать не за что: их не
      выбирали. Тогда говорим, из чего сложился день, и называем выход. */
@@ -2118,9 +2156,11 @@ function renderToday() {
         ${routDone.map(i => doneLineHTML(i, today())).join("")}
       </div></div></div>` : "") +
 
-    `<div class="sidepanel appts"><h3>Аппоинтменты</h3>
+    /* «События дня», а не «Аппоинтменты»: тут же живут напоминания, и
+       день рождения — не встреча.                                   */
+    `<div class="sidepanel appts"><h3>События дня</h3>
       <div class="panelscroll"><div class="apptbox">${appts.length ? appts.map(apptRowHTML).join("")
-        : `<div class="apptempty"><b>На сегодня встреч нет</b>
+        : `<div class="apptempty"><b>На сегодня ничего не назначено</b>
              Это не «ничего» — день дышит свободнее.</div>`}</div></div></div>` +
     `</div></div>`;
 }
@@ -2139,8 +2179,10 @@ function apptRowHTML(i) {
     <button class="tick" data-act="toggle" data-id="${i.id}" title="Состоялась"></button>
     <div class="amain">
       <div class="atop">
-        <span class="atime${i.time ? "" : " none"}">${i.time ? esc(i.time) : "без времени"}</span>
-        <button class="rname" data-act="open" data-id="${i.id}">${esc(i.title)}</button>
+        ${isRemind(i) ? "" : `<span class="atime${i.time ? "" : " none"}">${
+          i.time ? esc(i.time) : "без времени"}</span>`}
+        <button class="rname" data-act="open" data-id="${i.id}">${
+          isRemind(i) ? kindIcon(i) : ""}${esc(i.title)}</button>
       </div>
       ${tags ? `<div class="ameta">${tags}</div>` : ""}
     </div>
@@ -2543,7 +2585,7 @@ function renderMatrix() {
   /* Рутины и идеи в матрицу не попадают: одна не про конкретный день,
      другая ещё не обязательство. Остальное — всё, включая неразобранное:
      у него тоже есть дедлайн, и его тоже надо разложить.             */
-  const pool = here().filter(i => !isRoutine(i) && !isIdea(i));
+  const pool = here().filter(i => !isRoutine(i) && !isIdea(i) && !isRemind(i));
   const q = { iu: [], in: [], nu: [], nn: [] };
   pool.forEach(i => q[quadrant(i)].push(i));
   /* Внутри клетки — по дедлайну: ближайшее сверху, бессрочное внизу. */
@@ -3616,7 +3658,7 @@ function itemFormHTML(it, ids) {
     isRoutine(it)
       ? cell("Сколько занимает", ddMinsHTML(it))
         + daysItem(it.routine && it.routine.days) + partItem
-    : isAppt(it)
+    : isAppt(it) || isRemind(it)
       ? whenSwitch + (it.repeat
           ? cell("Как часто", `<div class="seg">${REPEATS.map(([k, L]) =>
               `<button data-act="rmode" data-id="${it.id}" data-v="${k}"
@@ -3631,7 +3673,9 @@ function itemFormHTML(it, ids) {
             /* Время занимает строку целиком только там, где иначе рядом
                осталась бы пустая клетка: при выборе числа месяца оно
                встаёт с ним в пару.                                    */
-            + cell("Время", ddTimeHTML(it), everyOf(it) !== "month" && everyOf(it) !== "quarter")
+            /* У напоминания времени нет: оно про день, а не про час. */
+            + (isRemind(it) ? "" : cell("Время", ddTimeHTML(it),
+                everyOf(it) !== "month" && everyOf(it) !== "quarter"))
           /* Дата, часы и минуты стоят в одну линию — втроём в половину
              строки они не помещаются: кнопка даты сжималась до одной
              буквы, а мини-календарь вылезал за край окна.          */
@@ -3658,7 +3702,7 @@ function itemFormHTML(it, ids) {
       <div class="cfgitem"><p class="lbl">Человек</p>${ddPickHTML(it, "person")}</div>
     </div>
 
-    ${isRoutine(it) || isIdea(it) ? "" : `<p class="lbl">Важность</p>
+    ${isRoutine(it) || isIdea(it) || isRemind(it) ? "" : `<p class="lbl">Важность</p>
       <div class="chips">${[["imp", "важное"], ["not", "неважное"]].map(([k, L]) =>
         `<button class="chip ${(isImportant(it) ? "imp" : "not") === k ? "on" : ""}"
           data-act="equad" data-id="${it.id}" data-q="${k}">${L}</button>`).join("")}</div>
@@ -3803,6 +3847,9 @@ function whenFieldsHTML(it, dateId, timeId) {
   if (isRoutine(it)) return "";
   if (isIdea(it)) return `<p class="qs" style="margin:24px 0 0">Идея ничего не требует
     и сама в «Сегодня» не просится. Захотите взяться — смените вид.</p>`;
+  if (isRemind(it)) return `<p class="lbl">Когда</p>${ddDueHTML(it)}
+    <p class="qs" style="margin:8px 0 0">Напоминание ничего не требует: придёт
+      в свой день и просто скажет.</p>`;
   if (isAppt(it)) return `<p class="lbl">Дата и время</p>
     <div style="display:flex;gap:8px;align-items:center">
       <div style="flex:1;min-width:0">${ddDueHTML(it)}</div>
@@ -3969,7 +4016,7 @@ function openItem(id) {
       ${it.place ? placeTag(it.place) : ""}
       ${it.person && it.person !== "Я" ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(it.person)}</span>` : ""}
       ${dateLabel(it) && !isRoutine(it) ? `<span class="tag when">${sandFor(it)}${dateLabel(it)}</span>` : ""}
-      ${!isRoutine(it) && !isIdea(it)
+      ${!isRoutine(it) && !isIdea(it) && !isRemind(it)
         ? `<span class="tag quadtag" title="Клетка матрицы: срочность из дедлайна, важность — ваша">${
           esc(QUADS[quadrant(it)])}</span>` : ""}
     </div>
@@ -3978,7 +4025,7 @@ function openItem(id) {
     <div class="row modalfoot">
       <button class="btn link" data-act="edit" data-id="${it.id}">Редактировать</button>
       <div class="spacer"></div>
-      ${isRoutine(it) || isAppt(it) || isIdea(it) ? "" : `<button class="btn ${
+      ${isRoutine(it) || isAppt(it) || isIdea(it) || isRemind(it) ? "" : `<button class="btn ${
         pickedToday(it) ? "link" : "primary"}" data-act="pin" data-id="${it.id}">${
         pickedToday(it) ? "Убрать из сегодня" : "Сделать сегодня"}</button>`}
     </div>`, "view:" + it.id, { act: "close", title: "Закрыть" });

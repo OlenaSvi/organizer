@@ -62,6 +62,9 @@ const DEFAULT_TYPES = [
   { key: "routine", name: "рутина",             hint: "повторяется, пропуск не страшен", kind: "routine" },
   { key: "appt",    name: "аппоинтмент",        hint: "точные дата и время",             kind: "appt" },
   { key: "idea",    name: "идея на будущее",    hint: "мысль без срока — ничего не требует", kind: "idea" },
+  /* Напоминание — не дело: его не делают, про него помнят. День
+     рождения, посылка в пути, «привезут шкаф в среду».             */
+  { key: "remind",  name: "напоминание",        hint: "не делать — помнить: дата, о которой нельзя забыть", kind: "remind" },
 ];
 /* Вид по умолчанию — обычный, а не первый в списке: если первым окажется
    «выбрать / купить», новое дело зря получало бы его логику.        */
@@ -72,6 +75,9 @@ const kindOf    = it => typeDef(it.type).kind;
 const isRoutine = it => kindOf(it) === "routine";
 const isChoice  = it => kindOf(it) === "choice";
 const isAppt    = it => kindOf(it) === "appt";   // дата + час: врач, встреча
+/* Напоминание ничего не требует: не предлагается, не входит в лимит
+   дня, не попадает в матрицу. Только приходит в свой день и говорит. */
+const isRemind  = it => kindOf(it) === "remind";
 /* Идея — мысль без срока. Она видна на карте и не теряется, но сама
    в «Сегодня» не просится и в матрице не участвует: это ещё не
    обязательство. Взять её в работу можно только руками.             */
@@ -122,6 +128,10 @@ const repeatDone = (it, d) => !!(it.repeat && it.repeat.history.indexOf(d) >= 0)
 const schedDays = it => isRoutine(it) ? (it.routine && it.routine.days)
   : (it.repeat && it.repeat.days);
 
+/* Что происходит сегодня само, без вашего решения: встречи и
+   напоминания. Обе живут в одной панели и в лимит дня не входят. */
+const isTodayEvent = it => (isAppt(it) || isRemind(it))
+  && (it.due === today() || repeatOn(it, today()));
 const isTodayAppt = it => isAppt(it) && (it.due === today() || repeatOn(it, today()));
 /* Срок сегодня — это уже сегодняшнее дело, а не предложение: «сделать
    не позже сегодня» и «сделать сегодня» здесь одно и то же, выбирать
@@ -130,7 +140,7 @@ const isTodayAppt = it => isAppt(it) && (it.due === today() || repeatOn(it, toda
    Прошедший срок сюда не входит: там решение принимается заново, и
    тащить такое дело в день без спроса — упрёк, а не помощь.        */
 const dueTodayTask = it => !isAppt(it) && !isIdea(it) && !isRoutine(it)
-  && it.due === today();
+  && !isRemind(it) && it.due === today();
 /* Сортировка по сроку: у встреч учитываем ещё и время внутри дня. */
 const sortKey = i => (i.due || "9999") + "T" + (i.time || "23:59");
 
@@ -382,6 +392,26 @@ if (!S.itemsCleared) {
   S.itemsCleared = true;
   save();
 }
+/* Напоминания — 4 сентября 2026. Вид добавляется тем, у кого его ещё
+   нет: он появился позже, а справочник видов больше не правится руками.
+   Заодно два примера, о которых просила Елена. Ничего не удаляем и не
+   переписываем — только добавляем.                                  */
+if (!S.remindAdded) {
+  if (!S.types.some(t => t.kind === "remind"))
+    S.types.push({ key: "remind", name: "напоминание",
+      hint: "не делать — помнить: дата, о которой нельзя забыть", kind: "remind" });
+  const mk = o => Object.assign({
+    id: uid(), title: "", type: "remind", multi: false, spheres: [], place: null,
+    person: null, due: null, time: null, steps: [], options: [], routine: null,
+    repeat: null, done: false, created: today(), createdAt: stamp(), notes: "",
+    forceImp: null, today: null, notToday: null,
+  }, o);
+  S.items.push(mk({ title: "Мой день рождения", spheres: ["Семья"],
+    repeat: { every: "year", day: 26, month: 8, history: [] } }));
+  S.items.push(mk({ title: "Привезут машину", due: today() }));
+  S.remindAdded = true;
+  save();
+}
 /* «Сделать» переименовано в «дело» — 31 августа 2026, по просьбе Елены.
    Меняем ТОЛЬКО подпись и только если она ещё стандартная: переименовал
    человек сам — его слово важнее. Ни одного дела при этом не тронуто,
@@ -615,12 +645,13 @@ function normalizeItems() {
     if (repeats(i) && i.due) { i.due = null; touched = true; }
     /* Записи из прежних версий знают только дни недели. */
     if (i.repeat && !i.repeat.every) { i.repeat.every = "week"; touched = true; }
-    /* Время и расписание бывают только у встречи. Сменили вид — они
-       остаются в записи и вредят молча: время всплывает в подписях, а
-       расписание уводит галочку в историю повторов вместо закрытия. */
-    if (!isAppt(i) && (i.time || i.repeat)) {
-      i.time = null; i.repeat = null; touched = true;
-    }
+    /* Время бывает только у встречи: напоминание про день, а не про
+       час. Расписание — у встречи и у напоминания. Сменили вид — чужие
+       поля остаются в записи и вредят молча: время всплывает в
+       подписях, а расписание уводит галочку в историю повторов вместо
+       закрытия.                                                     */
+    if (!isAppt(i) && i.time) { i.time = null; touched = true; }
+    if (!isAppt(i) && !isRemind(i) && i.repeat) { i.repeat = null; touched = true; }
     /* Остаток убранной кнопки «завтра»: выбор на будущее число больше
        не существует — список каждого дня собирается в этот день.    */
     if (i.today && i.today > today()) { i.today = null; touched = true; }

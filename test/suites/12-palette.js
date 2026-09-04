@@ -81,7 +81,7 @@ T.ok("цвета не повторяются", used.length === new Set(used).siz
 
 T.head("ЦВЕТА ВИДОВ ДЕЛ ТОЖЕ РАЗЛИЧИМЫ");
 var kinds = [];
-["appt", "go", "buy", "idea", "routine", "do"].forEach(function (k) {
+["appt", "go", "buy", "idea", "routine", "remind", "do"].forEach(function (k) {
   var m2 = new RegExp("--kind-" + k + ":\\s*(#[0-9a-f]{6})", "i").exec(CSS);
   if (m2) kinds.push(m2[1]);
 });

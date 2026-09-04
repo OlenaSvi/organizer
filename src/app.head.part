@@ -36,6 +36,7 @@
   --wire:#aab2c0; --maproot:#55504b;
   --kind-appt:#1f5cff; --kind-go:#4f8fa0; --kind-buy:#a08a4a;
   --kind-idea:#8a72ab; --kind-routine:#7d9a6f; --kind-do:#7c8794;
+  --kind-remind:#a3568f;
   --cal-timed-bg:var(--accent-soft); --cal-due-bg:#f0f2f8;
 }
 :root[data-theme="dark"]{
@@ -55,6 +56,7 @@
   --wire:#5b6577; --maproot:#6f675f;
   --kind-appt:#5b8aff; --kind-go:#74aebf; --kind-buy:#c0a968;
   --kind-idea:#a98fd0; --kind-routine:#9cbb8e; --kind-do:#98a3b2;
+  --kind-remind:#c98ab8;
   --cal-timed-bg:rgba(91,138,255,.18); --cal-due-bg:#212a3e;
 }
 *{box-sizing:border-box}

@@ -24,7 +24,8 @@ T.ok("«сходить / съездить» тоже убрано — это о�
 T.ok("остальные виды на месте",
   ["рутина", "аппоинтмент", "идея на будущее"]
     .every(function (n) { return names.indexOf(n) >= 0; }), names.join(" · "));
-T.ok("видов ровно четыре", fresh.types.length === 4, String(fresh.types.length));
+T.ok("видов ровно пять", fresh.types.length === 5, String(fresh.types.length));
+T.ok("напоминание среди них", names.indexOf("напоминание") >= 0);
 T.ok("варианты остаются у идеи",
   fresh.types.some(function (t) { return t.kind === "idea"; }));
 var kinds = {};
