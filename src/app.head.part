@@ -185,12 +185,14 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
   flex:0 0 auto;margin-top:1px;transition:.15s;position:relative;
   display:inline-flex;align-items:center;justify-content:center;padding:0}
 .tick:hover{border-color:var(--accent);background:var(--accent-soft)}
-.card.done .tick,.doneline .tick,.rline.done .tick,.aline.done .tick,.tick.on{background:var(--accent);
+.card.done .tick,.doneline .tick,.rline.done .tick,.aline.done .tick,.tick.on,
+.caltick.on{background:var(--accent);
   border-color:var(--accent)}
 /* Галочка центрируется от середины кружка, а не жёсткими пикселями:
    кружки бывают 19, 20 и 22px, и на мелких она съезжала. Сдвиг по
    вертикали -58%: у «птички» визуальный центр выше геометрического. */
-.card.done .tick::after,.doneline .tick::after,.rline.done .tick::after,.aline.done .tick::after,.tick.on::after{
+.card.done .tick::after,.doneline .tick::after,.rline.done .tick::after,.aline.done .tick::after,.tick.on::after,
+.caltick.on::after{
   content:"";position:absolute;left:50%;top:50%;width:5px;height:9px;
   border:solid #fff;border-width:0 2px 2px 0;
   transform:translate(-50%,-58%) rotate(45deg)}
@@ -565,6 +567,12 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .lnk{color:var(--accent); text-decoration:underline; text-underline-offset:2px;
   text-decoration-thickness:1px; overflow-wrap:anywhere}
 .lnk:hover{text-decoration-thickness:2px}
+/* Состоявшаяся в этот день запись календаря — приглушённой и
+   зачёркнутой, как сделанное дело в дне. */
+.calrow.done .calitem,.dayrow.done .suggname{opacity:.55;text-decoration:line-through}
+/* Будущее не отмечают: вместо кнопки — пустое место того же размера,
+   чтобы строка не съезжала. */
+.caltick.none,.tick.none{visibility:hidden}
 
 /* ── рутина: части дня, длительность, карта четырёх недель ───────── */
 .rgroup{display:flex;align-items:baseline;gap:8px;margin:15px 0 8px;font-size:11px;

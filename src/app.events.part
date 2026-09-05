@@ -130,6 +130,12 @@ document.addEventListener("click", e => {
     case "cheerhide": { const h = document.getElementById("cheerHost");
                         if (h) h.innerHTML = ""; } break;
     case "toggle":  toggleDone(id); break;
+    /* Отметка за конкретный день: у повторяющейся записи одной даты
+       нет, и «сделано» без дня отмечало бы сегодняшний.            */
+    case "toggleon": if (it && it.repeat) {
+                      const d2 = el.dataset.d, h2 = it.repeat.history, k2 = h2.indexOf(d2);
+                      if (k2 >= 0) h2.splice(k2, 1); else h2.push(d2);
+                      save(); render(); } break;
     case "open":    openItem(id); break;
     case "edit":    if (it) openEdit(id); break;
     case "axis":    AXIS = el.dataset.a; render(); break;

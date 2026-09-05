@@ -864,13 +864,23 @@ function calTitle() {
     : ds.getDate() + " " + MONTHS[ds.getMonth()] + " – " + de.getDate() + " " + MONTHS[de.getMonth()];
 }
 
-function calItemHTML(i, compact) {
+/* Клетка календаря знает свой день — и галочка обязана знать тоже.
+   У повторяющейся записи одной даты нет: та же встреча стоит в
+   десятке клеток, и «отметить» без указания дня означало отметить
+   сегодняшний — в прошлом четверге при этом не менялось ничего. */
+function calItemHTML(i, compact, iso) {
   /* Полоска слева — «что это»: в сетке времени важнее вид дела, чем
      сфера. Цвета расшифрованы в легенде под календарём.             */
   const col = kindColor(i);
   const label = compact && i.title.length > 24 ? i.title.slice(0, 23) + "…" : i.title;
-  return `<div class="calrow" draggable="true" data-drag="${i.id}">
-    <button class="caltick" data-act="toggle" data-id="${i.id}" title="Отметить сделанным"></button>
+  const rep = repeats(i), was = rep && repeatDone(i, iso);
+  /* Отметить будущее нельзя: «состоялась» про завтра — бессмыслица. */
+  const canTick = !rep || iso <= today();
+  return `<div class="calrow${was ? " done" : ""}" draggable="true" data-drag="${i.id}">
+    ${canTick ? `<button class="caltick${was ? " on" : ""}" data-act="${
+      rep ? "toggleon" : "toggle"}" data-id="${i.id}" data-d="${iso}"
+      title="${rep ? "Отметить, что состоялась в этот день" : "Отметить сделанным"}"></button>`
+      : `<span class="caltick none"></span>`}
     <button class="calitem ${isAppt(i) ? "appt" : "dl"}" data-act="open" data-id="${i.id}"
       style="border-left-color:${col}" title="${esc(i.title)}">${
         i.time ? `<span class="t">${esc(i.time)}</span>` : ""}${esc(label)}${stepMini(i)}</button>
@@ -878,9 +888,14 @@ function calItemHTML(i, compact) {
 }
 
 /* Зум на один день: всё, что на него назначено, целиком и без обрезки. */
-function dayRowHTML(i) {
-  return `<div class="dayrow">
-    <button class="tick" data-act="toggle" data-id="${i.id}" title="Отметить сделанным"></button>
+function dayRowHTML(i, iso) {
+  const rep = repeats(i), was = rep && repeatDone(i, iso);
+  const canTick = !rep || iso <= today();
+  return `<div class="dayrow${was ? " done" : ""}">
+    ${canTick ? `<button class="tick${was ? " on" : ""}" data-act="${
+      rep ? "toggleon" : "toggle"}" data-id="${i.id}" data-d="${iso}"
+      title="${rep ? "Отметить, что состоялась в этот день" : "Отметить сделанным"}"></button>`
+      : `<span class="tick none"></span>`}
     <span class="daytime${i.time ? "" : " none"}">${i.time ? esc(i.time) : ""}</span>
     ${kindIcon(i)}
     <button class="suggname" data-act="open" data-id="${i.id}">${esc(i.title)}</button>
@@ -912,11 +927,11 @@ function renderCalendarDay(bar) {
         ${past ? "" : `<button class="addhere" data-act="newhere" data-due="${d}"
           title="Создать дело на этот день">＋</button>`}
       </div>
-      ${list.length ? list.map(dayRowHTML).join("")
+      ${list.length ? list.map(i => dayRowHTML(i, d)).join("")
         : `<div class="empty" style="padding:24px 20px">На этот день ничего не назначено.</div>`}
       ${taken.length ? `<p class="lbl" style="margin:22px 0 6px">Взято на сегодня
           <span class="apptno">срок у них другой</span></p>
-        ${taken.map(dayRowHTML).join("")}` : ""}
+        ${taken.map(i => dayRowHTML(i, d)).join("")}` : ""}
     </div>`;
 }
 
@@ -967,7 +982,7 @@ function renderCalendar() {
           ${past ? "" : `<button class="addhere" data-act="newhere" data-due="${d}"
             title="Создать дело на этот день">＋</button>`}
         </div>
-        ${list.slice(0, cap).map(i => calItemHTML(i, CALMODE === "month")).join("")}
+        ${list.slice(0, cap).map(i => calItemHTML(i, CALMODE === "month", d)).join("")}
         ${list.length > cap ? `<div class="calmore" data-act="calday" data-d="${d}"
           title="Открыть этот день целиком">и ещё ${list.length - cap}</div>` : ""}
       </div>`;
