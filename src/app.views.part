@@ -2,6 +2,13 @@
 /* ══════════════════════════════════════════════════════════════════
    ЭКРАНЫ
    ══════════════════════════════════════════════════════════════════ */
+/* Дело в работе помечено кружком сразу за названием — не подписью:
+   подпись спорила бы с метками сферы и срока, а кружок ничего не
+   занимает. «В работе» не значит «сделано» нигде: ни в счёте дня, ни
+   в архиве. Это про «я этим занимаюсь», а не про результат.        */
+const workDot = i => i && i.working && !i.done
+  ? `<span class="wdot" title="в работе"></span>` : "";
+
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g,
   c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
@@ -143,7 +150,7 @@ function cardHTML(it, opts) {
     <div class="card-top">
       <button class="tick" data-act="toggle" data-id="${it.id}" title="Готово"></button>
       <div class="title" data-act="open" data-id="${it.id}">${kindIcon(it)}${
-        leadStep ? esc(step.text) : esc(it.title)}</div>
+        leadStep ? esc(step.text) : esc(it.title)}${leadStep ? "" : workDot(it)}</div>
       ${it.done || isRoutine(it) || isAppt(it) ? ""
         /* У встреч этих кнопок нет вовсе: их день определяется датой,
            а не выбором. Сегодняшняя в дне сама, остальные ждут своего. */
@@ -253,8 +260,10 @@ function todayItems() {
      ещё бронь мест под «неважное со сроком» — она существовала затем,
      чтобы дело с сегодняшним сроком не исчезло из дня. Теперь оно
      попадает в день само, и бронь стала не нужна.                   */
-  const whyCarried = i => "не успели " + (i.today === addDays(today(), -1)
-    ? "вчера" : formatDay(i.today));
+  /* Дело в работе возвращается молча: «не успели» про него неправда —
+     вы им занимались. За него говорит кружок у названия.           */
+  const whyCarried = i => i.working ? "" : "не успели "
+    + (i.today === addDays(today(), -1) ? "вчера" : formatDay(i.today));
   const carried = visible.filter(i => i.today && i.today < today())
     .sort((a, b) => String(b.today).localeCompare(String(a.today)));
   const isNew = i => carried.indexOf(i) < 0;
@@ -455,7 +464,8 @@ function suggestRowHTML(s) {
     <div class="suggmain">
       <div class="suggtitle">
         ${kindIcon(i)}
-        <button class="suggname" data-act="open" data-id="${i.id}" title="Посмотреть детали">${esc(i.title)}</button>
+        <button class="suggname" data-act="open" data-id="${i.id}" title="Посмотреть детали">${
+          esc(i.title)}${workDot(i)}</button>
       </div>
       <div class="suggmeta">
         ${stepBadge(i)}
@@ -667,7 +677,8 @@ function allRowHTML(i) {
            data-id="${i.id}" title="Отметить сделанной сегодня"></button>`
       : `<button class="tick" data-act="toggle" data-id="${i.id}" title="Отметить сделанным"></button>`}
     ${kindIcon(i)}
-    <button class="suggname" data-act="open" data-id="${i.id}">${esc(i.title)}</button>
+    <button class="suggname" data-act="open" data-id="${i.id}">${
+      esc(i.title)}${workDot(i)}</button>
     ${sphereTags(i)}
     ${inInbox(i) ? `<span class="tag place">без категории</span>` : ""}
     ${i.place ? placeTag(i.place) : ""}
@@ -898,7 +909,8 @@ function dayRowHTML(i, iso) {
       : `<span class="tick none"></span>`}
     <span class="daytime${i.time ? "" : " none"}">${i.time ? esc(i.time) : ""}</span>
     ${kindIcon(i)}
-    <button class="suggname" data-act="open" data-id="${i.id}">${esc(i.title)}</button>
+    <button class="suggname" data-act="open" data-id="${i.id}">${
+      esc(i.title)}${workDot(i)}</button>
     ${stepBadge(i)}
     ${sphereTags(i)}
     ${i.place ? placeTag(i.place) : ""}
@@ -1018,7 +1030,7 @@ function renderMatrix() {
       <ul>${q[k].length
         ? q[k].map(i => `<li draggable="true" data-drag="${i.id}">
             <button class="qtick" data-act="toggle" data-id="${i.id}" title="Отметить сделанным"></button>
-            <span class="qname" data-act="open" data-id="${i.id}">${kindIcon(i)}${esc(i.title)}
+            <span class="qname" data-act="open" data-id="${i.id}">${kindIcon(i)}${esc(i.title)}${workDot(i)}
               <span style="color:var(--dim)">· ${esc((i.spheres || []).join(" · "))}</span>${
               ""}</span>
             ${stepBadge(i)}

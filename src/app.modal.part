@@ -863,6 +863,9 @@ function openItem(id) {
       <button class="btn link" data-act="edit" data-id="${it.id}">Редактировать</button>
       <div class="spacer"></div>
       ${isRoutine(it) || isAppt(it) || isIdea(it) || isRemind(it) ? "" : `<button class="btn ${
+        it.working ? "link" : "primary"}" data-act="work" data-id="${it.id}">${
+        it.working ? "Отложить" : "Взяться"}</button>
+      <button class="btn ${
         pickedToday(it) ? "link" : "primary"}" data-act="pin" data-id="${it.id}">${
         pickedToday(it) ? "Убрать из сегодня" : "Сделать сегодня"}</button>`}
     </div>`, "view:" + it.id, { act: "close", title: "Закрыть" });

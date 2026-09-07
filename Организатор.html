@@ -33,7 +33,7 @@
   --sph-5:#4fc08b; --sph-6:#f08a5d; --sph-7:#c278b8; --sph-8:#c4d95e;
   /* Провода карты и её корень. Корень нарочно вне восьмёрки: любой
      сферный цвет превратил бы его в девятую сферу.                  */
-  --wire:#aab2c0; --maproot:#55504b;
+  --wire:#aab2c0; --maproot:#55504b; --work:#8a6fd0;
   --kind-appt:#1f5cff; --kind-go:#4f8fa0; --kind-buy:#a08a4a;
   --kind-idea:#8a72ab; --kind-routine:#7d9a6f; --kind-do:#7c8794;
   --kind-remind:#a3568f;
@@ -53,7 +53,7 @@
   --sph-5:#6fd0a4; --sph-6:#f4a37c; --sph-7:#d194ca; --sph-8:#d2e37e;
   /* В тёмной теме корень наоборот светлее панели — иначе плашка тонет
      в фоне. Белый текст на нём по-прежнему читается.               */
-  --wire:#5b6577; --maproot:#6f675f;
+  --wire:#5b6577; --maproot:#6f675f; --work:#a996e0;
   --kind-appt:#5b8aff; --kind-go:#74aebf; --kind-buy:#c0a968;
   --kind-idea:#a98fd0; --kind-routine:#9cbb8e; --kind-do:#98a3b2;
   --kind-remind:#c98ab8;
@@ -567,6 +567,10 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .lnk{color:var(--accent); text-decoration:underline; text-underline-offset:2px;
   text-decoration-thickness:1px; overflow-wrap:anywhere}
 .lnk:hover{text-decoration-thickness:2px}
+/* Дело в работе: кружок сразу за названием. Свой цвет — ни синий
+   «сделано», ни розовое замечание сюда не годятся. */
+.wdot{display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--work);margin-left:7px;vertical-align:middle;flex:none}
 /* Состоявшаяся в этот день запись календаря — приглушённой и
    зачёркнутой, как сделанное дело в дне. */
 .calrow.done .calitem,.dayrow.done .suggname{opacity:.55;text-decoration:line-through}
@@ -1612,6 +1616,13 @@ function findDupes(text, skipId) {
 /* ══════════════════════════════════════════════════════════════════
    ЭКРАНЫ
    ══════════════════════════════════════════════════════════════════ */
+/* Дело в работе помечено кружком сразу за названием — не подписью:
+   подпись спорила бы с метками сферы и срока, а кружок ничего не
+   занимает. «В работе» не значит «сделано» нигде: ни в счёте дня, ни
+   в архиве. Это про «я этим занимаюсь», а не про результат.        */
+const workDot = i => i && i.working && !i.done
+  ? `<span class="wdot" title="в работе"></span>` : "";
+
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g,
   c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
@@ -1753,7 +1764,7 @@ function cardHTML(it, opts) {
     <div class="card-top">
       <button class="tick" data-act="toggle" data-id="${it.id}" title="Готово"></button>
       <div class="title" data-act="open" data-id="${it.id}">${kindIcon(it)}${
-        leadStep ? esc(step.text) : esc(it.title)}</div>
+        leadStep ? esc(step.text) : esc(it.title)}${leadStep ? "" : workDot(it)}</div>
       ${it.done || isRoutine(it) || isAppt(it) ? ""
         /* У встреч этих кнопок нет вовсе: их день определяется датой,
            а не выбором. Сегодняшняя в дне сама, остальные ждут своего. */
@@ -1863,8 +1874,10 @@ function todayItems() {
      ещё бронь мест под «неважное со сроком» — она существовала затем,
      чтобы дело с сегодняшним сроком не исчезло из дня. Теперь оно
      попадает в день само, и бронь стала не нужна.                   */
-  const whyCarried = i => "не успели " + (i.today === addDays(today(), -1)
-    ? "вчера" : formatDay(i.today));
+  /* Дело в работе возвращается молча: «не успели» про него неправда —
+     вы им занимались. За него говорит кружок у названия.           */
+  const whyCarried = i => i.working ? "" : "не успели "
+    + (i.today === addDays(today(), -1) ? "вчера" : formatDay(i.today));
   const carried = visible.filter(i => i.today && i.today < today())
     .sort((a, b) => String(b.today).localeCompare(String(a.today)));
   const isNew = i => carried.indexOf(i) < 0;
@@ -2065,7 +2078,8 @@ function suggestRowHTML(s) {
     <div class="suggmain">
       <div class="suggtitle">
         ${kindIcon(i)}
-        <button class="suggname" data-act="open" data-id="${i.id}" title="Посмотреть детали">${esc(i.title)}</button>
+        <button class="suggname" data-act="open" data-id="${i.id}" title="Посмотреть детали">${
+          esc(i.title)}${workDot(i)}</button>
       </div>
       <div class="suggmeta">
         ${stepBadge(i)}
@@ -2277,7 +2291,8 @@ function allRowHTML(i) {
            data-id="${i.id}" title="Отметить сделанной сегодня"></button>`
       : `<button class="tick" data-act="toggle" data-id="${i.id}" title="Отметить сделанным"></button>`}
     ${kindIcon(i)}
-    <button class="suggname" data-act="open" data-id="${i.id}">${esc(i.title)}</button>
+    <button class="suggname" data-act="open" data-id="${i.id}">${
+      esc(i.title)}${workDot(i)}</button>
     ${sphereTags(i)}
     ${inInbox(i) ? `<span class="tag place">без категории</span>` : ""}
     ${i.place ? placeTag(i.place) : ""}
@@ -2508,7 +2523,8 @@ function dayRowHTML(i, iso) {
       : `<span class="tick none"></span>`}
     <span class="daytime${i.time ? "" : " none"}">${i.time ? esc(i.time) : ""}</span>
     ${kindIcon(i)}
-    <button class="suggname" data-act="open" data-id="${i.id}">${esc(i.title)}</button>
+    <button class="suggname" data-act="open" data-id="${i.id}">${
+      esc(i.title)}${workDot(i)}</button>
     ${stepBadge(i)}
     ${sphereTags(i)}
     ${i.place ? placeTag(i.place) : ""}
@@ -2628,7 +2644,7 @@ function renderMatrix() {
       <ul>${q[k].length
         ? q[k].map(i => `<li draggable="true" data-drag="${i.id}">
             <button class="qtick" data-act="toggle" data-id="${i.id}" title="Отметить сделанным"></button>
-            <span class="qname" data-act="open" data-id="${i.id}">${kindIcon(i)}${esc(i.title)}
+            <span class="qname" data-act="open" data-id="${i.id}">${kindIcon(i)}${esc(i.title)}${workDot(i)}
               <span style="color:var(--dim)">· ${esc((i.spheres || []).join(" · "))}</span>${
               ""}</span>
             ${stepBadge(i)}
@@ -4054,6 +4070,9 @@ function openItem(id) {
       <button class="btn link" data-act="edit" data-id="${it.id}">Редактировать</button>
       <div class="spacer"></div>
       ${isRoutine(it) || isAppt(it) || isIdea(it) || isRemind(it) ? "" : `<button class="btn ${
+        it.working ? "link" : "primary"}" data-act="work" data-id="${it.id}">${
+        it.working ? "Отложить" : "Взяться"}</button>
+      <button class="btn ${
         pickedToday(it) ? "link" : "primary"}" data-act="pin" data-id="${it.id}">${
         pickedToday(it) ? "Убрать из сегодня" : "Сделать сегодня"}</button>`}
     </div>`, "view:" + it.id, { act: "close", title: "Закрыть" });
@@ -4384,6 +4403,10 @@ document.addEventListener("click", e => {
                       else tryAddToToday(id);
                       /* Нажали из правки — остаёмся в правке, из просмотра — в просмотре. */
                       if (host.innerHTML) (editBackup && editBackup.id === id ? openEdit : openItem)(id); } break;
+    /* «Взяться» и «Сделать сегодня» равнозначны и устроены одинаково:
+       залитая кнопка зовёт, ссылка отменяет.                       */
+    case "work":    if (it) { it.working = !it.working; save();
+                      if (host.innerHTML) openItem(id); render(); } break;
     case "takeone": tryAddToToday(id); break;
     case "suggfold": S.suggCollapsed = !S.suggCollapsed; save(); render(); break;
     case "swap":    { const out = S.items.find(x => x.id === el.dataset.out);
