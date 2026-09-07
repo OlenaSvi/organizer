@@ -42,6 +42,22 @@ w.working = false;
 TAB = "today"; render();
 T.ok("без признака кружка нет", !/class="wdot"/.test(view.innerHTML));
 
+T.head("У ДЕЛА С ШАГАМИ КРУЖОК ТОЖЕ ВИДЕН");
+/* В карточке дня такое дело показано ШАГОМ, а не названием — и кружок
+   там сначала не рисовался вовсе. «В работе» это про дело целиком, а
+   не про его название, поэтому кружок должен быть виден и здесь. */
+T.reset();
+var ms = live().find(function (i) { return i.multi && (i.steps || []).length; });
+ms.working = true;
+addToToday(ms);
+TAB = "today"; render();
+T.ok("карточка ведёт шагом", T.card(ms.id).indexOf("Шаг 1 из") >= 0
+  || /Шаг \d+ из/.test(T.card(ms.id)), T.visible(T.card(ms.id)).slice(0, 90));
+T.ok("и кружок на месте", /class="wdot"/.test(T.card(ms.id)));
+ms.working = false;
+render();
+T.ok("без признака его нет", !/class="wdot"/.test(T.card(ms.id)));
+
 T.head("ЗАВТРА ВОЗВРАЩАЕТСЯ БЕЗ УПРЁКА");
 T.reset();
 w = T.tasks()[0];

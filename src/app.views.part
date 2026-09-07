@@ -150,7 +150,7 @@ function cardHTML(it, opts) {
     <div class="card-top">
       <button class="tick" data-act="toggle" data-id="${it.id}" title="Готово"></button>
       <div class="title" data-act="open" data-id="${it.id}">${kindIcon(it)}${
-        leadStep ? esc(step.text) : esc(it.title)}${leadStep ? "" : workDot(it)}</div>
+        leadStep ? esc(step.text) : esc(it.title)}${workDot(it)}</div>
       ${it.done || isRoutine(it) || isAppt(it) ? ""
         /* У встреч этих кнопок нет вовсе: их день определяется датой,
            а не выбором. Сегодняшняя в дне сама, остальные ждут своего. */
