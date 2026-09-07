@@ -1788,7 +1788,10 @@ function cardHTML(it, opts) {
            вернётся в «Предлагаю» — его можно взять снова. Дело со сроком
            сегодня туда не вернётся: срок уже сегодня, предлагать нечего,
            поэтому оно просто уходит из дня до завтра.                 */
-        : `${TAB === "today" || inDay(it)
+        /* У дела в работе выходов ровно два: галочка и «Отложить» в его
+           окне. «В предложения» была противоречива — дело уходило из
+           дня, а признак работы оставался.                          */
+        : it.working ? "" : `${TAB === "today" || inDay(it)
              ? (dueTodayTask(it) && !pickedToday(it)
                 ? `<button class="linkbtn danger" data-act="unpick" data-id="${it.id}"
                      title="Убрать из дня. Срок остаётся — завтра дело придёт в предложения">не сегодня</button>`
@@ -4156,9 +4159,11 @@ function openItem(id) {
       ${isRoutine(it) || isAppt(it) || isIdea(it) || isRemind(it) ? "" : `<button class="btn ${
         it.working ? "link" : "primary"}" data-act="work" data-id="${it.id}">${
         it.working ? "Отложить" : "Взяться"}</button>
-      <button class="btn ${
+      ${/* У дела в работе «убрать из сегодня» нет: для этого есть
+            «Отложить», которое и снимает признак, и уносит из дня. */
+        it.working ? "" : `<button class="btn ${
         pickedToday(it) ? "link" : "primary"}" data-act="pin" data-id="${it.id}">${
-        pickedToday(it) ? "Убрать из сегодня" : "Сделать сегодня"}</button>`}
+        pickedToday(it) ? "Убрать из сегодня" : "Сделать сегодня"}</button>`}`}
     </div>`, "view:" + it.id, { act: "close", title: "Закрыть" });
 }
 
@@ -4505,6 +4510,12 @@ document.addEventListener("click", e => {
                          от которого утром отказались, оставалось
                          спрятанным: помечено работой, а нигде не видно. */
                       if (on) it.notToday = null;
+                      /* «Отложить» — это «сегодня делать не буду». Дело
+                         уходит из дня целиком, а не переезжает в соседнюю
+                         створку: у дела в работе других выходов нет —
+                         «в предложения» у него убрана как противоречивая.
+                         Завтра вернётся само.                        */
+                      else { it.today = null; it.notToday = today(); }
                       save();
                       if (on && !pickedToday(it) && !dueTodayTask(it) && !isAppt(it))
                         tryAddToToday(id);

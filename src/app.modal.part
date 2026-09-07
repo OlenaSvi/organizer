@@ -865,9 +865,11 @@ function openItem(id) {
       ${isRoutine(it) || isAppt(it) || isIdea(it) || isRemind(it) ? "" : `<button class="btn ${
         it.working ? "link" : "primary"}" data-act="work" data-id="${it.id}">${
         it.working ? "Отложить" : "Взяться"}</button>
-      <button class="btn ${
+      ${/* У дела в работе «убрать из сегодня» нет: для этого есть
+            «Отложить», которое и снимает признак, и уносит из дня. */
+        it.working ? "" : `<button class="btn ${
         pickedToday(it) ? "link" : "primary"}" data-act="pin" data-id="${it.id}">${
-        pickedToday(it) ? "Убрать из сегодня" : "Сделать сегодня"}</button>`}
+        pickedToday(it) ? "Убрать из сегодня" : "Сделать сегодня"}</button>`}`}
     </div>`, "view:" + it.id, { act: "close", title: "Закрыть" });
 }
 
