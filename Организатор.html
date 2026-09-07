@@ -2228,15 +2228,17 @@ function renderToday() {
       /* Время стоит над списком своей створки, а не в шапке: там оно
          относилось ко всей панели и не говорило, к чему именно.
          В шапке остаётся название и сами створки у правого края.    */
-      const label = (parts.find(pp => pp[0] === pick) || [, ""])[1];
       const mins = sumMins(shown);
       return `<div class="sidepanel routines"><h3>Рутина${
         split ? `<span class="seg tabseg">${parts.map(([k, L]) =>
           `<button data-act="routview" data-v="${k}" class="${pick === k ? "on" : ""}"
             >${L}</button>`).join("")}</span>` : ""}</h3>
       <div class="panelscroll"><div class="rbox">
-        ${mins ? `<p class="rsum">${split ? esc(label) + " · " : ""}${
-          minsLabel(mins)}</p>` : ""}
+        ${/* Название створки не повторяем: оно подсвечено в переключателе
+              прямо над этой строкой. Слово «минута» целиком — строка
+              одна на список, места хватает.                        */
+          mins ? `<p class="rsum">всего ${mins} ${
+            plural(mins, "минута", "минуты", "минут")}</p>` : ""}
         ${routineListHTML(shown, anyRout > 1)}
         ${shownDone.map(i => doneLineHTML(i, today())).join("")}
       </div></div></div>`; })() : "") +

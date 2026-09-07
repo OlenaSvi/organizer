@@ -68,9 +68,11 @@ T.ok("створки появились", p.indexOf('data-act="routview"') >= 0)
 T.ok("утро идёт раньше вечера",
   p.indexOf("Утро") >= 0 && p.indexOf("Вечер") > p.indexOf("Утро"));
 T.ok("время стоит над списком, а не в шапке",
-  /class="rsum"[^>]*>[^<]*10 мин/.test(p.replace(/\s+/g, " ")),
+  /class="rsum"[^>]*>\s*всего 10 минут/.test(p.replace(/\s+/g, " ")),
   T.visible(p).slice(0, 120));
-T.ok("и подписано частью дня", /class="rsum"[^>]*>\s*Утро/.test(p.replace(/\s+/g, " ")));
+/* Название створки в строке не повторяем — оно и так подсвечено в
+   переключателе прямо над ней. */
+T.ok("часть дня не дублируется", !/class="rsum"[^>]*>\s*Утро/.test(p.replace(/\s+/g, " ")));
 T.ok("в шапке времени больше нет", p.indexOf('class="rall"') < 0);
 T.ok("в строке видно, сколько занимает", p.indexOf("10 мин") >= 0);
 
@@ -220,7 +222,7 @@ clickOn({ act: "routview", v: "evening" });
 T.ok("переключились на вечер", T.visible(view.innerHTML).indexOf(rs[1].title) >= 0
   && T.visible(view.innerHTML).indexOf(rs[0].title) < 0);
 T.ok("время створки — над её списком",
-  /class="rsum"[^>]*>[^<]*20 мин/.test(view.innerHTML.replace(/\s+/g, " ")));
+  /class="rsum"[^>]*>\s*всего 20 минут/.test(view.innerHTML.replace(/\s+/g, " ")));
 
 T.head("БЕЗ ЧАСТИ ДНЯ — СТВОРКА «ЛЮБОЕ»");
 rs[1].partOfDay = null;
@@ -237,6 +239,23 @@ T.ok("створок нет", view.innerHTML.indexOf('data-act="routview"') < 0)
 T.ok("а рутины на месте", T.visible(view.innerHTML).indexOf(rs[0].title) >= 0
   && T.visible(view.innerHTML).indexOf(rs[1].title) >= 0);
 ROUTVIEW = null;
+T.reset();
+
+T.head("МИНУТЫ СКЛОНЯЮТСЯ");
+T.reset();
+var rr2 = live().filter(isRoutine);
+/* T.reset() чистит выбор дня, но не историю отметок: отмеченная в
+   прошлой секции рутина уехала бы в «сделанное», и считать было бы
+   нечего. */
+rr2.forEach(function (x) { x.routine.history = []; x.partOfDay = null; });
+rr2[1].mins = null;
+[[1, "всего 1 минута"], [2, "всего 2 минуты"], [5, "всего 5 минут"],
+ [21, "всего 21 минута"], [22, "всего 22 минуты"]].forEach(function (c) {
+  rr2[0].mins = c[0];
+  TAB = "today"; ROUTVIEW = null; render();
+  T.ok(c[1], view.innerHTML.replace(/\s+/g, " ").indexOf(c[1]) >= 0,
+    (/class="rsum"[^>]*>([^<]*)</.exec(view.innerHTML.replace(/\s+/g, " ")) || [, "нет"])[1]);
+});
 T.reset();
 
 T.done();
