@@ -151,6 +151,7 @@ document.addEventListener("click", e => {
     /* Разворот не трогает саму карту — только отдаёт ей всё окно.
        Масштаб и сдвиг остаются как были.                          */
     case "mapfull": MAPFULL = !MAPFULL; render(); break;
+    case "todayview": TODAYVIEW = el.dataset.v; render(); break;
     case "calmode": CALMODE = el.dataset.m; render(); break;
     case "calnav":  { const d = el.dataset.d, back = d === "prev" ? -1 : 1;
                       if (d === "today") CALANCHOR = null;

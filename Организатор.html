@@ -235,6 +235,10 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .empty{text-align:center;color:var(--dim);padding:50px 20px;line-height:1.7}
 
 /* счётчик дня: сегменты + «N из 5» */
+/* Створки колонки дел — тот же переключатель, что в настройках, только
+   мельче: место в закреплённой шапке дорогое. */
+.tabseg{margin-left:12px;padding:2px}
+.tabseg button{height:26px;padding:0 10px;font-size:12px}
 .capseg{display:inline-flex;gap:4px;align-items:center;margin-left:auto}
 .capseg i{width:16px;height:4px;border-radius:999px;background:var(--dot-off)}
 .capseg i.on{background:color-mix(in srgb, var(--accent) 45%, transparent)}
@@ -1846,8 +1850,14 @@ function todayItems() {
      (день назначен) и взятое вами. Лимит — только про последнее: его
      вы выбирали, а остальное вам назначено, и «8 из 5» без выхода
      было бы упрёком, а не реализмом.                                */
-  const dueCount = mine.filter(i => !isTodayEvent(i) && dueTodayTask(i)).length;
-  const chosenCount = mine.filter(i => !isTodayEvent(i) && !dueTodayTask(i)).length;
+  const dueCount = mine.filter(i => !isTodayEvent(i) && dueTodayTask(i) && !i.working).length;
+  /* Дела в работе в лимит не входят: лимит про то, сколько вы БЕРЁТЕ
+     сегодня, а взялись вы раньше. Считать их заново каждый день значило
+     бы, что длинное дело съедает день просто фактом своего
+     существования.                                                   */
+  const workCount = mine.filter(i => !isTodayEvent(i) && i.working).length;
+  const chosenCount = mine.filter(i => !isTodayEvent(i) && !dueTodayTask(i)
+    && !i.working).length;
   /* Дело без сферы предлагается наравне со всеми: «Разобрать» — место,
      где сферу можно проставить, а не карантин, из-за которого дело
      не показывается в дне.                                          */
@@ -1935,7 +1945,7 @@ function todayItems() {
   const whyRest = parts.join(" · ");
   const whyEmpty = parts.length ? whyRest : "живых дел нет. Новые появятся здесь сами";
   return { routines, routDone, mine, doneTasks, doneSteps, apptDone,
-           apptCount, chosenCount, dueCount, away,
+           apptCount, chosenCount, dueCount, workCount, away,
            queued, whyEmpty, whyRest, proposals };
 }
 
@@ -2098,9 +2108,16 @@ function suggestRowHTML(s) {
 
 function renderToday() {
   const { routines, routDone, mine, doneTasks, doneSteps, proposals, apptDone,
-          apptCount, chosenCount, dueCount, away, queued, whyEmpty, whyRest } = todayItems();
+          apptCount, chosenCount, dueCount, workCount, away, queued,
+          whyEmpty, whyRest } = todayItems();
   const cap = S.cfg.todayCap;
-  const tasks = mine.filter(i => !isTodayEvent(i));
+  /* Две створки, не пересекаются: «дела» — то, что взято на сегодня,
+     «в работе» — то, чем вы заняты давно. Створки показываем, только
+     когда есть что разделять.                                       */
+  const inWork = mine.filter(i => !isTodayEvent(i) && i.working);
+  const plain = mine.filter(i => !isTodayEvent(i) && !i.working);
+  const split = inWork.length > 0;
+  const tasks = !split ? plain : (TODAYVIEW === "work" ? inWork : plain);
   /* Состоявшиеся сегодня встречи стоят там же, в конце: день не пятится
      назад, а наполняется. */
   const appts = mine.filter(isTodayEvent).concat(apptDone);
@@ -2128,6 +2145,10 @@ function renderToday() {
 
   view.innerHTML = `<div class="tgrid"><div class="tcol">` +
     `<div class="todayhead"><h2>Дела</h2>
+      ${split ? `<span class="seg tabseg">${[["all", "взято", plain.length],
+        ["work", "в работе", inWork.length]].map(([k, L, n]) =>
+        `<button data-act="todayview" data-v="${k}" class="${TODAYVIEW === k ? "on" : ""}"
+          >${L} · ${n}</button>`).join("")}</span>` : ""}
       <span class="capseg">${segs}</span>
       ${takenN ? `<span class="mineno ${over ? "over" : ""}"
         title="Сделано из поставленных на сегодня. Полоски — лимит дня: ${cap}">сделано ${doneN} из ${takenN}</span>` : ""}</div>` +
@@ -2215,6 +2236,10 @@ function apptRowHTML(i) {
    Единственный плоский срез: список всего живого, без линз. Остальные
    виды показывают жизнь через принадлежность, время или важность —
    и в каждом что-то намеренно не показано. Здесь не показано ничего.  */
+/* Какая створка колонки дел открыта. Нарочно не запоминается между
+   заходами: оставленная на «в работе», назавтра она показала бы пустой
+   день, и было бы непонятно, куда всё делось.                       */
+let TODAYVIEW = "all";
 let ALLFILTER = savedView.allFilter || "all", ALLQUERY = "";
 let ALLSORT = savedView.allSort || "due";
 let ALLPERIOD = savedView.allPeriod || "all";
@@ -4282,6 +4307,7 @@ document.addEventListener("click", e => {
     /* Разворот не трогает саму карту — только отдаёт ей всё окно.
        Масштаб и сдвиг остаются как были.                          */
     case "mapfull": MAPFULL = !MAPFULL; render(); break;
+    case "todayview": TODAYVIEW = el.dataset.v; render(); break;
     case "calmode": CALMODE = el.dataset.m; render(); break;
     case "calnav":  { const d = el.dataset.d, back = d === "prev" ? -1 : 1;
                       if (d === "today") CALANCHOR = null;

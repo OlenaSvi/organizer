@@ -32,8 +32,9 @@ closeModal();
 
 T.head("КРУЖОК У НАЗВАНИЯ");
 addToToday(w);
-TAB = "today"; render();
+TAB = "today"; TODAYVIEW = "work"; render();
 T.ok("виден в дне", /class="wdot"/.test(T.card(w.id)));
+TODAYVIEW = "all";
 TAB = "all"; ALLFILTER = "all"; ALLQUERY = ""; ALLPERIOD = "all"; render();
 T.ok("виден в списке", /class="wdot"/.test(document.getElementById("allList").innerHTML));
 TAB = "matrix"; render();
@@ -50,12 +51,13 @@ T.reset();
 var ms = live().find(function (i) { return i.multi && (i.steps || []).length; });
 ms.working = true;
 addToToday(ms);
-TAB = "today"; render();
+/* Дела в работе живут в своей створке колонки — туда и смотрим. */
+TAB = "today"; TODAYVIEW = "work"; render();
 T.ok("карточка ведёт шагом", T.card(ms.id).indexOf("Шаг 1 из") >= 0
   || /Шаг \d+ из/.test(T.card(ms.id)), T.visible(T.card(ms.id)).slice(0, 90));
 T.ok("и кружок на месте", /class="wdot"/.test(T.card(ms.id)));
 ms.working = false;
-render();
+TODAYVIEW = "all"; render();
 T.ok("без признака его нет", !/class="wdot"/.test(T.card(ms.id)));
 
 T.head("ЗАВТРА ВОЗВРАЩАЕТСЯ БЕЗ УПРЁКА");
@@ -76,16 +78,19 @@ T.ok("но возвращается", todayItems().proposals.some(function (x) {
 T.head("«В РАБОТЕ» — НЕ «СДЕЛАНО»");
 T.reset();
 w = T.tasks()[0]; w.working = true; addToToday(w);
+addToToday(T.tasks()[1]);            // обычное взятое, чтобы счётчик был
 render();
-T.ok("в счёт сделанного не идёт",
-  /сделано 0 из/.test(T.visible(view.innerHTML)), T.visible(view.innerHTML).slice(0, 80));
+T.ok("в счёт дня идёт только взятое сегодня",
+  /сделано 0 из 1/.test(T.visible(view.innerHTML)),
+  T.visible(view.innerHTML).slice(0, 90));
 T.ok("в архиве его нет", (function () {
   TAB = "all"; ALLFILTER = "done"; render();
   return document.getElementById("allList").innerHTML.indexOf(esc(w.title)) < 0; })());
 ALLFILTER = "all"; TAB = "today"; render();
+TODAYVIEW = "work"; render();
 clickOn({ act: "toggle", id: w.id });
 T.ok("галочка по-прежнему закрывает дело", w.done === true);
-T.ok("и признак работы ему больше не нужен", !/class="wdot"/.test(view.innerHTML));
+TODAYVIEW = "all";
 clickOn({ act: "undo", id: w.id });
 T.reset();
 
@@ -169,6 +174,47 @@ clickOn({ act: "work", id: d1.id });
 T.ok("взято не помечается — оно и так в дне", !d1.today);
 T.ok("но признак работы стоит", d1.working === true);
 closeModal();
+T.reset();
+
+T.head("ПЕРЕКЛЮЧАТЕЛЬ В КОЛОНКЕ ДЕЛ");
+/* Дела в работе живут своим ходом и в лимит дня не входят: лимит про
+   то, сколько вы БЕРЁТЕ сегодня, а взялись вы раньше. Чтобы они не
+   мешались среди сегодняшних — отдельная створка. */
+T.reset();
+S.cfg.todayCap = 3;
+var ts = T.tasks();
+ts.forEach(function (i) { i.due = null; });
+addToToday(ts[0]); addToToday(ts[1]);
+ts[2].working = true; addToToday(ts[2]);
+ts[3].working = true; addToToday(ts[3]);
+TAB = "today"; render();
+
+T.ok("переключатель появился", view.innerHTML.indexOf('data-act="todayview"') >= 0);
+T.ok("на нём видно, сколько в работе",
+  /data-act="todayview"[^>]*data-v="work"[^>]*>[^<]*2/.test(view.innerHTML.replace(/\s+/g, " ")),
+  T.visible(view.innerHTML).slice(0, 120));
+
+T.head("ЛИМИТ СЧИТАЕТ ТОЛЬКО ВЗЯТОЕ СЕГОДНЯ");
+var day = todayItems();
+T.ok("в лимит идут только не-в-работе", day.chosenCount === 2,
+  day.chosenCount + " при двух взятых и двух в работе");
+T.ok("перебора нет", view.innerHTML.indexOf("Взято больше") < 0);
+T.ok("а без послабления был бы", day.chosenCount + day.workCount > S.cfg.todayCap);
+
+T.head("СТВОРКИ НЕ ПЕРЕСЕКАЮТСЯ");
+T.ok("по умолчанию видны обычные дела",
+  T.card(ts[0].id).length > 0 && T.card(ts[2].id) === "");
+clickOn({ act: "todayview", v: "work" });
+T.ok("во второй створке — только в работе",
+  T.card(ts[2].id).length > 0 && T.card(ts[0].id) === "");
+clickOn({ act: "todayview", v: "all" });
+T.ok("вернулись", T.card(ts[0].id).length > 0);
+
+T.head("НЕТ ДЕЛ В РАБОТЕ — НЕТ И ПЕРЕКЛЮЧАТЕЛЯ");
+ts[2].working = false; ts[3].working = false;
+render();
+T.ok("створок не показываем", view.innerHTML.indexOf('data-act="todayview"') < 0);
+S.cfg.todayCap = 5;
 T.reset();
 
 T.done();
