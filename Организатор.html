@@ -4413,8 +4413,15 @@ document.addEventListener("click", e => {
     case "work":    if (it) {
                       const on = !it.working;
                       const full = todayItems().chosenCount >= S.cfg.todayCap;
-                      it.working = on; save();
-                      if (on && !inDay(it) && !isAppt(it)) tryAddToToday(id);
+                      it.working = on;
+                      /* «Взяться» — новое решение, и оно отменяет прежнее
+                         «не сегодня». Без этого дело со сроком сегодня,
+                         от которого утром отказались, оставалось
+                         спрятанным: помечено работой, а нигде не видно. */
+                      if (on) it.notToday = null;
+                      save();
+                      if (on && !pickedToday(it) && !dueTodayTask(it) && !isAppt(it))
+                        tryAddToToday(id);
                       if (host.innerHTML && !(on && full && !inDay(it))) openItem(id);
                       render(); } break;
     case "takeone": tryAddToToday(id); break;

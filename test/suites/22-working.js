@@ -108,6 +108,39 @@ T.ok("признак снят", !g.working);
 T.ok("а из дня не ушло", pickedToday(g));
 closeModal();
 
+T.head("«ВЗЯТЬСЯ» ОТМЕНЯЕТ ПРЕЖНЕЕ «НЕ СЕГОДНЯ»");
+/* Дело, от которого сегодня отказались, спрятано и из дня, и из
+   предложений — так задумано. Но «взяться» — это новое решение, и оно
+   должно старое отменять, иначе дело просто исчезает: помечено
+   работой, а нигде не видно. */
+T.reset();
+var sk = T.tasks()[0];
+sk.due = null;
+clickOn({ act: "skip", id: sk.id });
+T.ok("после отказа его не видно нигде",
+  todayItems().mine.indexOf(sk) < 0
+  && !todayItems().proposals.some(function (x) { return x.it === sk; }));
+openItem(sk.id);
+clickOn({ act: "work", id: sk.id });
+T.ok("взялись — отказ снят", !skippedToday(sk));
+T.ok("и дело в дне", todayItems().mine.indexOf(sk) >= 0);
+closeModal();
+
+T.head("ТО ЖЕ У ДЕЛА СО СРОКОМ СЕГОДНЯ");
+/* Такое дело стоит в дне по сроку, и «не сегодня» его оттуда уносит.
+   «Взяться» обязано вернуть. */
+T.reset();
+var sd = T.tasks()[0];
+sd.due = today();
+render();
+clickOn({ act: "unpick", id: sd.id });
+T.ok("ушло из дня", todayItems().mine.indexOf(sd) < 0);
+openItem(sd.id);
+clickOn({ act: "work", id: sd.id });
+T.ok("вернулось", todayItems().mine.indexOf(sd) >= 0);
+T.ok("и помечено работой", sd.working === true);
+closeModal();
+
 T.head("ЛИМИТ ДЕЙСТВУЕТ ТОТ ЖЕ");
 /* Взять дело в переполненный день «Взяться» не может тихо: спрашивает,
    что вытеснить, — ровно как «Сделать сегодня». */
