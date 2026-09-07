@@ -243,9 +243,9 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 /* В узкой панели створкам тесно: подписи ужимаем, а заголовку
    разрешаем перенести их на вторую строку — лучше перенос внутри
    шапки, чем отдельная полоса под ней.                             */
-.sidepanel h3 .tabseg{margin-left:10px;padding:2px}
+/* Створки прижаты к правому краю шапки, время — сразу за названием. */
+.sidepanel h3 .tabseg{margin-left:auto;padding:2px}
 .sidepanel h3 .tabseg button{padding:0 9px}
-.sidepanel h3 .rall{margin-left:auto}
 .capseg{display:inline-flex;gap:4px;align-items:center;margin-left:auto}
 .capseg i{width:16px;height:4px;border-radius:999px;background:var(--dot-off)}
 .capseg i.on{background:color-mix(in srgb, var(--accent) 45%, transparent)}

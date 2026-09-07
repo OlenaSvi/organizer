@@ -595,11 +595,13 @@ function renderToday() {
       /* Створки стоят в самом заголовке, как у дел. Панель узкая, поэтому
          без счётчиков: четыре подписи с числами туда не помещаются, а
          сколько в створке — видно по самому списку.                 */
+      /* Порядок в шапке: название, время открытой створки, и сами
+         створки — прижатыми к правому краю. */
       return `<div class="sidepanel routines"><h3>Рутина${
+        sumMins(shown) ? `<span class="rall">${minsLabel(sumMins(shown))}</span>` : ""}${
         split ? `<span class="seg tabseg">${parts.map(([k, L]) =>
           `<button data-act="routview" data-v="${k}" class="${pick === k ? "on" : ""}"
-            >${L}</button>`).join("")}</span>` : ""}${
-        sumMins(shown) ? `<span class="rall">${minsLabel(sumMins(shown))}</span>` : ""}</h3>
+            >${L}</button>`).join("")}</span>` : ""}</h3>
       <div class="panelscroll"><div class="rbox">
         ${routineListHTML(shown, anyRout > 1)}
         ${shownDone.map(i => doneLineHTML(i, today())).join("")}
