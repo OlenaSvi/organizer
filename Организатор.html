@@ -4404,9 +4404,19 @@ document.addEventListener("click", e => {
                       /* Нажали из правки — остаёмся в правке, из просмотра — в просмотре. */
                       if (host.innerHTML) (editBackup && editBackup.id === id ? openEdit : openItem)(id); } break;
     /* «Взяться» и «Сделать сегодня» равнозначны и устроены одинаково:
-       залитая кнопка зовёт, ссылка отменяет.                       */
-    case "work":    if (it) { it.working = !it.working; save();
-                      if (host.innerHTML) openItem(id); render(); } break;
+       залитая кнопка зовёт, ссылка отменяет.
+       Взялись — значит начинаете сейчас, и дело само встаёт в день: по
+       тем же правилам, что и «Сделать сегодня», включая лимит — в
+       переполненный день оно спросит, что вытеснить, а не влезет тихо.
+       «Отложить» из дня НЕ убирает: перестать работать над делом и
+       выкинуть его из дня — разные решения.                        */
+    case "work":    if (it) {
+                      const on = !it.working;
+                      const full = todayItems().chosenCount >= S.cfg.todayCap;
+                      it.working = on; save();
+                      if (on && !inDay(it) && !isAppt(it)) tryAddToToday(id);
+                      if (host.innerHTML && !(on && full && !inDay(it))) openItem(id);
+                      render(); } break;
     case "takeone": tryAddToToday(id); break;
     case "suggfold": S.suggCollapsed = !S.suggCollapsed; save(); render(); break;
     case "swap":    { const out = S.items.find(x => x.id === el.dataset.out);

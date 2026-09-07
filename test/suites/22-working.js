@@ -73,4 +73,53 @@ T.ok("и признак работы ему больше не нужен", !/cla
 clickOn({ act: "undo", id: w.id });
 T.reset();
 
+T.head("ВЗЯЛИСЬ — ЗНАЧИТ СЕГОДНЯ");
+/* «Взяться» — это «начинаю сейчас». Отдельно потом жать «Сделать
+   сегодня» было бы лишним решением на пустом месте. */
+T.reset();
+var g = T.tasks()[0];
+g.due = null;
+openItem(g.id);
+clickOn({ act: "work", id: g.id });
+T.ok("дело встало в сегодня", pickedToday(g));
+T.ok("и помечено работой", g.working === true);
+T.ok("окно осталось открытым", host.innerHTML.indexOf(esc(g.title)) >= 0);
+
+T.head("«ОТЛОЖИТЬ» ИЗ ДНЯ НЕ ВЫКИДЫВАЕТ");
+/* Перестать работать над делом и убрать его из дня — разные решения. */
+clickOn({ act: "work", id: g.id });
+T.ok("признак снят", !g.working);
+T.ok("а из дня не ушло", pickedToday(g));
+closeModal();
+
+T.head("ЛИМИТ ДЕЙСТВУЕТ ТОТ ЖЕ");
+/* Взять дело в переполненный день «Взяться» не может тихо: спрашивает,
+   что вытеснить, — ровно как «Сделать сегодня». */
+T.reset();
+S.cfg.todayCap = 2;
+var few = T.tasks();
+few.forEach(function (i) { i.due = null; });
+addToToday(few[0]); addToToday(few[1]);
+render();
+openItem(few[2].id);
+clickOn({ act: "work", id: few[2].id });
+T.ok("признак всё равно поставлен", few[2].working === true);
+T.ok("в день молча не влезло", !pickedToday(few[2]));
+T.ok("спросили, что вытеснить",
+  /Что уберём/.test(T.visible(host.innerHTML)),
+  T.visible(host.innerHTML).slice(0, 140));
+closeModal();
+S.cfg.todayCap = 5;
+
+T.head("ДЕЛО СО СРОКОМ СЕГОДНЯ УЖЕ В ДНЕ");
+T.reset();
+var d1 = T.tasks()[0];
+d1.due = today();
+openItem(d1.id);
+clickOn({ act: "work", id: d1.id });
+T.ok("взято не помечается — оно и так в дне", !d1.today);
+T.ok("но признак работы стоит", d1.working === true);
+closeModal();
+T.reset();
+
 T.done();

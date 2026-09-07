@@ -27,6 +27,7 @@ globalThis.T = {
   reset: function () {
     S.items.forEach(function (i) {
       i.today = null; i.notToday = null; i.forceImp = undefined;
+      i.working = false;                 // признак «в работе» — тоже состояние
       i.done = false; i.doneAt = null;
     });
     S.todayOrder = null; S.hereNow = null; S.suggCollapsed = false;
