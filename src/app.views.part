@@ -427,20 +427,28 @@ function routineRowHTML(i, sortable) {
 /* Группы по частям дня появляются, только если часть дня проставлена
    хоть у одной рутины. Пока её нет — плоский список, как было: пустой
    заголовок «В любое время» над всем списком ничего не объясняет.   */
-function routineListHTML(list, sortable) {
-  if (!list.some(i => i.partOfDay))
-    return list.map(i => routineRowHTML(i, sortable)).join("");
-  const head = (label, g) => `<div class="rgroup"><span>${label}</span>${
-    sumMins(g) ? `<b>${minsLabel(sumMins(g))}</b>` : ""}</div>`;
+/* Какие части дня вообще заняты — по этому решаем, показывать ли
+   створки и какую открыть.                                          */
+function routParts(list) {
   const out = [];
   PARTS.forEach(([k, L]) => {
-    const g = list.filter(i => i.partOfDay === k);
-    if (g.length) out.push(head(L, g) + g.map(i => routineRowHTML(i, sortable)).join(""));
+    const n = list.filter(i => (i.partOfDay || "") === k).length;
+    if (n) out.push([k, L, n]);
   });
-  const rest = list.filter(i => !i.partOfDay);
-  if (rest.length) out.push(head("В любое время", rest)
-    + rest.map(i => routineRowHTML(i, sortable)).join(""));
-  return out.join("");
+  const n0 = list.filter(i => !i.partOfDay).length;
+  if (n0) out.push(["", PART_ANY, n0]);
+  return out;
+}
+/* Открытая створка: выбранная, иначе текущая по часам, иначе первая
+   занятая. Пустую створку не открываем никогда.                     */
+function routPick(parts) {
+  const has = k => parts.some(p => p[0] === k);
+  if (ROUTVIEW !== null && has(ROUTVIEW)) return ROUTVIEW;
+  if (has(partNow())) return partNow();
+  return parts.length ? parts[0][0] : "";
+}
+function routineListHTML(list, sortable) {
+  return list.map(i => routineRowHTML(i, sortable)).join("");
 }
 
 /* Сделанное уезжает в конец своего блока: зачёркнуто, без подробностей.
@@ -574,12 +582,25 @@ function renderToday() {
 
     `</div></div><div class="tcol side">` +
 
-    (anyRout ? `<div class="sidepanel routines"><h3>Рутина${
-      sumMins(routines) ? `<span class="rall">${minsLabel(sumMins(routines))}</span>` : ""}</h3>
+    (anyRout ? (() => {
+      /* Панель короткая: показывать разом утро, день и вечер значит
+         заставлять листать. Створки делят рутину по частям дня, и
+         появляются, только когда занята не одна часть.              */
+      const all = routines.concat(routDone);
+      const parts = routParts(all);
+      const pick = routPick(parts);
+      const split = parts.length > 1;
+      const mine2 = i => !split || (i.partOfDay || "") === pick;
+      const shown = routines.filter(mine2), shownDone = routDone.filter(mine2);
+      return `<div class="sidepanel routines"><h3>Рутина${
+        sumMins(shown) ? `<span class="rall">${minsLabel(sumMins(shown))}</span>` : ""}</h3>
+      ${split ? `<div class="rowseg"><span class="seg tabseg">${parts.map(([k, L, n]) =>
+        `<button data-act="routview" data-v="${k}" class="${pick === k ? "on" : ""}"
+          >${L} · ${n}</button>`).join("")}</span></div>` : ""}
       <div class="panelscroll"><div class="rbox">
-        ${routineListHTML(routines, anyRout > 1)}
-        ${routDone.map(i => doneLineHTML(i, today())).join("")}
-      </div></div></div>` : "") +
+        ${routineListHTML(shown, anyRout > 1)}
+        ${shownDone.map(i => doneLineHTML(i, today())).join("")}
+      </div></div></div>`; })() : "") +
 
     /* «События дня», а не «Аппоинтменты»: тут же живут напоминания, и
        день рождения — не встреча.                                   */
@@ -622,6 +643,10 @@ function apptRowHTML(i) {
    заходами: оставленная на «в работе», назавтра она показала бы пустой
    день, и было бы непонятно, куда всё делось.                       */
 let TODAYVIEW = "all";
+/* Какая часть дня открыта в панели рутины. null — «сама решай»: панель
+   встаёт на текущую по часам. Между заходами не запоминается по той же
+   причине, что и створки дел.                                       */
+let ROUTVIEW = null;
 let ALLFILTER = savedView.allFilter || "all", ALLQUERY = "";
 let ALLSORT = savedView.allSort || "due";
 let ALLPERIOD = savedView.allPeriod || "all";

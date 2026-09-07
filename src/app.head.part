@@ -237,6 +237,10 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 /* счётчик дня: сегменты + «N из 5» */
 /* Створки колонки дел — тот же переключатель, что в настройках, только
    мельче: место в закреплённой шапке дорогое. */
+/* Створки рутины стоят своей строкой под заголовком панели: в шапке
+   для них нет места, а заголовок закреплён. */
+.rowseg{flex:none;padding:0 22px 10px}
+.rowseg .tabseg{margin-left:0}
 .tabseg{margin-left:12px;padding:2px}
 .tabseg button{height:26px;padding:0 10px;font-size:12px}
 .capseg{display:inline-flex;gap:4px;align-items:center;margin-left:auto}
@@ -583,11 +587,6 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .caltick.none,.tick.none{visibility:hidden}
 
 /* ── рутина: части дня, длительность, карта четырёх недель ───────── */
-.rgroup{display:flex;align-items:baseline;gap:8px;margin:15px 0 8px;font-size:11px;
-  font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
-.rgroup:first-child{margin-top:0}
-.rgroup b{margin-left:auto;font-weight:500;letter-spacing:0;text-transform:none;
-  font-size:12px;color:var(--dim)}
 .rall{margin-left:9px;font-size:12.5px;font-weight:500;color:var(--dim)}
 .rmins{font-size:12px;color:var(--dim);white-space:nowrap}
 .heatwrap{margin-top:2px}

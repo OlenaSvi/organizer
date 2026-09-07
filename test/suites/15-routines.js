@@ -57,27 +57,30 @@ clickOn({ act: "ddset", f: "mins", id: r.id, v: "10" });
 T.ok("минуты записались числом, а не строкой", r.mins === 10);
 clickOn({ act: "esave", id: r.id }); closeModal();
 
-T.head("ПАНЕЛЬ ДНЯ: ГРУППЫ ПО ЧАСТЯМ ДНЯ");
+T.head("ПАНЕЛЬ ДНЯ: ЧАСТИ ДНЯ СТВОРКАМИ");
+/* Раньше части дня стояли группами одна под другой — панель короткая, и
+   всё это приходилось листать. Теперь створки: видна одна часть. */
 r.partOfDay = "morning"; r.mins = 10;
 r2.partOfDay = "evening"; r2.mins = 20;
-TAB = "today"; render();
+TAB = "today"; ROUTVIEW = "morning"; render();
 var p = view.innerHTML;
-T.ok("группы появились", p.indexOf('class="rgroup"') >= 0);
+T.ok("створки появились", p.indexOf('data-act="routview"') >= 0);
 T.ok("утро идёт раньше вечера",
   p.indexOf("Утро") >= 0 && p.indexOf("Вечер") > p.indexOf("Утро"));
-T.ok("у каждой группы своя сумма", p.indexOf("10 мин") >= 0 && p.indexOf("20 мин") >= 0);
-T.ok("общее время — в шапке панели", /Рутина[\s\S]{0,120}30 мин/.test(p));
+T.ok("в шапке — время открытой створки", /Рутина[\s\S]{0,120}10 мин/.test(p));
+T.ok("в строке видно, сколько занимает", p.indexOf("10 мин") >= 0);
 
 T.head("СДЕЛАННОЕ ИЗ СУММЫ УХОДИТ");
 clickOn({ act: "toggle", id: r.id });
 p = view.innerHTML;
-T.ok("группы «Утро» больше нет", p.indexOf(">Утро<") < 0);
-T.ok("общее время уменьшилось", /Рутина[\s\S]{0,120}20 мин/.test(p));
+T.ok("время открытой створки обнулилось", !/Рутина[\s\S]{0,120}10 мин/.test(p));
+T.ok("но сама рутина на месте, зачёркнутая",
+  T.visible(p).indexOf(r.title) >= 0);
 clickOn({ act: "toggle", id: r.id });
 
 T.head("БЕЗ ЧАСТЕЙ ДНЯ — ПЛОСКИЙ СПИСОК, КАК РАНЬШЕ");
-r.partOfDay = null; r2.partOfDay = null; render();
-T.ok("заголовков групп нет", view.innerHTML.indexOf('class="rgroup"') < 0);
+r.partOfDay = null; r2.partOfDay = null; ROUTVIEW = null; render();
+T.ok("створок нет", view.innerHTML.indexOf('data-act="routview"') < 0);
 T.ok("а рутины на месте", T.visible(view.innerHTML).indexOf(r.title) >= 0);
 T.ok("в строке видно, сколько занимает", view.innerHTML.indexOf("10 мин") >= 0);
 
@@ -189,6 +192,42 @@ clickOn({ act: "opendone", id: rr.id, when: today() });
 T.ok("в архиве тоже", firstDay(host.innerHTML) === "вс");
 closeModal();
 S.cfg.weekStart = 1;
+T.reset();
+
+T.head("СТВОРКИ РУТИНЫ ПО ЧАСТЯМ ДНЯ");
+/* Панель рутины короткая: показывать разом утро, день и вечер значит
+   заставлять листать. Створка показывает то, что сейчас нужно. */
+T.reset();
+var rs = live().filter(isRoutine);
+rs[0].partOfDay = "morning"; rs[0].mins = 10;
+rs[1].partOfDay = "evening"; rs[1].mins = 20;
+TAB = "today"; ROUTVIEW = "morning"; render();
+T.ok("переключатель появился", view.innerHTML.indexOf('data-act="routview"') >= 0);
+T.ok("створки названы частями дня",
+  /Утро/.test(view.innerHTML) && /Вечер/.test(view.innerHTML));
+T.ok("видно только утреннюю", T.visible(view.innerHTML).indexOf(rs[0].title) >= 0
+  && T.visible(view.innerHTML).indexOf(rs[1].title) < 0);
+clickOn({ act: "routview", v: "evening" });
+T.ok("переключились на вечер", T.visible(view.innerHTML).indexOf(rs[1].title) >= 0
+  && T.visible(view.innerHTML).indexOf(rs[0].title) < 0);
+T.ok("время створки — в шапке панели",
+  /Рутина[\s\S]{0,120}20 мин/.test(view.innerHTML));
+
+T.head("БЕЗ ЧАСТИ ДНЯ — СТВОРКА «ЛЮБОЕ»");
+rs[1].partOfDay = null;
+ROUTVIEW = null; render();
+T.ok("створка названа одним словом", /Любое/.test(view.innerHTML));
+clickOn({ act: "routview", v: "" });
+T.ok("в ней рутина без части дня",
+  T.visible(view.innerHTML).indexOf(rs[1].title) >= 0);
+
+T.head("ОДНА ГРУППА — ПЕРЕКЛЮЧАТЕЛЬ НЕ НУЖЕН");
+rs[0].partOfDay = null;
+ROUTVIEW = null; render();
+T.ok("створок нет", view.innerHTML.indexOf('data-act="routview"') < 0);
+T.ok("а рутины на месте", T.visible(view.innerHTML).indexOf(rs[0].title) >= 0
+  && T.visible(view.innerHTML).indexOf(rs[1].title) >= 0);
+ROUTVIEW = null;
 T.reset();
 
 T.done();
