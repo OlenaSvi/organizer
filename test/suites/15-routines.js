@@ -258,4 +258,28 @@ rr2[1].mins = null;
 });
 T.reset();
 
+T.head("РУТИНЫ БЕЗ ЗАДАННОГО ВРЕМЕНИ ТОЖЕ СЧИТАЮТСЯ");
+/* Иначе «всего 10 минут» врёт: в створке ещё две рутины, просто у них
+   время не проставлено. */
+T.reset();
+var rn = live().filter(isRoutine);
+rn.forEach(function (x) { x.routine.history = []; x.partOfDay = null; });
+rn[0].mins = 10; rn[1].mins = null;
+TAB = "today"; ROUTVIEW = null; render();
+var line = function () {
+  var m = /class="rsum"[^>]*>([^<]*)</.exec(view.innerHTML.replace(/\s+/g, " "));
+  return m ? m[1].trim() : "нет строки";
+};
+T.ok("сказано и про минуты, и про остальные",
+  line() === "всего 10 минут + 1 без времени", line());
+rn[0].mins = null;
+render();
+T.ok("когда времени нет ни у кого — говорим только про них",
+  /^2 рутины без заданного времени$/.test(line()), line());
+rn[1].mins = 15; rn[0].mins = 5;
+render();
+T.ok("когда время у всех — про остальных молчим",
+  line() === "всего 20 минут", line());
+T.reset();
+
 T.done();

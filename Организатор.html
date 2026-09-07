@@ -2236,9 +2236,20 @@ function renderToday() {
       <div class="panelscroll"><div class="rbox">
         ${/* Название створки не повторяем: оно подсвечено в переключателе
               прямо над этой строкой. Слово «минута» целиком — строка
-              одна на список, места хватает.                        */
-          mins ? `<p class="rsum">всего ${mins} ${
-            plural(mins, "минута", "минуты", "минут")}</p>` : ""}
+              одна на список, места хватает.
+              Рутины без проставленного времени называем отдельно: без
+              них «всего 10 минут» врало бы — в створке их больше.   */
+          (() => {
+            const noMins = shown.filter(i => !i.mins).length;
+            if (!mins && !noMins) return "";
+            const bits = [];
+            if (mins) bits.push(`всего ${mins} ${
+              plural(mins, "минута", "минуты", "минут")}`);
+            if (noMins) bits.push(mins ? `+ ${noMins} без времени`
+              : `${noMins} ${plural(noMins, "рутина", "рутины", "рутин")
+                } без заданного времени`);
+            return `<p class="rsum">${bits.join(" ")}</p>`;
+          })()}
         ${routineListHTML(shown, anyRout > 1)}
         ${shownDone.map(i => doneLineHTML(i, today())).join("")}
       </div></div></div>`; })() : "") +
