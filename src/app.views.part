@@ -592,11 +592,14 @@ function renderToday() {
       const split = parts.length > 1;
       const mine2 = i => !split || (i.partOfDay || "") === pick;
       const shown = routines.filter(mine2), shownDone = routDone.filter(mine2);
+      /* Створки стоят в самом заголовке, как у дел. Панель узкая, поэтому
+         без счётчиков: четыре подписи с числами туда не помещаются, а
+         сколько в створке — видно по самому списку.                 */
       return `<div class="sidepanel routines"><h3>Рутина${
+        split ? `<span class="seg tabseg">${parts.map(([k, L]) =>
+          `<button data-act="routview" data-v="${k}" class="${pick === k ? "on" : ""}"
+            >${L}</button>`).join("")}</span>` : ""}${
         sumMins(shown) ? `<span class="rall">${minsLabel(sumMins(shown))}</span>` : ""}</h3>
-      ${split ? `<div class="rowseg"><span class="seg tabseg">${parts.map(([k, L, n]) =>
-        `<button data-act="routview" data-v="${k}" class="${pick === k ? "on" : ""}"
-          >${L} · ${n}</button>`).join("")}</span></div>` : ""}
       <div class="panelscroll"><div class="rbox">
         ${routineListHTML(shown, anyRout > 1)}
         ${shownDone.map(i => doneLineHTML(i, today())).join("")}

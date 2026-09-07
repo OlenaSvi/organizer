@@ -205,6 +205,11 @@ TAB = "today"; ROUTVIEW = "morning"; render();
 T.ok("переключатель появился", view.innerHTML.indexOf('data-act="routview"') >= 0);
 T.ok("створки названы частями дня",
   /Утро/.test(view.innerHTML) && /Вечер/.test(view.innerHTML));
+/* Створки стоят в самом заголовке панели, как у дел, — не отдельной
+   полосой под ним. */
+T.ok("и стоят в заголовке панели",
+  /<h3>Рутина[\s\S]{0,400}data-act="routview"[\s\S]{0,400}<\/h3>/
+    .test(view.innerHTML));
 T.ok("видно только утреннюю", T.visible(view.innerHTML).indexOf(rs[0].title) >= 0
   && T.visible(view.innerHTML).indexOf(rs[1].title) < 0);
 clickOn({ act: "routview", v: "evening" });

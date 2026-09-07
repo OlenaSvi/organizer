@@ -138,7 +138,8 @@ main.fit .todayhead{flex:none}
   padding:0;margin-bottom:20px;display:flex;flex-direction:column;
   overflow:hidden;min-height:0}
 .sidepanel h3{flex:none;margin:0;padding:18px 22px 10px;
-  border-bottom:1px solid var(--hairline);font-size:17px;font-weight:700}
+  border-bottom:1px solid var(--hairline);font-size:17px;font-weight:700;
+  display:flex;align-items:center;flex-wrap:wrap;gap:6px 0}
 /* Содержимое панели прокручивается само — и у рутины, и у встреч,
    когда их становится много.                                        */
 .panelscroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;
@@ -237,12 +238,14 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 /* счётчик дня: сегменты + «N из 5» */
 /* Створки колонки дел — тот же переключатель, что в настройках, только
    мельче: место в закреплённой шапке дорогое. */
-/* Створки рутины стоят своей строкой под заголовком панели: в шапке
-   для них нет места, а заголовок закреплён. */
-.rowseg{flex:none;padding:0 22px 10px}
-.rowseg .tabseg{margin-left:0}
 .tabseg{margin-left:12px;padding:2px}
 .tabseg button{height:26px;padding:0 10px;font-size:12px}
+/* В узкой панели створкам тесно: подписи ужимаем, а заголовку
+   разрешаем перенести их на вторую строку — лучше перенос внутри
+   шапки, чем отдельная полоса под ней.                             */
+.sidepanel h3 .tabseg{margin-left:10px;padding:2px}
+.sidepanel h3 .tabseg button{padding:0 9px}
+.sidepanel h3 .rall{margin-left:auto}
 .capseg{display:inline-flex;gap:4px;align-items:center;margin-left:auto}
 .capseg i{width:16px;height:4px;border-radius:999px;background:var(--dot-off)}
 .capseg i.on{background:color-mix(in srgb, var(--accent) 45%, transparent)}
