@@ -67,13 +67,17 @@ var p = view.innerHTML;
 T.ok("створки появились", p.indexOf('data-act="routview"') >= 0);
 T.ok("утро идёт раньше вечера",
   p.indexOf("Утро") >= 0 && p.indexOf("Вечер") > p.indexOf("Утро"));
-T.ok("в шапке — время открытой створки", /Рутина[\s\S]{0,120}10 мин/.test(p));
+T.ok("время стоит над списком, а не в шапке",
+  /class="rsum"[^>]*>[^<]*10 мин/.test(p.replace(/\s+/g, " ")),
+  T.visible(p).slice(0, 120));
+T.ok("и подписано частью дня", /class="rsum"[^>]*>\s*Утро/.test(p.replace(/\s+/g, " ")));
+T.ok("в шапке времени больше нет", p.indexOf('class="rall"') < 0);
 T.ok("в строке видно, сколько занимает", p.indexOf("10 мин") >= 0);
 
 T.head("СДЕЛАННОЕ ИЗ СУММЫ УХОДИТ");
 clickOn({ act: "toggle", id: r.id });
 p = view.innerHTML;
-T.ok("время открытой створки обнулилось", !/Рутина[\s\S]{0,120}10 мин/.test(p));
+T.ok("время открытой створки обнулилось", p.indexOf('class="rsum"') < 0);
 T.ok("но сама рутина на месте, зачёркнутая",
   T.visible(p).indexOf(r.title) >= 0);
 clickOn({ act: "toggle", id: r.id });
@@ -215,8 +219,8 @@ T.ok("видно только утреннюю", T.visible(view.innerHTML).index
 clickOn({ act: "routview", v: "evening" });
 T.ok("переключились на вечер", T.visible(view.innerHTML).indexOf(rs[1].title) >= 0
   && T.visible(view.innerHTML).indexOf(rs[0].title) < 0);
-T.ok("время створки — в шапке панели",
-  /Рутина[\s\S]{0,120}20 мин/.test(view.innerHTML));
+T.ok("время створки — над её списком",
+  /class="rsum"[^>]*>[^<]*20 мин/.test(view.innerHTML.replace(/\s+/g, " ")));
 
 T.head("БЕЗ ЧАСТИ ДНЯ — СТВОРКА «ЛЮБОЕ»");
 rs[1].partOfDay = null;

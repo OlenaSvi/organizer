@@ -590,7 +590,10 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .caltick.none,.tick.none{visibility:hidden}
 
 /* ── рутина: части дня, длительность, карта четырёх недель ───────── */
-.rall{margin-left:9px;font-size:12.5px;font-weight:500;color:var(--dim)}
+/* Время створки — строкой над её списком: в шапке оно относилось ко
+   всей панели и не говорило, к чему именно. */
+.rsum{margin:0 0 10px;font-size:12px;font-weight:600;color:var(--dim);
+  text-transform:uppercase;letter-spacing:.08em}
 .rmins{font-size:12px;color:var(--dim);white-space:nowrap}
 .heatwrap{margin-top:2px}
 .heathd,.heat{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;max-width:214px}
@@ -2222,14 +2225,18 @@ function renderToday() {
       /* Створки стоят в самом заголовке, как у дел. Панель узкая, поэтому
          без счётчиков: четыре подписи с числами туда не помещаются, а
          сколько в створке — видно по самому списку.                 */
-      /* Порядок в шапке: название, время открытой створки, и сами
-         створки — прижатыми к правому краю. */
+      /* Время стоит над списком своей створки, а не в шапке: там оно
+         относилось ко всей панели и не говорило, к чему именно.
+         В шапке остаётся название и сами створки у правого края.    */
+      const label = (parts.find(pp => pp[0] === pick) || [, ""])[1];
+      const mins = sumMins(shown);
       return `<div class="sidepanel routines"><h3>Рутина${
-        sumMins(shown) ? `<span class="rall">${minsLabel(sumMins(shown))}</span>` : ""}${
         split ? `<span class="seg tabseg">${parts.map(([k, L]) =>
           `<button data-act="routview" data-v="${k}" class="${pick === k ? "on" : ""}"
             >${L}</button>`).join("")}</span>` : ""}</h3>
       <div class="panelscroll"><div class="rbox">
+        ${mins ? `<p class="rsum">${split ? esc(label) + " · " : ""}${
+          minsLabel(mins)}</p>` : ""}
         ${routineListHTML(shown, anyRout > 1)}
         ${shownDone.map(i => doneLineHTML(i, today())).join("")}
       </div></div></div>`; })() : "") +

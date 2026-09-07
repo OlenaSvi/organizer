@@ -590,7 +590,10 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .caltick.none,.tick.none{visibility:hidden}
 
 /* ── рутина: части дня, длительность, карта четырёх недель ───────── */
-.rall{margin-left:9px;font-size:12.5px;font-weight:500;color:var(--dim)}
+/* Время створки — строкой над её списком: в шапке оно относилось ко
+   всей панели и не говорило, к чему именно. */
+.rsum{margin:0 0 10px;font-size:12px;font-weight:600;color:var(--dim);
+  text-transform:uppercase;letter-spacing:.08em}
 .rmins{font-size:12px;color:var(--dim);white-space:nowrap}
 .heatwrap{margin-top:2px}
 .heathd,.heat{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;max-width:214px}
