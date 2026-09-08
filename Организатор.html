@@ -1103,7 +1103,11 @@ const SPHERES0 = ["Быт","Здоровье","Работа","Семья","Фи�
 const PLACES0  = ["Страна 1","Страна 2"];
 const PEOPLE0  = ["Я"];
 
-/* По одному делу каждого вида — как образец, а не как список задач. */
+/* По одному делу каждого вида — как образец, а не как список задач.
+   Названия самые обиходные: приложение открывает незнакомый человек,
+   и чужие подробности в его приложении лишние. Каждый пример за
+   что-то отвечает — шаги, варианты, время рутины, повтор, — чтобы
+   возможности было видно сразу, без объяснений.                    */
 function templateItems() {
   const t = (o) => Object.assign({
     id: uid(), title: "", type: "task", multi: false, spheres: [], place: null, person: null,
@@ -1112,37 +1116,36 @@ function templateItems() {
     today: null, notToday: null,
   }, o);
   return [
-    t({ title: "Позвонить в банк", spheres: ["Финансы"],
-        person: "Я", due: addDays(today(), 5) }),
-    t({ title: "Выбрать новый чайник", spheres: ["Быт"],
-        place: "Страна 1", person: "Я", due: addDays(today(), 14),
-        options: [{ text: "подешевле, но шумный" }, { text: "подороже, тихий" }] }),
-    t({ title: "Забрать посылку", spheres: ["Другое"],
-        place: "Страна 1", person: "Я", due: addDays(today(), 3), multi: true,
-        steps: [{ text: "найти номер отправления", done: false },
-                { text: "съездить на пункт выдачи", done: false }] }),
-    t({ title: "Зарядка 15 минут", type: "routine", spheres: ["Здоровье"],
-        person: "Я", mins: 15, partOfDay: "morning",
+    t({ title: "Оплатить счета", spheres: ["Финансы"],
+        person: "Я", due: addDays(today(), 3) }),
+    t({ title: "Купить продукты", spheres: ["Быт"],
+        place: "Страна 1", person: "Я", due: addDays(today(), 2), multi: true,
+        steps: [{ text: "составить список", done: false },
+                { text: "зайти в магазин", done: false }] }),
+    t({ title: "Выбрать подарок", spheres: ["Семья"],
+        person: "Я", due: addDays(today(), 14),
+        options: [{ text: "книга" }, { text: "что-нибудь для дома" }] }),
+    t({ title: "Зарядка", type: "routine", spheres: ["Здоровье"],
+        person: "Я", mins: 10, partOfDay: "morning",
         routine: { days: [1,2,3,4,5], history: [] } }),
-    t({ title: "Приём у стоматолога", type: "appt", spheres: ["Здоровье"],
+    t({ title: "Приём у врача", type: "appt", spheres: ["Здоровье"],
         place: "Страна 2", person: "Я", due: addDays(today(), 7), time: "10:30",
         notes: "адрес, телефон и что взять с собой — сюда" }),
     t({ title: "Разобрать шкаф", spheres: ["Быт"], person: "Я" }),
-    t({ title: "Собрать документы", spheres: ["Работа"],
+    t({ title: "Обновить резюме", spheres: ["Работа"],
         person: "Я", due: addDays(today(), 10), multi: true,
-        steps: [{ text: "список нужных справок", done: false },
-                { text: "заказать выписку", done: false },
-                { text: "отнести", done: false }] }),
-    t({ title: "Читать 20 минут", type: "routine", spheres: ["Развитие"],
+        steps: [{ text: "собрать список проектов", done: false },
+                { text: "поправить текст", done: false },
+                { text: "отправить", done: false }] }),
+    t({ title: "Читать перед сном", type: "routine", spheres: ["Развитие"],
         person: "Я", mins: 20, partOfDay: "evening",
         routine: { days: [0,1,2,3,4,5,6], history: [] } }),
     /* Напоминание — не дело: его не делают, про него помнят. */
-    t({ title: "День рождения подруги", type: "remind", spheres: ["Семья"],
+    t({ title: "День рождения", type: "remind", spheres: ["Семья"],
         repeat: { every: "year", day: 26, month: 8, history: [] } }),
-    t({ title: "Придумать, куда съездить летом", type: "idea",
+    t({ title: "Куда поехать летом", type: "idea",
         spheres: ["Отдых"], person: "Я",
-        options: [{ text: "море, никуда не ходить" },
-                  { text: "город, музеи и еда" }] }),
+        options: [{ text: "к морю" }, { text: "в горы" }] }),
   ];
 }
 
@@ -1155,11 +1158,6 @@ function seed() {
     types: JSON.parse(JSON.stringify(DEFAULT_TYPES)),
     hereNow: null, open: [],
     items: templateItems(),
-    /* Разовые правки чинят историю уже заведённого приложения. Тому,
-       кто открыл его впервые, чинить нечего: помечаем их пройденными,
-       иначе очистка дел (сделанная однажды для своих) стирала бы
-       примеры и у него — приложение открывалось бы пустым, и показать
-       его кому-то было бы нечего.                                   */
   };
 }
 
