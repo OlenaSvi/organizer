@@ -30,12 +30,12 @@ function ddTypeHTML(it) {
   const def = typeDef(it.type);
   return `<div class="ddwrap" data-ddwrap>
     <button class="ddbtn" data-act="dd" data-k="type:${it.id}">${iconSVG(kindToken(def),
-      kindColor(it))}<span>${esc(def.name)}</span><i class="caret">▾</i></button>
+      kindColor(it))}<span>${esc(typeLabel(def))}</span><i class="caret">▾</i></button>
     ${open ? `<div class="dd inline">${S.types.map(t => `
       <button class="ddrow ${t.key === it.type ? "on" : ""}" data-act="ddset" data-f="type"
         data-id="${it.id}" data-v="${esc(t.key)}">${iconSVG(kindToken(t),
-        "var(--kind-" + kindToken(t) + ")")}<span>${esc(t.name)}${
-        t.kind === "appt" ? " — со временем" : ""}</span>${t.key === it.type ? ddCheck : ""}</button>`).join("")}
+        "var(--kind-" + kindToken(t) + ")")}<span>${esc(typeLabel(t))}${
+        t.kind === "appt" ? " — " + tr("со временем") : ""}</span>${t.key === it.type ? ddCheck : ""}</button>`).join("")}
     </div>` : ""}</div>`;
 }
 
@@ -71,12 +71,12 @@ function ddTimeHTML(it) {
           v === val ? ddCheck : ""}</button>`).join("")}
       <div class="dddiv"></div>
       <button class="ddrow dim ${cur ? "" : "on"}" data-act="ttime" data-f="clear"
-        data-id="${it.id}" data-v=""><span>без времени</span>${cur ? "" : ddCheck}</button>
+        data-id="${it.id}" data-v=""><span>${tr("без времени")}</span>${cur ? "" : ddCheck}</button>
     </div>` : ""}</span>`;
   return `<div style="display:flex;gap:7px;align-items:center">
-    ${part("th:" + it.id, HOURS, cur.slice(0, 2), "час", "h")}
+    ${part("th:" + it.id, HOURS, cur.slice(0, 2), tr("час"), "h")}
     <span class="qs" style="margin:0">:</span>
-    ${part("tm:" + it.id, MINS5, cur.slice(3, 5), "мин", "m")}</div>`;
+    ${part("tm:" + it.id, MINS5, cur.slice(3, 5), tr("мин"), "m")}</div>`;
 }
 
 /* Число месяца и месяц — теми же списками, что часы и минуты.
@@ -86,7 +86,7 @@ function ddNumHTML(it, key, list, cur, label, f) {
   const k = key + ":" + it.id, has = cur !== null && cur !== undefined;
   return `<div class="ddwrap" data-ddwrap>
     <button class="ddbtn ${has ? "" : "dim"}" data-act="dd" data-k="${k}"><span>${
-      has ? label(cur) : "выбрать"}</span><i class="caret">▾</i></button>
+      has ? label(cur) : tr("выбрать")}</span><i class="caret">▾</i></button>
     ${DD === k ? `<div class="dd inline" style="max-height:232px;overflow-y:auto">
       ${list.map(v => `<button class="ddrow ${v === cur ? "on" : ""}" data-act="rdate"
           data-f="${f}" data-id="${it.id}" data-v="${v}"><span>${label(v)}</span>${
@@ -100,13 +100,13 @@ function ddMinsHTML(it) {
   const key = "mins:" + it.id, open = DD === key;
   return `<div class="ddwrap" data-ddwrap>
     <button class="ddbtn ${it.mins ? "" : "dim"}" data-act="dd" data-k="${key}"><span>${
-      it.mins ? minsLabel(it.mins) : "не важно"}</span><i class="caret">▾</i></button>
+      it.mins ? minsLabel(it.mins) : tr("не важно")}</span><i class="caret">▾</i></button>
     ${open ? `<div class="dd inline">
       ${MINCHOICES.map(n => `<button class="ddrow ${it.mins === n ? "on" : ""}" data-act="ddset"
           data-f="mins" data-id="${it.id}" data-v="${n}"><span>${minsLabel(n)}</span>${
           it.mins === n ? ddCheck : ""}</button>`).join("")}
       <button class="ddrow dim ${it.mins ? "" : "on"}" data-act="ddset" data-f="mins"
-        data-id="${it.id}" data-v=""><span>не важно</span>${it.mins ? "" : ddCheck}</button>
+        data-id="${it.id}" data-v=""><span>${tr("не важно")}</span>${it.mins ? "" : ddCheck}</button>
     </div>` : ""}</div>`;
 }
 
@@ -118,18 +118,18 @@ function ddPickHTML(it, field) {
   const icon = v => isPlace ? iconSVG("pin", "var(--pin)") : iconSVG("person", "currentColor");
   return `<div class="ddwrap" data-ddwrap>
     <button class="ddbtn ${cur ? "" : "dim"}" data-act="dd" data-k="${key}">${icon()}<span>${
-      cur ? esc(cur) : (isPlace ? "без места" : "без человека")}</span><i class="caret">▾</i></button>
+      cur ? esc(cur) : (isPlace ? tr("без места") : tr("без человека"))}</span><i class="caret">▾</i></button>
     ${open ? `<div class="dd inline">
       ${list.map(v => `<button class="ddrow ${v === cur ? "on" : ""}" data-act="ddset"
           data-f="${field}" data-id="${it.id}" data-v="${esc(v)}">${icon(v)}<span>${esc(v)}</span>${
           v === cur ? ddCheck : ""}</button>`).join("")}
       <button class="ddrow dim ${cur ? "" : "on"}" data-act="ddset" data-f="${field}"
-        data-id="${it.id}" data-v=""><span>${isPlace ? "без места" : "без человека"}</span>${cur ? "" : ddCheck}</button>
+        data-id="${it.id}" data-v=""><span>${isPlace ? tr("без места") : tr("без человека")}</span>${cur ? "" : ddCheck}</button>
       <div class="dddiv"></div>
       ${DDADD ? `<div class="ddaddrow"><input type="text" id="ddAddInp" autocomplete="off"
-          data-f="${field}" data-id="${it.id}" placeholder="${isPlace ? "Новое место" : "Имя"}">
-          <button class="btn primary" data-act="ddaddgo" data-f="${field}" data-id="${it.id}">Добавить</button></div>`
-        : `<button class="ddrow ddadd" data-act="ddaddshow">＋ добавить ${isPlace ? "место" : "человека"}</button>`}
+          data-f="${field}" data-id="${it.id}" placeholder="${isPlace ? tr("Новое место") : tr("Имя")}">
+          <button class="btn primary" data-act="ddaddgo" data-f="${field}" data-id="${it.id}">${tr("Добавить")}</button></div>`
+        : `<button class="ddrow ddadd" data-act="ddaddshow">＋ ${tr("добавить")} ${isPlace ? tr("место") : tr("человека")}</button>`}
     </div>` : ""}</div>`;
 }
 
@@ -176,16 +176,16 @@ function ddDueHTML(it) {
   const key = "due:" + it.id, open = DD === key;
   return `<div class="ddwrap" data-ddwrap>
     <button class="ddbtn ${it.due ? "" : "dim"}" data-act="dd" data-k="${key}">${SAND}<span>${
-      it.due ? dateLabel(it) : "без срока"}</span><i class="caret">▾</i></button>
+      it.due ? dateLabel(it) : tr("без срока")}</span><i class="caret">▾</i></button>
     ${open ? `<div class="dd inline duedd">
       <div class="ddquick">
-        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="today">сегодня</button>
-        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="tomorrow">завтра</button>
-        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="week">через неделю</button>
-        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="none">без срока</button>
+        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="today">${tr("сегодня")}</button>
+        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="tomorrow">${tr("завтра")}</button>
+        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="week">${tr("через неделю")}</button>
+        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="none">${tr("без срока")}</button>
       </div>
       ${ddCalHTML(it)}
-      <p class="qs" style="margin:6px 10px 6px">сегодня — в кольце · выбранное — залито</p>
+      <p class="qs" style="margin:6px 10px 6px">${tr("сегодня — в кольце · выбранное — залито")}</p>
     </div>` : ""}</div>`;
 }
 
@@ -205,7 +205,7 @@ function openModal(html, key, close) {
   const keep = (prev && key && key === lastModalKey) ? prev.scrollTop : 0;
   host.innerHTML = `<div class="veil"><div class="modal">${close
     ? `<div class="modalbar"><button class="modalx" data-act="${close.act}"${
-        close.id ? ` data-id="${close.id}"` : ""} title="${close.title || "Закрыть"}">×</button></div>`
+        close.id ? ` data-id="${close.id}"` : ""} title="${close.title || tr("Закрыть")}">×</button></div>`
     : ""}${html}</div></div>`;
   const now = host.querySelector ? host.querySelector(".modal") : null;
   if (now) now.scrollTop = keep;
@@ -221,42 +221,42 @@ function openDone(id, when) {
   const rout = isRoutine(it);
   const hasSteps = it.multi && it.steps.length;
   openModal(`<h3>${kindIcon(it)}${esc(it.title)}</h3>
-    <p class="qs" style="margin:-10px 0 16px">${rout ? "Отмечено"
-      : isAppt(it) ? "Состоялась" : "Сделано"}:
+    <p class="qs" style="margin:-10px 0 16px">${rout ? tr("Отмечено")
+      : isAppt(it) ? tr("Состоялась") : tr("Сделано")}:
       <b style="color:var(--good)">${formatDay(when)}</b>${when ? " · " + esc(when) : ""}</p>
 
     <div class="readmeta">
       ${sphereTags(it)}
       ${it.place ? placeTag(it.place) : ""}
-      ${it.person && it.person !== "Я" ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(it.person)}</span>` : ""}
-      ${it.due && !rout ? `<span class="tag when">дедлайн был ${esc(it.due)}${
+      ${it.person && !isSelf(it.person) ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(it.person)}</span>` : ""}
+      ${it.due && !rout ? `<span class="tag when">${tr("дедлайн был")} ${esc(it.due)}${
         it.time ? " " + esc(it.time) : ""}</span>` : ""}
     </div>
 
-    ${(schedDays(it) || []).length ? `<p class="lbl">В какие дни</p>
+    ${(schedDays(it) || []).length ? `<p class="lbl">${tr("В какие дни")}</p>
       ${daysRowHTML(schedDays(it))}
-      <p class="qs" style="margin:-4px 0 16px">Сделано ${routineScore(it).hit}
-        из ${routineScore(it).of} за последнюю неделю.</p>` : ""}
+      <p class="qs" style="margin:-4px 0 16px">${tr("Сделано")} ${routineScore(it).hit}
+        ${tr("из")} ${routineScore(it).of} ${tr("за последнюю неделю.")}</p>` : ""}
 
-    ${hasSteps ? `<p class="lbl">Шаги</p>
+    ${hasSteps ? `<p class="lbl">${tr("Шаги")}</p>
       <div style="margin-bottom:16px">${it.steps.map(s =>
         `<div class="readstep ${s.done ? "done" : ""}">
            <span class="m" style="color:${s.done ? "var(--good)" : "var(--dim)"}">${s.done ? "✓" : "○"}</span>
            <span class="tx">${esc(s.text)}</span></div>`).join("")}</div>` : ""}
 
-    ${it.options && it.options.length ? `<p class="lbl">Варианты</p>
+    ${it.options && it.options.length ? `<p class="lbl">${tr("Варианты")}</p>
       <div style="margin-bottom:16px">${it.options.map(o =>
         `<div class="readstep"><span class="m">·</span><span class="tx">${linkify(o.text)}</span></div>`).join("")}</div>` : ""}
 
-    ${hasNotes(it) ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
+    ${hasNotes(it) ? `<p class="lbl">${isAppt(it) ? tr("Адрес, телефон, заметки") : tr("Заметка")}</p>
       <div class="readnote">${linkify(it.notes)}</div>` : ""}
 
     ${!it.notes && !hasSteps && !rout && !(it.options || []).length
-      ? `<p class="qs" style="margin-bottom:16px">Ни шагов, ни заметок — просто сделано.</p>` : ""}
+      ? `<p class="qs" style="margin-bottom:16px">${tr("Ни шагов, ни заметок — просто сделано.")}</p>` : ""}
 
-    <p class="qs" style="margin:0 0 14px">Здесь только просмотр. Чтобы снова править — верните дело.</p>
+    <p class="qs" style="margin:0 0 14px">${tr("Здесь только просмотр. Чтобы снова править — верните дело.")}</p>
     <div class="row">
-      <button class="btn ghost" data-act="undo" data-id="${it.id}">Вернуть в дела</button>
+      <button class="btn ghost" data-act="undo" data-id="${it.id}">${tr("Вернуть в дела")}</button>
     </div>`, "done:" + id, { act: "close" });
 }
 
@@ -270,19 +270,19 @@ function askSwap(newId) {
   /* Встречу убрать нельзя — она назначена, а не выбрана. */
   const free = mine.filter(m => !isTodayAppt(m));
   const appts = mine.length - free.length;
-  openModal(`<h3>На сегодня уже ${mine.length}</h3>
-    <p class="qs" style="margin:-10px 0 16px">Добавляем «<b>${esc(it.title)}</b>».
-      ${free.length ? "Что уберём, чтобы день остался реальным?"
-        : "Но день занят встречами — их не отложишь."}</p>
-    ${appts ? `<p class="qs" style="margin:-8px 0 12px">Встреч сегодня: ${appts}.
-      Они назначены, поэтому в обмен не идут.</p>` : ""}
+  openModal(`<h3>${tr("На сегодня уже")} ${mine.length}</h3>
+    <p class="qs" style="margin:-10px 0 16px">${tr("Добавляем")} «<b>${esc(it.title)}</b>».
+      ${free.length ? tr("Что уберём, чтобы день остался реальным?")
+        : tr("Но день занят встречами — их не отложишь.")}</p>
+    ${appts ? `<p class="qs" style="margin:-8px 0 12px">${tr("Встреч сегодня:")} ${appts}.
+      ${tr("Они назначены, поэтому в обмен не идут.")}</p>` : ""}
     ${free.map(m => `<button class="swaprow" data-act="swap" data-id="${newId}" data-out="${m.id}">
       <span class="pickmark" style="color:var(--warm)">−</span>
       <span class="picktitle">${esc(m.title)}</span>
       ${sphereTags(m)}</button>`).join("")}
-    <p class="qs" style="margin:12px 0 0">Убранное не пропадёт — вернётся в «Предлагаю».</p>
+    <p class="qs" style="margin:12px 0 0">${tr("Убранное не пропадёт — вернётся в «Предлагаю».")}</p>
     <div class="row">
-      <button class="btn ghost" data-act="swapskip" data-id="${newId}">Всё равно добавить</button>
+      <button class="btn ghost" data-act="swapskip" data-id="${newId}">${tr("Всё равно добавить")}</button>
     </div>`, "swap", { act: "close" });
 }
 
@@ -321,7 +321,7 @@ function exportData() {
   if (typeof Blob === "undefined" || typeof URL === "undefined") return;
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([exportPayload()], { type: "application/json" }));
-  a.download = "организатор-данные-" + today() + ".json";
+  a.download = tr("организатор-данные-") + today() + ".json";
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
@@ -331,7 +331,7 @@ function applyImport(text) {
   let data;
   try { data = JSON.parse(text); } catch (e) { data = null; }
   if (!data || !Array.isArray(data.items))
-    return { error: "Это не файл с данными организатора." };
+    return { error: tr("Это не файл с данными организатора.") };
   return { data, count: data.items.filter(i => i && !i.draft).length };
 }
 
@@ -339,11 +339,11 @@ function importData(text) {
   const r = applyImport(text);
   if (r.error) return alert(r.error);
   const here = S.items.filter(i => !i.draft).length;
-  if (!confirm("Заменить данные в приложении теми, что в файле?\n\nСейчас в приложении "
-      + here + " " + plural(here, "запись", "записи", "записей") + ", в файле "
+  if (!confirm(tr("Заменить данные в приложении теми, что в файле?") + "\n\n" + tr("Сейчас в приложении") + " "
+      + here + " " + plural(here, "запись", "записи", "записей") + ", " + tr("в файле") + " "
       + r.count + " " + plural(r.count, "запись", "записи", "записей") + ".")) return;
   try { localStorage.setItem(KEY, JSON.stringify(r.data)); }
-  catch (e) { return alert("Не получилось сохранить — данные не тронуты."); }
+  catch (e) { return alert(tr("Не получилось сохранить — данные не тронуты.")); }
   if (typeof location !== "undefined" && location.reload) location.reload();
 }
 
@@ -448,16 +448,16 @@ function itemFormHTML(it, ids) {
   /* data-id обязателен: без него перерисовка не знает, какое дело
      открыто, и блок молча не раскрывался.                          */
   const bNotes = `<button class="addtoday" data-act="formopen" data-k="notes"
-    data-id="${it.id}">＋ заметка</button>`;
+    data-id="${it.id}">＋ ${tr("заметка")}</button>`;
   const bOpts = `<button class="addtoday" data-act="formopen" data-k="options"
-    data-id="${it.id}">＋ варианты</button>`;
-  const bSteps = `<button class="addtoday" data-act="emulti" data-id="${it.id}">＋ шаги</button>`;
+    data-id="${it.id}">＋ ${tr("варианты")}</button>`;
+  const bSteps = `<button class="addtoday" data-act="emulti" data-id="${it.id}">＋ ${tr("шаги")}</button>`;
   /* Когда пусто, отдельная плашка «Пока ничего нет» не нужна: поле
      ввода само говорит, что здесь делать.                          */
-  const optsHTML = `<p class="lbl">Варианты</p>
+  const optsHTML = `<p class="lbl">${tr("Варианты")}</p>
       ${(it.options || []).length
         ? `<div>${it.options.map(o => `<div class="opt">· ${esc(o.text)}</div>`).join("")}</div>` : ""}
-      <input type="text" id="newOpt" placeholder="Добавить вариант и нажать Enter"${
+      <input type="text" id="newOpt" placeholder="${tr("Добавить вариант и нажать Enter")}"${
         (it.options || []).length ? ` style="margin-top:10px"` : ""}>`;
   /* Раскрытые блоки идут сверху во всю ширину, свёрнутые — рядом
      пунктирными кнопками.                                          */
@@ -478,43 +478,43 @@ function itemFormHTML(it, ids) {
      последним зияла бы пустая клетка.                               */
   const cell = (label, body, wide) => `<div class="cfgitem${wide ? " wide" : ""}">
       <p class="lbl">${label}</p>${body}</div>`;
-  const kindItem = cell("Вид", ddTypeHTML(it));
+  const kindItem = cell(tr("Вид"), ddTypeHTML(it));
   /* Семь плиток — самый широкий элемент формы. В половине строки они
      сжимались вдвое против того, как выглядят в просмотре.          */
-  const daysItem = days => cell("В какие дни", daysRowHTML(days, it.id), true);
-  const partItem = cell("Часть дня",
+  const daysItem = days => cell(tr("В какие дни"), daysRowHTML(days, it.id), true);
+  const partItem = cell(tr("Часть дня"),
     `<div class="seg">${PARTS.concat([["", "—"]]).map(([k, L]) =>
       `<button data-act="rpart" data-id="${it.id}" data-v="${k}"${
-        k ? "" : ` title="Часть дня не важна"`}
-        class="${(it.partOfDay || "") === k ? "on" : ""}">${L}</button>`).join("")}</div>`, true);
+        k ? "" : ` title="${tr("Часть дня не важна")}"`}
+        class="${(it.partOfDay || "") === k ? "on" : ""}">${k ? tr(L) : L}</button>`).join("")}</div>`, true);
   /* Одна дата или расписание — два ответа на «когда», а не два поля.
      У сессии по вторникам и четвергам одной даты не существует.      */
-  const whenSwitch = cell("Когда",
-    `<div class="seg">${[["once", "Одна дата"], ["days", "По расписанию"]].map(([k, L]) =>
+  const whenSwitch = cell(tr("Когда"),
+    `<div class="seg">${[["once", tr("Одна дата")], ["days", tr("По расписанию")]].map(([k, L]) =>
       `<button data-act="arepeat" data-id="${it.id}" data-v="${k}"
         class="${(it.repeat ? "days" : "once") === k ? "on" : ""}">${L}</button>`).join("")}</div>`);
 
   const cells = kindItem + (
     isRoutine(it)
-      ? cell("Сколько занимает", ddMinsHTML(it))
+      ? cell(tr("Сколько занимает"), ddMinsHTML(it))
         + daysItem(it.routine && it.routine.days) + partItem
     : isAppt(it) || isRemind(it)
       ? whenSwitch + (it.repeat
-          ? cell("Как часто", `<div class="seg">${REPEATS.map(([k, L]) =>
+          ? cell(tr("Как часто"), `<div class="seg">${REPEATS.map(([k, L]) =>
               `<button data-act="rmode" data-id="${it.id}" data-v="${k}"
-                class="${everyOf(it) === k ? "on" : ""}">${L}</button>`).join("")}</div>`, true)
+                class="${everyOf(it) === k ? "on" : ""}">${tr(L)}</button>`).join("")}</div>`, true)
             + (everyOf(it) === "week" ? daysItem(it.repeat.days)
                : everyOf(it) === "year"
-                 ? cell("День", ddNumHTML(it, "rnum", NUMS31, it.repeat.day, v => v, "day"))
-                   + cell("Месяц", ddNumHTML(it, "rmon", MONTHNUMS, it.repeat.month,
+                 ? cell(tr("День"), ddNumHTML(it, "rnum", NUMS31, it.repeat.day, v => v, "day"))
+                   + cell(tr("Месяц"), ddNumHTML(it, "rmon", MONTHNUMS, it.repeat.month,
                        v => MONTHS_NOM[v], "month"))
-                 : cell("Число месяца",
-                     ddNumHTML(it, "rnum", NUMS31, it.repeat.day, v => v + "-го", "day")))
+                 : cell(tr("Число месяца"),
+                     ddNumHTML(it, "rnum", NUMS31, it.repeat.day, dayNum, "day")))
             /* Время занимает строку целиком только там, где иначе рядом
                осталась бы пустая клетка: при выборе числа месяца оно
                встаёт с ним в пару.                                    */
             /* У напоминания времени нет: оно про день, а не про час. */
-            + (isRemind(it) ? "" : cell("Время", ddTimeHTML(it),
+            + (isRemind(it) ? "" : cell(tr("Время"), ddTimeHTML(it),
                 everyOf(it) !== "month" && everyOf(it) !== "quarter"))
           /* Дата, часы и минуты стоят в одну линию — втроём в половину
              строки они не помещаются: кнопка даты сжималась до одной
@@ -526,28 +526,26 @@ function itemFormHTML(it, ids) {
   return `<div class="cfggrid">
       ${cells}
     </div>
-    ${isAppt(it) && it.repeat ? `<p class="qs" style="margin:-8px 0 16px">Повторяется
-      бессрочно, пока не удалите. Каждый раз отмечается отдельно — запись не закрывается.</p>` : ""}
+    ${isAppt(it) && it.repeat ? `<p class="qs" style="margin:-8px 0 16px">${tr("Повторяется бессрочно, пока не удалите. Каждый раз отмечается отдельно — запись не закрывается.")}</p>` : ""}
 
-    <p class="lbl">Сфера
-      <span class="qs" style="text-transform:none;letter-spacing:0;margin-left:8px">можно несколько</span></p>
+    <p class="lbl">${tr("Сфера")}
+      <span class="qs" style="text-transform:none;letter-spacing:0;margin-left:8px">${tr("можно несколько")}</span></p>
     <div class="chips">${S.spheres.map(v =>
       `<button class="chip ${it.spheres.indexOf(v) >= 0 ? "on" : ""}" data-act="esphere"
         data-id="${it.id}" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div>
-    ${(it.spheres || []).length > 1 ? `<div class="dupe">Это по-прежнему <b>одна запись</b>.
-      Она видна во всех выбранных ветках, а отметите сделанной — исчезнет сразу отовсюду.</div>` : ""}
+    ${(it.spheres || []).length > 1 ? `<div class="dupe">${tr("Это по-прежнему")} <b>${tr("одна запись")}</b>.
+      ${tr("Она видна во всех выбранных ветках, а отметите сделанной — исчезнет сразу отовсюду.")}</div>` : ""}
 
     <div class="cfggrid">
-      <div class="cfgitem"><p class="lbl">Место</p>${ddPickHTML(it, "place")}</div>
-      <div class="cfgitem"><p class="lbl">Человек</p>${ddPickHTML(it, "person")}</div>
+      <div class="cfgitem"><p class="lbl">${tr("Место")}</p>${ddPickHTML(it, "place")}</div>
+      <div class="cfgitem"><p class="lbl">${tr("Человек")}</p>${ddPickHTML(it, "person")}</div>
     </div>
 
-    ${isRoutine(it) || isIdea(it) || isRemind(it) ? "" : `<p class="lbl">Важность</p>
-      <div class="chips">${[["imp", "важное"], ["not", "неважное"]].map(([k, L]) =>
+    ${isRoutine(it) || isIdea(it) || isRemind(it) ? "" : `<p class="lbl">${tr("Важность")}</p>
+      <div class="chips">${[["imp", tr("важное")], ["not", tr("неважное")]].map(([k, L]) =>
         `<button class="chip ${(isImportant(it) ? "imp" : "not") === k ? "on" : ""}"
           data-act="equad" data-id="${it.id}" data-q="${k}">${L}</button>`).join("")}</div>
-      <p class="qs" style="margin:-6px 0 4px">Срочность сюда не входит —
-        она считается из дедлайна.</p>`}
+      <p class="qs" style="margin:-6px 0 4px">${tr("Срочность сюда не входит — она считается из дедлайна.")}</p>`}
 
     ${extra}`;
 }
@@ -577,20 +575,20 @@ function drawCapture() {
     list.map(v => `<button class="chip ${cur(v) ? "on" : ""}" data-act="${act}"
       data-id="${it.id}" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div>`;
 
-  openModal(`<h3>Новое дело</h3>
-    <input type="text" id="capText" placeholder="Что нужно сделать?"
+  openModal(`<h3>${tr("Новое дело")}</h3>
+    <input type="text" id="capText" placeholder="${tr("Что нужно сделать?")}"
       autocomplete="off" value="${esc(it.title)}">
     <div id="capDupe"></div>
 
     ${itemFormHTML(it, { date: "capDate", time: "capTime", notes: "capNotes" })}
 
     <div class="row modalfoot">
-      <button class="btn primary" data-act="capsave">Добавить</button>
+      <button class="btn primary" data-act="capsave">${tr("Добавить")}</button>
       ${isRoutine(it) || isAppt(it) || isIdea(it) ? ""
-        : `<button class="btn soft" data-act="capsavetake">добавить и взять</button>`}
+        : `<button class="btn soft" data-act="capsavetake">${tr("добавить и взять")}</button>`}
       <div class="spacer"></div>
-      <button class="btn link" data-act="capcancel">Отмена</button>
-    </div>`, "capture", { act: "capcancel", title: "Отменить и закрыть" });
+      <button class="btn link" data-act="capcancel">${tr("Отмена")}</button>
+    </div>`, "capture", { act: "capcancel", title: tr("Отменить и закрыть") });
 
   const inp = document.getElementById("capText");
   if (inp && inp.addEventListener) {
@@ -599,9 +597,9 @@ function drawCapture() {
       const d = findDupes(inp.value, it.id);
       const box = document.getElementById("capDupe");
       if (box) box.innerHTML = d.length
-        ? `<div class="dupe"><b>Похоже, это уже есть:</b><br>${d.map(x =>
-            `«${esc(x.title)}»${(x.spheres || []).length ? " — " + esc(x.spheres.join(", ")) : ""}, записано ${esc(x.created)}`).join("<br>")}
-           <br><span style="opacity:.75">Если это другое дело — просто добавляйте.</span></div>`
+        ? `<div class="dupe"><b>${tr("Похоже, это уже есть:")}</b><br>${d.map(x =>
+            `«${esc(x.title)}»${(x.spheres || []).length ? " — " + esc(x.spheres.join(", ")) : ""}, ${tr("записано")} ${esc(x.created)}`).join("<br>")}
+           <br><span style="opacity:.75">${tr("Если это другое дело — просто добавляйте.")}</span></div>`
         : "";
     });
     inp.addEventListener("keydown", e => { if (e.key === "Enter") saveCapture(); });
@@ -644,13 +642,13 @@ function cancelCapture() {
 /* ── Разобрать: всё, что записано без ветки ──────────────────────── */
 function openInbox() {
   const inb = here().filter(inInbox);
-  openModal(`<h3>Разобрать · ${inb.length}</h3>
-    <p class="sub">Записать сразу, разложить потом — так мысли не теряются.</p>
+  openModal(`<h3>${tr("Разобрать")} · ${inb.length}</h3>
+    <p class="sub">${tr("Записать сразу, разложить потом — так мысли не теряются.")}</p>
     ${inb.map(i => `<div class="card" style="box-shadow:none">
       <div class="title">${esc(i.title)}</div>
       <div class="chips" style="margin-top:10px">${S.spheres.map(sp =>
         `<button class="chip" data-act="assign" data-id="${i.id}" data-v="${esc(sp)}">${esc(sp)}</button>`).join("")}</div>
-    </div>`).join("") || `<div class="empty">Пусто — всё разобрано.</div>`}
+    </div>`).join("") || `<div class="empty">${tr("Пусто — всё разобрано.")}</div>`}
     `, "inbox", { act: "close" });
 }
 
@@ -666,10 +664,10 @@ function quadPickHTML(it) {
   const cur = isImportant(it) ? "imp" : "not";
   const opt = (k, label) => `<button class="chip ${cur === k ? "on" : ""}" data-act="equad"
     data-id="${it.id}" data-q="${k}">${label}</button>`;
-  return `<p class="lbl">Важность</p>
-    <div class="chips">${opt("imp", "важное")}${opt("not", "неважное")}</div>
-    <p class="qs" style="margin:-8px 0 12px">Это ваше решение и ничьё больше.
-      Срочность сюда не входит — она считается из дедлайна.</p>`;
+  return `<p class="lbl">${tr("Важность")}</p>
+    <div class="chips">${opt("imp", tr("важное"))}${opt("not", tr("неважное"))}</div>
+    <p class="qs" style="margin:-8px 0 12px">${tr("Это ваше решение и ничьё больше.")}
+      ${tr("Срочность сюда не входит — она считается из дедлайна.")}</p>`;
 }
 
 /* ── Когда: дедлайн, дата выбора или точные дата и время ────────────
@@ -685,20 +683,18 @@ const minDate = it => (it.due && it.due < today()) ? it.due : today();
 
 function whenFieldsHTML(it, dateId, timeId) {
   if (isRoutine(it)) return "";
-  if (isIdea(it)) return `<p class="qs" style="margin:24px 0 0">Идея ничего не требует
-    и сама в «Сегодня» не просится. Захотите взяться — смените вид.</p>`;
-  if (isRemind(it)) return `<p class="lbl">Когда</p>${ddDueHTML(it)}
-    <p class="qs" style="margin:8px 0 0">Напоминание ничего не требует: придёт
-      в свой день и просто скажет.</p>`;
-  if (isAppt(it)) return `<p class="lbl">Дата и время</p>
+  if (isIdea(it)) return `<p class="qs" style="margin:24px 0 0">${tr("Идея ничего не требует и сама в «Сегодня» не просится. Захотите взяться — смените вид.")}</p>`;
+  if (isRemind(it)) return `<p class="lbl">${tr("Когда")}</p>${ddDueHTML(it)}
+    <p class="qs" style="margin:8px 0 0">${tr("Напоминание ничего не требует: придёт в свой день и просто скажет.")}</p>`;
+  if (isAppt(it)) return `<p class="lbl">${tr("Дата и время")}</p>
     <div style="display:flex;gap:8px;align-items:center">
       <div style="flex:1;min-width:0">${ddDueHTML(it)}</div>
       ${ddTimeHTML(it)}
     </div>
     <p class="qs" style="margin:8px 0 0">${it.due === today()
-      ? "Встреча сегодня — поэтому она стоит в дне и убрать её оттуда нельзя. Смените дату, и она уйдёт сама."
-      : "Время видно в списках: «завтра в 14:30»."}</p>`;
-  return `<p class="lbl">Дедлайн</p>${ddDueHTML(it)}`;
+      ? tr("Встреча сегодня — поэтому она стоит в дне и убрать её оттуда нельзя. Смените дату, и она уйдёт сама.")
+      : tr("Время видно в списках: «завтра в 14:30».")}</p>`;
+  return `<p class="lbl">${tr("Дедлайн")}</p>${ddDueHTML(it)}`;
 }
 
 function wireWhen(id, dateId, timeId, after) {
@@ -717,11 +713,11 @@ function wireWhen(id, dateId, timeId, after) {
    Пишется сразу, без перерисовки, чтобы не терялся курсор.          */
 function notesBlockHTML(it, id) {
   return `<p class="lbl">${isAppt(it)
-    ? "Адрес, телефон, что взять с собой"
-    : "Заметки"}</p>
+    ? tr("Адрес, телефон, что взять с собой")
+    : tr("Заметки")}</p>
     <textarea class="notebox" id="${id}" placeholder="${isAppt(it)
-      ? "Кайзерсграхт 12, 2 этаж · +31 20 123 45 67 · взять страховку"
-      : "Что угодно, что пригодится"}">${esc(it.notes || "")}</textarea>`;
+      ? tr("улица Садовая 12, 2 этаж · +7 900 123 45 67 · взять страховку")
+      : tr("Что угодно, что пригодится")}">${esc(it.notes || "")}</textarea>`;
 }
 
 function wireNotes(itemId, fieldId) {
@@ -742,10 +738,10 @@ function wireNotes(itemId, fieldId) {
 function stepsBlockHTML(it) {
   if (isRoutine(it) || !it.multi) return "";
   const doneN = it.steps.filter(s => s.done).length;
-  return `<p class="lbl">Шаги${it.steps.length
-    ? ` · закрыто ${doneN} из ${it.steps.length}` : ""}
+  return `<p class="lbl">${tr("Шаги")}${it.steps.length
+    ? ` · ${tr("закрыто")} ${doneN} ${tr("из")} ${it.steps.length}` : ""}
       <button class="linkbtn" data-act="emulti" data-id="${it.id}"
-        title="Вернуть дело к одному действию">убрать шаги</button></p>
+        title="${tr("Вернуть дело к одному действию")}">${tr("убрать шаги")}</button></p>
     ${true ? `<div class="steps">${it.steps.map((s, i) => {
       const editing = EDITSTEP === it.id + ":" + i;
       return `<div class="step ${s.done ? "done" : ""} ${editing ? "editing" : ""}"${
@@ -757,13 +753,13 @@ function stepsBlockHTML(it) {
           ? `<input type="text" class="stepedit" id="stepEdit" value="${esc(s.text)}"
                autocomplete="off">`
           : `<span class="steptext" data-act="editstep" data-id="${it.id}" data-i="${i}"
-               title="Нажмите, чтобы поправить">${esc(s.text)}</span>`}
+               title="${tr("Нажмите, чтобы поправить")}">${esc(s.text)}</span>`}
         ${editing ? "" : `<button class="linkbtn danger" data-act="delstep"
-          data-id="${it.id}" data-i="${i}">убрать</button>`}
+          data-id="${it.id}" data-i="${i}">${tr("убрать")}</button>`}
       </div>`; }).join("")}</div>
-      <input type="text" id="newStep" placeholder="Добавить шаг и нажать Enter"
-        title="В списках виден только следующий незакрытый шаг${it.steps.length > 1
-          ? ". Порядок меняется перетаскиванием" : ""}">` : ""}`;
+      <input type="text" id="newStep" placeholder="${tr("Добавить шаг и нажать Enter")}"
+        title="${tr("В списках виден только следующий незакрытый шаг")}${it.steps.length > 1
+          ? ". " + tr("Порядок меняется перетаскиванием") : ""}">` : ""}`;
 }
 
 /* Записать поправленный шаг. Пустой текст не принимаем — для удаления
@@ -814,11 +810,11 @@ function openItem(id) {
      заранее — если их нет, разделитель не рисуем вовсе, иначе окно
      показывало две линии подряд с пустотой между ними.              */
   const details =
-    (it.multi && (it.steps || []).length ? `<p class="lbl">Шаги · сделано ${doneSteps} из ${it.steps.length}</p>
+    (it.multi && (it.steps || []).length ? `<p class="lbl">${tr("Шаги")} · ${tr("сделано")} ${doneSteps} ${tr("из")} ${it.steps.length}</p>
       <div class="readsteps">${it.steps.map((st, k) => `<div class="readstep ${
         st.done ? "done" : ""}"><span class="stepnum">${k + 1}</span><span class="tx">${
         esc(st.text)}</span></div>`).join("")}</div>` : "")
-    + ((isChoice(it) || isIdea(it)) && (it.options || []).length ? `<p class="lbl">Варианты</p>
+    + ((isChoice(it) || isIdea(it)) && (it.options || []).length ? `<p class="lbl">${tr("Варианты")}</p>
       <div>${it.options.map(o => `<div class="opt">· ${linkify(o.text)}</div>`).join("")}</div>` : "")
     /* У встречи по расписанию нет ни доли, ни тепловой карты: пропуск
        встречи — не статистика, а отдельное событие. Достаточно дней,
@@ -827,53 +823,53 @@ function openItem(id) {
       const hist = (it.repeat.history || []).slice().sort();
       const last = hist[hist.length - 1];
       const n = hist.length;
-      return `${everyOf(it) === "week" ? `<p class="lbl">В какие дни</p>
+      return `${everyOf(it) === "week" ? `<p class="lbl">${tr("В какие дни")}</p>
       ${daysRowHTML(it.repeat.days)}` : ""}
       <p class="qs" style="margin:11px 0 0">${n
-        ? `Состоялась ${n} ${plural(n, "раз", "раза", "раз")}, последний раз — ${formatDay(last)}`
-        : "Пока не состоялась ни разу"}. Повторяется бессрочно, пока не удалите.</p>`; })() : "")
+        ? `${tr("Состоялась")} ${n} ${plural(n, "раз", "раза", "раз")}, ${tr("последний раз —")} ${formatDay(last)}`
+        : tr("Пока не состоялась ни разу")}. ${tr("Повторяется бессрочно, пока не удалите.")}</p>`; })() : "")
     + (isRoutine(it) && it.routine ? (() => { const wi = weekInfo(it), mo = monthInfo(it);
-      const over = n => n ? ` · +${n} сверх расписания` : "";
-      return `<p class="lbl">В какие дни</p>
+      const over = n => n ? ` · +${n} ${tr("сверх расписания")}` : "";
+      return `<p class="lbl">${tr("В какие дни")}</p>
       ${daysRowHTML(it.routine.days)}
       ${it.partOfDay || it.mins ? `<p class="qs" style="margin:11px 0 0">${
         [partName(it.partOfDay), minsLabel(it.mins)].filter(Boolean).join(" · ")}</p>` : ""}
-      <p class="qs" style="margin:12px 0 4px">На этой неделе: <b style="color:var(--good)">${
-        wi.hit} из ${wi.of}</b> уже сделано${over(wi.extra)}</p>
+      <p class="qs" style="margin:12px 0 4px">${tr("На этой неделе:")} <b style="color:var(--good)">${
+        wi.hit} ${tr("из")} ${wi.of}</b> ${tr("уже сделано")}${over(wi.extra)}</p>
       ${weekDotsHTML(it)}
-      <p class="qs" style="margin:15px 0 6px">За 4 недели: <b style="color:var(--good)">${
-        mo.hit} из ${mo.of}</b>${over(mo.extra)}</p>
+      <p class="qs" style="margin:15px 0 6px">${tr("За 4 недели:")} <b style="color:var(--good)">${
+        mo.hit} ${tr("из")} ${mo.of}</b>${over(mo.extra)}</p>
       ${heatHTML(mo)}`; })() : "")
     /* Класс .readnote, а не .opt: у вариантов есть верхняя граница,
        и она рисовала лишнюю линию под заголовком «Заметка».        */
-    + (hasNotes(it) ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
+    + (hasNotes(it) ? `<p class="lbl">${isAppt(it) ? tr("Адрес, телефон, заметки") : tr("Заметка")}</p>
       <div class="readnote">${linkify(it.notes)}</div>` : "");
 
   openModal(`<h3>${kindIcon(it)}${esc(it.title)}</h3>
     <div class="readmeta" style="margin-top:-4px">
       ${sphereTags(it)}
-      ${inInbox(it) && !isIdea(it) ? `<span class="tag place">без категории</span>` : ""}
+      ${inInbox(it) && !isIdea(it) ? `<span class="tag place">${tr("без категории")}</span>` : ""}
       ${it.place ? placeTag(it.place) : ""}
-      ${it.person && it.person !== "Я" ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(it.person)}</span>` : ""}
+      ${it.person && !isSelf(it.person) ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(it.person)}</span>` : ""}
       ${dateLabel(it) && !isRoutine(it) ? `<span class="tag when">${sandFor(it)}${dateLabel(it)}</span>` : ""}
       ${!isRoutine(it) && !isIdea(it) && !isRemind(it)
-        ? `<span class="tag quadtag" title="Клетка матрицы: срочность из дедлайна, важность — ваша">${
-          esc(QUADS[quadrant(it)])}</span>` : ""}
+        ? `<span class="tag quadtag" title="${tr("Клетка матрицы: срочность из дедлайна, важность — ваша")}">${
+          esc(tr(QUADS[quadrant(it)]))}</span>` : ""}
     </div>
     ${details ? `<div class="sep"></div>${details}` : ""}
 
     <div class="row modalfoot">
-      <button class="btn link" data-act="edit" data-id="${it.id}">Редактировать</button>
+      <button class="btn link" data-act="edit" data-id="${it.id}">${tr("Редактировать")}</button>
       <div class="spacer"></div>
       ${isRoutine(it) || isAppt(it) || isIdea(it) || isRemind(it) ? "" : `<button class="btn ${
         it.working ? "link" : "primary"}" data-act="work" data-id="${it.id}">${
-        it.working ? "Отложить" : "Взяться"}</button>
+        it.working ? tr("Отложить") : tr("Взяться")}</button>
       ${/* У дела в работе «убрать из сегодня» нет: для этого есть
             «Отложить», которое и снимает признак, и уносит из дня. */
         it.working ? "" : `<button class="btn ${
         pickedToday(it) ? "link" : "primary"}" data-act="pin" data-id="${it.id}">${
-        pickedToday(it) ? "Убрать из сегодня" : "Сделать сегодня"}</button>`}`}
-    </div>`, "view:" + it.id, { act: "close", title: "Закрыть" });
+        pickedToday(it) ? tr("Убрать из сегодня") : tr("Сделать сегодня")}</button>`}`}
+    </div>`, "view:" + it.id, { act: "close", title: tr("Закрыть") });
 }
 
 function openEdit(id) {
@@ -890,10 +886,10 @@ function openEdit(id) {
     ${itemFormHTML(it, { date: "edDate", time: "edTime", notes: "edNotes" })}
 
     <div class="row modalfoot">
-      <button class="btn primary" data-act="esave" data-id="${it.id}">Готово</button>
+      <button class="btn primary" data-act="esave" data-id="${it.id}">${tr("Готово")}</button>
       <div class="spacer"></div>
-      <button class="btn outline danger" data-act="del" data-id="${it.id}">Удалить</button>
-    </div>`, "item:" + it.id, { act: "ecancel", id: it.id, title: "Отменить правки и закрыть" });
+      <button class="btn outline danger" data-act="del" data-id="${it.id}">${tr("Удалить")}</button>
+    </div>`, "item:" + it.id, { act: "ecancel", id: it.id, title: tr("Отменить правки и закрыть") });
 
   wireStepsInput(id);
   wireNotes(id, "edNotes");

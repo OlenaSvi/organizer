@@ -16,7 +16,20 @@
    котором приложение открыли впервые.                               */
 let CURLANG = "ru";
 const setLang = () => { CURLANG = (S && S.cfg && S.cfg.lang === "en") ? "en" : "ru"; };
-const tr = s => (CURLANG === "en" && EN[s] !== undefined) ? EN[s] : s;
+/* Второй довод — уточнение: одно и то же русское слово в разных местах
+   по-английски звучит по-разному. «без срока» в списке выбора — «no
+   deadline», а в итоге дня — «with no deadline». Уточнение ищется
+   первым, потом обычный ключ.                                      */
+const tr = (s, ctx) => {
+  if (CURLANG !== "en") return s;
+  if (ctx && EN[ctx + "|" + s] !== undefined) return EN[ctx + "|" + s];
+  return EN[s] !== undefined ? EN[s] : s;
+};
+/* Число месяца словами: «5-го» и «5th». Английские окончания зависят
+   от последней цифры, кроме подростковых чисел: 11th, 12th, 13th.  */
+const dayNum = n => CURLANG !== "en" ? n + "-го"
+  : n + (n % 100 >= 11 && n % 100 <= 13 ? "th"
+       : n % 10 === 1 ? "st" : n % 10 === 2 ? "nd" : n % 10 === 3 ? "rd" : "th");
 
 /* Множественное число: в русском три формы, в английском две.
    Ключ — русские формы через палку, значение — английская пара.    */
@@ -31,6 +44,8 @@ const PL_EN = {
   "встреча|встречи|встреч": ["appointment", "appointments"],
   "дело ждёт|дела ждут|дел ждут": ["task waiting", "tasks waiting"],
   "запись|записи|записей":  ["entry", "entries"],
+  "привязано|привязаны|привязаны": ["is tied", "are tied"],
+  "раз|раза|раз":           ["time", "times"],
   "вернётся|вернутся|вернутся": ["comes back", "come back"],
   "ждёт|ждут|ждут":         ["is waiting", "are waiting"],
   "молчит|молчат|молчат":   ["is quiet", "are quiet"],
@@ -84,7 +99,7 @@ const EN = {
   /* ── предложения и итог дня ────────────────────────────────── */
   "не успели": "didn't get to it", "давно ждёт": "waiting a while",
   "уже в дне": "already in today", "своего срока": "for their date",
-  "без срока": "with no deadline", "в других местах": "in other places",
+  "итог|без срока": "with no deadline", "в других местах": "in other places",
   "живых дел нет. Новые появятся здесь сами":
     "no live tasks. New ones will show up here on their own",
 
@@ -148,8 +163,8 @@ const EN = {
   /* ── даты ──────────────────────────────────────────────────── */
   /* Решётка — место числа: в английском порядок слов свой.       */
   "каждый год": "every year",
-  "#-го каждый месяц": "the #th, every month",
-  "#-го раз в квартал": "the #th, every quarter",
+  "# каждый месяц": "every month on the #",
+  "# раз в квартал": "every quarter on the #",
   "по": "on", "через #": "in #", "# назад": "# ago",
   "когда-то раньше": "some time ago",
 
@@ -191,6 +206,146 @@ const EN = {
     "This is where your whole life sits — and it is exactly what keeps losing to urgent nonsense. That's why one task from here is suggested every day",
   "Несрочное неважное": "Not urgent, not important",
   "Пусть лежит. Ничего страшного не происходит": "Let it sit. Nothing bad is happening",
+
+  /* ── карта ─────────────────────────────────────────────────── */
+  "Карта": "Map", "по сферам": "by area", "по местам": "by place",
+  "по людям": "by person", "по «что это»": "by kind", "без места": "no place",
+  "Здесь ничего не теряется. Раскрытые ветки такими и остаются — можно раскрыть все сразу и увидеть картину целиком.":
+    "Nothing gets lost here. Branches you open stay open — you can open them all and see the whole picture.",
+  "раскрыть все": "open all", "свернуть все": "close all",
+  "Отдалить": "Zoom out", "Приблизить": "Zoom in", "Показать всё": "Show everything",
+  "уместить": "fit", "Вернуть карту в страницу": "Put the map back in the page",
+  "Отдать карте всё окно": "Give the map the whole window",
+  "свернуть": "exit full screen", "во весь экран": "full screen",
+  "Ветка": "Branch", "Создать дело в этой ветке": "Create a task in this branch",
+  "Одна запись, видна в каждой своей ветке": "One task, shown in each of its branches",
+  "в дне": "in today",
+  "Сначала впишите название": "Type a name first",
+  "переименовать": "rename", "Готово": "Done",
+  "Изменения сохранены": "Changes saved",
+  "Такая сфера уже есть.": "That area already exists.",
+  "Убрать сферу": "Remove the area", "Убрать место": "Remove the place",
+  "Убрать": "Remove", "из списка людей?": "from the list of people?",
+  "дел останутся на месте, но потеряют эту метку.":
+    "tasks stay where they are but lose this label.",
+  "Из них": "Of those", "попадут в «Разобрать» — других сфер у них нет.":
+    "will move to “Sort out” — they have no other area.",
+  "Такое место уже есть.": "That place already exists.",
+  "дел останутся на месте, но потеряют привязку и снова будут видны отовсюду.":
+    "tasks stay where they are but lose their place and become visible everywhere again.",
+  "Такой человек уже есть.": "That person is already on the list.",
+  "дел останутся, но перестанут быть привязаны к человеку.":
+    "tasks stay but are no longer tied to a person.",
+  "Так называется пустая ветка на карте. Выберите другое название.":
+    "That is what the empty branch on the map is called. Please pick another name.",
+
+  /* ── похвала, места, повторы, части дня ────────────────────── */
+  "Сделано!": "Done!", "Одним меньше": "One less",
+  "Хорошо пошло": "That went well",
+  "Это было в списке — и вот его нет": "It was on the list — and now it isn't",
+  "Полетело": "Off it goes",
+  "первое за сегодня": "the first one today", "за сегодня": "today",
+  "Удалить": "Delete",
+  "Показано доступное из": "Showing what you can do from", "ещё": "another",
+  "к другим местам и": "to other places and", "вас там": "for you there",
+  "мин": "min",
+  "по дням недели": "on days of the week", "каждый месяц": "every month",
+  "раз в квартал": "every quarter",
+  "Утро": "Morning", "День": "Daytime", "Вечер": "Evening", "Любое": "Any time",
+
+  /* ── окна: поля и выпадающие списки ────────────────────────── */
+  "со временем": "with a time", "без времени": "no time set",
+  "час": "hour", "выбрать": "choose", "не важно": "doesn't matter",
+  "без места": "no place", "без человека": "nobody",
+  "Новое место": "New place", "Имя": "Name", "добавить": "add",
+  "место": "a place", "человека": "a person",
+  "без срока": "no deadline", "через неделю": "in a week",
+  "сегодня — в кольце · выбранное — залито": "today is ringed · your pick is filled in",
+  "Закрыть": "Close",
+
+  /* ── просмотр сделанного, обмен местами в дне ──────────────── */
+  "Отмечено": "Ticked off", "Сделано": "Done",
+  "дедлайн был": "deadline was", "В какие дни": "On which days",
+  "за последнюю неделю.": "over the past week.",
+  "Шаги": "Steps", "Варианты": "Options",
+  "Адрес, телефон, заметки": "Address, phone, notes", "Заметка": "Note",
+  "Ни шагов, ни заметок — просто сделано.": "No steps, no notes — just done.",
+  "Здесь только просмотр. Чтобы снова править — верните дело.":
+    "This is read-only. To edit it again, put the task back.",
+  "Вернуть в дела": "Put back into tasks",
+  "На сегодня уже": "Today already has", "Добавляем": "Adding",
+  "Что уберём, чтобы день остался реальным?": "What comes out, so the day stays realistic?",
+  "Но день занят встречами — их не отложишь.": "But the day is full of appointments — those can't be moved.",
+  "Встреч сегодня:": "Appointments today:",
+  "Они назначены, поэтому в обмен не идут.": "They are scheduled, so they can't be swapped out.",
+  "Убранное не пропадёт — вернётся в «Предлагаю».": "What you take out isn't lost — it goes back to “Suggested”.",
+  "Всё равно добавить": "Add it anyway",
+
+  /* ── файл с данными, кнопки формы ──────────────────────────── */
+  "организатор-данные-": "organizer-data-",
+  "Это не файл с данными организатора.": "This is not an organizer data file.",
+  "Заменить данные в приложении теми, что в файле?": "Replace the data in the app with what is in the file?",
+  "Сейчас в приложении": "The app now holds", "в файле": "the file holds",
+  "Не получилось сохранить — данные не тронуты.": "Couldn't save — your data is untouched.",
+  "заметка": "note", "варианты": "options", "шаги": "steps",
+  "Добавить вариант и нажать Enter": "Add an option and press Enter",
+
+  /* ── форма дела ────────────────────────────────────────────── */
+  "Вид": "Kind", "Часть дня": "Part of day", "Часть дня не важна": "Part of day doesn't matter",
+  "Когда": "When", "Одна дата": "One date", "По расписанию": "On a schedule",
+  "Сколько занимает": "How long it takes", "Как часто": "How often",
+  "День": "Day", "Месяц": "Month", "Число месяца": "Day of the month", "Время": "Time",
+  "Повторяется бессрочно, пока не удалите. Каждый раз отмечается отдельно — запись не закрывается.":
+    "Repeats indefinitely until you delete it. Each occurrence is ticked off on its own — the entry stays open.",
+  "Сфера": "Area", "можно несколько": "more than one is fine",
+  "Это по-прежнему": "This is still", "одна запись": "one entry",
+  "Она видна во всех выбранных ветках, а отметите сделанной — исчезнет сразу отовсюду.":
+    "It shows in every branch you picked, and ticking it off removes it from all of them at once.",
+  "Место": "Place", "Человек": "Person", "Важность": "Importance",
+  "Срочность сюда не входит — она считается из дедлайна.":
+    "Urgency isn't part of this — it is worked out from the deadline.",
+
+  /* ── создание дела, «Разобрать», поле «когда» ──────────────── */
+  "Новое дело": "New task", "Что нужно сделать?": "What needs doing?",
+  "добавить и взять": "add and take it on", "Отменить и закрыть": "Cancel and close",
+  "Похоже, это уже есть:": "Looks like you already have this:",
+  "записано": "written down", "Если это другое дело — просто добавляйте.":
+    "If it's a different task — just add it.",
+  "Записать сразу, разложить потом — так мысли не теряются.":
+    "Write it down now, sort it later — that way nothing slips away.",
+  "Пусто — всё разобрано.": "Empty — everything is sorted.",
+  "Это ваше решение и ничьё больше.": "This is your call and nobody else's.",
+  "Идея ничего не требует и сама в «Сегодня» не просится. Захотите взяться — смените вид.":
+    "An idea asks nothing of you and never puts itself into Today. When you want to take it on, change its kind.",
+  "Напоминание ничего не требует: придёт в свой день и просто скажет.":
+    "A reminder asks nothing of you: it turns up on its day and simply tells you.",
+  "Дата и время": "Date and time", "Дедлайн": "Deadline",
+  "Встреча сегодня — поэтому она стоит в дне и убрать её оттуда нельзя. Смените дату, и она уйдёт сама.":
+    "The appointment is today — that's why it sits in the day and can't be taken out. Change the date and it leaves on its own.",
+  "Время видно в списках: «завтра в 14:30».": "The time shows in lists: “tomorrow at 14:30”.",
+
+  /* ── шаги, заметки, окно дела ──────────────────────────────── */
+  "закрыто": "closed", "Вернуть дело к одному действию": "Turn it back into a single action",
+  "убрать шаги": "remove steps", "Нажмите, чтобы поправить": "Click to edit",
+  "убрать": "remove", "Добавить шаг и нажать Enter": "Add a step and press Enter",
+  "В списках виден только следующий незакрытый шаг": "Lists show only the next open step",
+  "Порядок меняется перетаскиванием": "Drag to reorder",
+  "Адрес, телефон, что взять с собой": "Address, phone, what to bring",
+  "Заметки": "Notes",
+  "улица Садовая 12, 2 этаж · +7 900 123 45 67 · взять страховку":
+    "12 Garden Street, 2nd floor · +1 555 123 4567 · bring the insurance card",
+  "Что угодно, что пригодится": "Anything that will come in handy",
+  "Состоялась": "Happened", "последний раз —": "last time —",
+  "Пока не состоялась ни разу": "Hasn't happened yet",
+  "Повторяется бессрочно, пока не удалите.": "Repeats indefinitely until you delete it.",
+  "сверх расписания": "off schedule",
+  "На этой неделе:": "This week:", "уже сделано": "done already",
+  "За 4 недели:": "Over 4 weeks:",
+  "Клетка матрицы: срочность из дедлайна, важность — ваша":
+    "Matrix cell: urgency comes from the deadline, importance is yours",
+  "Редактировать": "Edit", "Отложить": "Put it aside", "Взяться": "Take it on",
+  "Убрать из сегодня": "Take out of today", "Сделать сегодня": "Do it today",
+  "Удалить": "Delete", "Отменить правки и закрыть": "Discard changes and close",
 
   /* ── справочники ───────────────────────────────────────────── */
   "Сферы": "Areas", "Места": "Places", "Люди": "People",

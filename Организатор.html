@@ -970,7 +970,20 @@ button.ddday:hover{background:var(--bg)}
    котором приложение открыли впервые.                               */
 let CURLANG = "ru";
 const setLang = () => { CURLANG = (S && S.cfg && S.cfg.lang === "en") ? "en" : "ru"; };
-const tr = s => (CURLANG === "en" && EN[s] !== undefined) ? EN[s] : s;
+/* Второй довод — уточнение: одно и то же русское слово в разных местах
+   по-английски звучит по-разному. «без срока» в списке выбора — «no
+   deadline», а в итоге дня — «with no deadline». Уточнение ищется
+   первым, потом обычный ключ.                                      */
+const tr = (s, ctx) => {
+  if (CURLANG !== "en") return s;
+  if (ctx && EN[ctx + "|" + s] !== undefined) return EN[ctx + "|" + s];
+  return EN[s] !== undefined ? EN[s] : s;
+};
+/* Число месяца словами: «5-го» и «5th». Английские окончания зависят
+   от последней цифры, кроме подростковых чисел: 11th, 12th, 13th.  */
+const dayNum = n => CURLANG !== "en" ? n + "-го"
+  : n + (n % 100 >= 11 && n % 100 <= 13 ? "th"
+       : n % 10 === 1 ? "st" : n % 10 === 2 ? "nd" : n % 10 === 3 ? "rd" : "th");
 
 /* Множественное число: в русском три формы, в английском две.
    Ключ — русские формы через палку, значение — английская пара.    */
@@ -985,6 +998,8 @@ const PL_EN = {
   "встреча|встречи|встреч": ["appointment", "appointments"],
   "дело ждёт|дела ждут|дел ждут": ["task waiting", "tasks waiting"],
   "запись|записи|записей":  ["entry", "entries"],
+  "привязано|привязаны|привязаны": ["is tied", "are tied"],
+  "раз|раза|раз":           ["time", "times"],
   "вернётся|вернутся|вернутся": ["comes back", "come back"],
   "ждёт|ждут|ждут":         ["is waiting", "are waiting"],
   "молчит|молчат|молчат":   ["is quiet", "are quiet"],
@@ -1038,7 +1053,7 @@ const EN = {
   /* ── предложения и итог дня ────────────────────────────────── */
   "не успели": "didn't get to it", "давно ждёт": "waiting a while",
   "уже в дне": "already in today", "своего срока": "for their date",
-  "без срока": "with no deadline", "в других местах": "in other places",
+  "итог|без срока": "with no deadline", "в других местах": "in other places",
   "живых дел нет. Новые появятся здесь сами":
     "no live tasks. New ones will show up here on their own",
 
@@ -1102,8 +1117,8 @@ const EN = {
   /* ── даты ──────────────────────────────────────────────────── */
   /* Решётка — место числа: в английском порядок слов свой.       */
   "каждый год": "every year",
-  "#-го каждый месяц": "the #th, every month",
-  "#-го раз в квартал": "the #th, every quarter",
+  "# каждый месяц": "every month on the #",
+  "# раз в квартал": "every quarter on the #",
   "по": "on", "через #": "in #", "# назад": "# ago",
   "когда-то раньше": "some time ago",
 
@@ -1145,6 +1160,146 @@ const EN = {
     "This is where your whole life sits — and it is exactly what keeps losing to urgent nonsense. That's why one task from here is suggested every day",
   "Несрочное неважное": "Not urgent, not important",
   "Пусть лежит. Ничего страшного не происходит": "Let it sit. Nothing bad is happening",
+
+  /* ── карта ─────────────────────────────────────────────────── */
+  "Карта": "Map", "по сферам": "by area", "по местам": "by place",
+  "по людям": "by person", "по «что это»": "by kind", "без места": "no place",
+  "Здесь ничего не теряется. Раскрытые ветки такими и остаются — можно раскрыть все сразу и увидеть картину целиком.":
+    "Nothing gets lost here. Branches you open stay open — you can open them all and see the whole picture.",
+  "раскрыть все": "open all", "свернуть все": "close all",
+  "Отдалить": "Zoom out", "Приблизить": "Zoom in", "Показать всё": "Show everything",
+  "уместить": "fit", "Вернуть карту в страницу": "Put the map back in the page",
+  "Отдать карте всё окно": "Give the map the whole window",
+  "свернуть": "exit full screen", "во весь экран": "full screen",
+  "Ветка": "Branch", "Создать дело в этой ветке": "Create a task in this branch",
+  "Одна запись, видна в каждой своей ветке": "One task, shown in each of its branches",
+  "в дне": "in today",
+  "Сначала впишите название": "Type a name first",
+  "переименовать": "rename", "Готово": "Done",
+  "Изменения сохранены": "Changes saved",
+  "Такая сфера уже есть.": "That area already exists.",
+  "Убрать сферу": "Remove the area", "Убрать место": "Remove the place",
+  "Убрать": "Remove", "из списка людей?": "from the list of people?",
+  "дел останутся на месте, но потеряют эту метку.":
+    "tasks stay where they are but lose this label.",
+  "Из них": "Of those", "попадут в «Разобрать» — других сфер у них нет.":
+    "will move to “Sort out” — they have no other area.",
+  "Такое место уже есть.": "That place already exists.",
+  "дел останутся на месте, но потеряют привязку и снова будут видны отовсюду.":
+    "tasks stay where they are but lose their place and become visible everywhere again.",
+  "Такой человек уже есть.": "That person is already on the list.",
+  "дел останутся, но перестанут быть привязаны к человеку.":
+    "tasks stay but are no longer tied to a person.",
+  "Так называется пустая ветка на карте. Выберите другое название.":
+    "That is what the empty branch on the map is called. Please pick another name.",
+
+  /* ── похвала, места, повторы, части дня ────────────────────── */
+  "Сделано!": "Done!", "Одним меньше": "One less",
+  "Хорошо пошло": "That went well",
+  "Это было в списке — и вот его нет": "It was on the list — and now it isn't",
+  "Полетело": "Off it goes",
+  "первое за сегодня": "the first one today", "за сегодня": "today",
+  "Удалить": "Delete",
+  "Показано доступное из": "Showing what you can do from", "ещё": "another",
+  "к другим местам и": "to other places and", "вас там": "for you there",
+  "мин": "min",
+  "по дням недели": "on days of the week", "каждый месяц": "every month",
+  "раз в квартал": "every quarter",
+  "Утро": "Morning", "День": "Daytime", "Вечер": "Evening", "Любое": "Any time",
+
+  /* ── окна: поля и выпадающие списки ────────────────────────── */
+  "со временем": "with a time", "без времени": "no time set",
+  "час": "hour", "выбрать": "choose", "не важно": "doesn't matter",
+  "без места": "no place", "без человека": "nobody",
+  "Новое место": "New place", "Имя": "Name", "добавить": "add",
+  "место": "a place", "человека": "a person",
+  "без срока": "no deadline", "через неделю": "in a week",
+  "сегодня — в кольце · выбранное — залито": "today is ringed · your pick is filled in",
+  "Закрыть": "Close",
+
+  /* ── просмотр сделанного, обмен местами в дне ──────────────── */
+  "Отмечено": "Ticked off", "Сделано": "Done",
+  "дедлайн был": "deadline was", "В какие дни": "On which days",
+  "за последнюю неделю.": "over the past week.",
+  "Шаги": "Steps", "Варианты": "Options",
+  "Адрес, телефон, заметки": "Address, phone, notes", "Заметка": "Note",
+  "Ни шагов, ни заметок — просто сделано.": "No steps, no notes — just done.",
+  "Здесь только просмотр. Чтобы снова править — верните дело.":
+    "This is read-only. To edit it again, put the task back.",
+  "Вернуть в дела": "Put back into tasks",
+  "На сегодня уже": "Today already has", "Добавляем": "Adding",
+  "Что уберём, чтобы день остался реальным?": "What comes out, so the day stays realistic?",
+  "Но день занят встречами — их не отложишь.": "But the day is full of appointments — those can't be moved.",
+  "Встреч сегодня:": "Appointments today:",
+  "Они назначены, поэтому в обмен не идут.": "They are scheduled, so they can't be swapped out.",
+  "Убранное не пропадёт — вернётся в «Предлагаю».": "What you take out isn't lost — it goes back to “Suggested”.",
+  "Всё равно добавить": "Add it anyway",
+
+  /* ── файл с данными, кнопки формы ──────────────────────────── */
+  "организатор-данные-": "organizer-data-",
+  "Это не файл с данными организатора.": "This is not an organizer data file.",
+  "Заменить данные в приложении теми, что в файле?": "Replace the data in the app with what is in the file?",
+  "Сейчас в приложении": "The app now holds", "в файле": "the file holds",
+  "Не получилось сохранить — данные не тронуты.": "Couldn't save — your data is untouched.",
+  "заметка": "note", "варианты": "options", "шаги": "steps",
+  "Добавить вариант и нажать Enter": "Add an option and press Enter",
+
+  /* ── форма дела ────────────────────────────────────────────── */
+  "Вид": "Kind", "Часть дня": "Part of day", "Часть дня не важна": "Part of day doesn't matter",
+  "Когда": "When", "Одна дата": "One date", "По расписанию": "On a schedule",
+  "Сколько занимает": "How long it takes", "Как часто": "How often",
+  "День": "Day", "Месяц": "Month", "Число месяца": "Day of the month", "Время": "Time",
+  "Повторяется бессрочно, пока не удалите. Каждый раз отмечается отдельно — запись не закрывается.":
+    "Repeats indefinitely until you delete it. Each occurrence is ticked off on its own — the entry stays open.",
+  "Сфера": "Area", "можно несколько": "more than one is fine",
+  "Это по-прежнему": "This is still", "одна запись": "one entry",
+  "Она видна во всех выбранных ветках, а отметите сделанной — исчезнет сразу отовсюду.":
+    "It shows in every branch you picked, and ticking it off removes it from all of them at once.",
+  "Место": "Place", "Человек": "Person", "Важность": "Importance",
+  "Срочность сюда не входит — она считается из дедлайна.":
+    "Urgency isn't part of this — it is worked out from the deadline.",
+
+  /* ── создание дела, «Разобрать», поле «когда» ──────────────── */
+  "Новое дело": "New task", "Что нужно сделать?": "What needs doing?",
+  "добавить и взять": "add and take it on", "Отменить и закрыть": "Cancel and close",
+  "Похоже, это уже есть:": "Looks like you already have this:",
+  "записано": "written down", "Если это другое дело — просто добавляйте.":
+    "If it's a different task — just add it.",
+  "Записать сразу, разложить потом — так мысли не теряются.":
+    "Write it down now, sort it later — that way nothing slips away.",
+  "Пусто — всё разобрано.": "Empty — everything is sorted.",
+  "Это ваше решение и ничьё больше.": "This is your call and nobody else's.",
+  "Идея ничего не требует и сама в «Сегодня» не просится. Захотите взяться — смените вид.":
+    "An idea asks nothing of you and never puts itself into Today. When you want to take it on, change its kind.",
+  "Напоминание ничего не требует: придёт в свой день и просто скажет.":
+    "A reminder asks nothing of you: it turns up on its day and simply tells you.",
+  "Дата и время": "Date and time", "Дедлайн": "Deadline",
+  "Встреча сегодня — поэтому она стоит в дне и убрать её оттуда нельзя. Смените дату, и она уйдёт сама.":
+    "The appointment is today — that's why it sits in the day and can't be taken out. Change the date and it leaves on its own.",
+  "Время видно в списках: «завтра в 14:30».": "The time shows in lists: “tomorrow at 14:30”.",
+
+  /* ── шаги, заметки, окно дела ──────────────────────────────── */
+  "закрыто": "closed", "Вернуть дело к одному действию": "Turn it back into a single action",
+  "убрать шаги": "remove steps", "Нажмите, чтобы поправить": "Click to edit",
+  "убрать": "remove", "Добавить шаг и нажать Enter": "Add a step and press Enter",
+  "В списках виден только следующий незакрытый шаг": "Lists show only the next open step",
+  "Порядок меняется перетаскиванием": "Drag to reorder",
+  "Адрес, телефон, что взять с собой": "Address, phone, what to bring",
+  "Заметки": "Notes",
+  "улица Садовая 12, 2 этаж · +7 900 123 45 67 · взять страховку":
+    "12 Garden Street, 2nd floor · +1 555 123 4567 · bring the insurance card",
+  "Что угодно, что пригодится": "Anything that will come in handy",
+  "Состоялась": "Happened", "последний раз —": "last time —",
+  "Пока не состоялась ни разу": "Hasn't happened yet",
+  "Повторяется бессрочно, пока не удалите.": "Repeats indefinitely until you delete it.",
+  "сверх расписания": "off schedule",
+  "На этой неделе:": "This week:", "уже сделано": "done already",
+  "За 4 недели:": "Over 4 weeks:",
+  "Клетка матрицы: срочность из дедлайна, важность — ваша":
+    "Matrix cell: urgency comes from the deadline, importance is yours",
+  "Редактировать": "Edit", "Отложить": "Put it aside", "Взяться": "Take it on",
+  "Убрать из сегодня": "Take out of today", "Сделать сегодня": "Do it today",
+  "Удалить": "Delete", "Отменить правки и закрыть": "Discard changes and close",
 
   /* ── справочники ───────────────────────────────────────────── */
   "Сферы": "Areas", "Места": "Places", "Люди": "People",
@@ -1550,12 +1705,12 @@ const PART_ANY = "Любое";
    нужна утренняя рутина, вечером вечерняя.                          */
 const partNow = () => { const h = new Date().getHours();
   return h < 12 ? "morning" : h < 18 ? "day" : "evening"; };
-const partName = v => (PARTS.find(x => x[0] === v) || [null, ""])[1];
+const partName = v => tr((PARTS.find(x => x[0] === v) || [null, ""])[1]);
 /* Готовые длительности, а не поле ввода: выбрать быстрее, чем печатать,
    и не бывает «пятнадцвть минут». Точность тут не нужна — нужен порядок
    величины, чтобы понять, помещается ли рутина в утро.               */
 const MINCHOICES = [1, 5, 10, 15, 20, 30, 45, 60, 90];
-const minsLabel = n => n ? n + " мин" : "";
+const minsLabel = n => n ? n + " " + tr("мин") : "";
 const sumMins = list => list.reduce((a, i) => a + (i.mins || 0), 0);
 
 function routineScore(it) {
@@ -1668,10 +1823,10 @@ const awayAll = () => S.hereNow ? live().filter(i => !reachable(i)).length : 0;
    работает» — или хуже, как потеря.                                 */
 function awayNote(n) {
   if (!S.hereNow) return "";
-  return `<p class="sub">Показано доступное из «${esc(S.hereNow)}»${n
-    ? ` — ещё ${n} ${plural(n, "дело", "дела", "дел")} ${
-        plural(n, "привязано", "привязаны", "привязаны")} к другим местам и ${
-        plural(n, "ждёт", "ждут", "ждут")} вас там` : ""}.</p>`;
+  return `<p class="sub">${tr("Показано доступное из")} «${esc(S.hereNow)}»${n
+    ? ` — ${tr("ещё")} ${n} ${plural(n, "дело", "дела", "дел")} ${
+        plural(n, "привязано", "привязаны", "привязаны")} ${tr("к другим местам и")} ${
+        plural(n, "ждёт", "ждут", "ждут")} ${tr("вас там")}` : ""}.</p>`;
 }
 
 /* ── Самопочинка данных ──────────────────────────────────────────────
@@ -1859,8 +2014,8 @@ function dateLabel(it) {
   if (repeats(it)) {
     const r = it.repeat, clock = it.time ? " · " + esc(it.time) : "";
     if (r.every === "year")    return r.day + " " + MONTHS[r.month] + " " + tr("каждый год") + clock;
-    if (r.every === "month")   return tr("#-го каждый месяц").replace("#", r.day) + clock;
-    if (r.every === "quarter") return tr("#-го раз в квартал").replace("#", r.day) + clock;
+    if (r.every === "month")   return tr("# каждый месяц").replace("#", dayNum(r.day)) + clock;
+    if (r.every === "quarter") return tr("# раз в квартал").replace("#", dayNum(r.day)) + clock;
     return tr("по") + " " + wdOrder().filter(d => (r.days || []).indexOf(d) >= 0)
       .map(d => WD_BY_DAY[d]).join(", ") + clock;
   }
@@ -2080,7 +2235,7 @@ function todayItems() {
   if (nMine) parts.push(nMine + " " + tr("уже в дне"));
   if (nSkip) parts.push(nSkip + " " + plural(nSkip, "вернётся", "вернутся", "вернутся") + " " + tr("завтра"));
   if (nLater) parts.push(nLater + " " + plural(nLater, "ждёт", "ждут", "ждут") + " " + tr("своего срока"));
-  if (nQuiet) parts.push(nQuiet + " " + plural(nQuiet, "молчит", "молчат", "молчат") + " " + tr("без срока"));
+  if (nQuiet) parts.push(nQuiet + " " + plural(nQuiet, "молчит", "молчат", "молчат") + " " + tr("без срока", "итог"));
   if (nAway) parts.push(nAway + " " + tr("в других местах"));
   const whyRest = parts.join(" · ");
   const whyEmpty = parts.length ? whyRest : tr("живых дел нет. Новые появятся здесь сами");
@@ -2191,10 +2346,10 @@ function routParts(list) {
   const out = [];
   PARTS.forEach(([k, L]) => {
     const n = list.filter(i => (i.partOfDay || "") === k).length;
-    if (n) out.push([k, L, n]);
+    if (n) out.push([k, tr(L), n]);
   });
   const n0 = list.filter(i => !i.partOfDay).length;
-  if (n0) out.push(["", PART_ANY, n0]);
+  if (n0) out.push(["", tr(PART_ANY), n0]);
   return out;
 }
 /* Открытая створка: выбранная, иначе текущая по часам, иначе первая
@@ -2840,7 +2995,7 @@ function renderCalendar() {
     }).join("")}</div>
     <div class="callegend">
       ${S.types.filter(t => t.kind !== "routine" && t.kind !== "idea").map(t =>
-        `<span><i style="background:var(--kind-${kindToken(t)})"></i>${esc(t.name)}</span>`).join("")}
+        `<span><i style="background:var(--kind-${kindToken(t)})"></i>${esc(typeLabel(t))}</span>`).join("")}
       <span style="margin-left:10px"><i style="background:var(--accent-soft);border:1px solid var(--accent)"></i>${tr("фон: со временем")}</span>
       <span><i style="background:var(--warm-soft);border:1px solid var(--warm)"></i>${tr("фон: к сроку")}</span>
     </div>
@@ -2911,9 +3066,9 @@ const axisValues = a => a === "place" ? S.places.concat([NOPLACE])
 /* Ветка вида хранится ключом, а показывается именем — имена в «Что это»
    переименовываются, и подписи на карте следуют за ними сами.        */
 const axisLabel = v => AXIS === "type"
-  ? (S.types.find(t => t.key === v) || { name: v }).name : v;
+  ? typeLabel(S.types.find(t => t.key === v) || { name: v, key: v }) : tr(v);
 const inAxis = (it, v) => AXIS === "place" ? (it.place || NOPLACE) === v
-  : AXIS === "person" ? (it.person || "Я") === v   // без пометки — значит моё
+  : AXIS === "person" ? (it.person || S.people[0]) === v   // без пометки — значит моё
   : AXIS === "type" ? typeDef(it.type).key === v   // с запасом: битый вид падает на первый
   : (it.spheres || []).indexOf(v) >= 0;      // на оси сфер дело бывает в нескольких
 /* Дело без сферы на осях мест и людей видно как любое другое: место и
@@ -2986,7 +3141,7 @@ function renderMap() {
     bb.x1 = Math.max(bb.x1, x1); bb.y1 = Math.max(bb.y1, y1);
   };
 
-  const rootLabel = AXES[AXIS];
+  const rootLabel = tr(AXES[AXIS]);
   const rSide = Math.max(textW(rootLabel, 17, 800) + 46, 104), rHalf = rSide / 2;
   grow(-rHalf, -rHalf, rHalf, rHalf);
 
@@ -3060,23 +3215,22 @@ function renderMap() {
   const halfH = Math.max(Math.abs(bb.y0), Math.abs(bb.y1)) + 26;
 
   const openVals = vals.filter(isOpen);
-  view.innerHTML = `<h2>Карта</h2>
-    <p class="sub">Здесь ничего не теряется. Раскрытые ветки такими и остаются —
-      можно раскрыть все сразу и увидеть картину целиком.</p>
+  view.innerHTML = `<h2>${tr("Карта")}</h2>
+    <p class="sub">${tr("Здесь ничего не теряется. Раскрытые ветки такими и остаются — можно раскрыть все сразу и увидеть картину целиком.")}</p>
     ${awayNote(awayAll())}
     <div class="mapstage${MAPFULL ? " full" : ""}">
       <div class="maprow">
         <div class="axis">${Object.keys(AXES).map(a =>
-          `<button data-act="axis" data-a="${a}" class="${AXIS === a ? "on" : ""}">${AXES[a]}</button>`).join("")}</div>
+          `<button data-act="axis" data-a="${a}" class="${AXIS === a ? "on" : ""}">${tr(AXES[a])}</button>`).join("")}</div>
         <div class="maptools">
-          <button data-act="openall" data-v="all" class="wide">раскрыть все</button>
-          <button data-act="openall" data-v="none" class="wide">свернуть все</button>
-          <button data-act="zoom" data-d="out" title="Отдалить">−</button>
-          <button data-act="zoom" data-d="in" title="Приблизить">+</button>
-          <button data-act="zoom" data-d="fit" class="wide" title="Показать всё">уместить</button>
+          <button data-act="openall" data-v="all" class="wide">${tr("раскрыть все")}</button>
+          <button data-act="openall" data-v="none" class="wide">${tr("свернуть все")}</button>
+          <button data-act="zoom" data-d="out" title="${tr("Отдалить")}">−</button>
+          <button data-act="zoom" data-d="in" title="${tr("Приблизить")}">+</button>
+          <button data-act="zoom" data-d="fit" class="wide" title="${tr("Показать всё")}">${tr("уместить")}</button>
           <button data-act="mapfull" class="wide" title="${MAPFULL
-            ? "Вернуть карту в страницу" : "Отдать карте всё окно"}">${
-            MAPFULL ? "свернуть" : "во весь экран"}</button>
+            ? tr("Вернуть карту в страницу") : tr("Отдать карте всё окно")}">${
+            MAPFULL ? tr("свернуть") : tr("во весь экран")}</button>
         </div>
       </div>
       <svg id="map" viewBox="${-halfW} ${-halfH} ${halfW * 2} ${halfH * 2}"
@@ -3089,12 +3243,12 @@ function renderMap() {
                  : AXIS === "type" ? `data-type="${esc(v)}"` : `data-sphere="${esc(v)}"`;
       return `<div class="branchhead">
           <h2><span style="display:inline-block;width:11px;height:11px;border-radius:50%;
-            background:${colorOf(AXIS, v)};margin-right:9px"></span>Ветка «${esc(axisLabel(v))}»</h2>
+            background:${colorOf(AXIS, v)};margin-right:9px"></span>${tr("Ветка")} «${esc(axisLabel(v))}»</h2>
           <button class="addhere" data-act="newhere" ${v === NOPLACE ? "" : attr}
-            title="Создать дело в этой ветке">＋</button>
+            title="${tr("Создать дело в этой ветке")}">＋</button>
         </div>
-        <p class="sub">${list.length} ${list.length === 1 ? "дело" : "дел"}</p>
-        ${list.map(mapRowHTML).join("") || `<div class="empty">Пока ничего нет</div>`}`;
+        <p class="sub">${list.length} ${plural(list.length, "дело", "дела", "дел")}</p>
+        ${list.map(mapRowHTML).join("") || `<div class="empty">${tr("Пока ничего нет")}</div>`}`;
     }).join("")}`;
 
   wireMap(halfW * 2, halfH * 2);
@@ -3115,15 +3269,15 @@ function mapRowHTML(i) {
   const takeable = !isRoutine(i) && !isAppt(i) && !isIdea(i);
   return `<div class="allrow">
     ${isRoutine(i) ? `<span class="tick" style="opacity:.35"></span>`
-      : `<button class="tick" data-act="toggle" data-id="${i.id}" title="Отметить сделанным"></button>`}
+      : `<button class="tick" data-act="toggle" data-id="${i.id}" title="${tr("Отметить сделанным")}"></button>`}
     ${kindIcon(i)}
     <button class="suggname" data-act="open" data-id="${i.id}">${esc(i.title)}</button>
     ${stepBadge(i)}
     ${(i.spheres || []).length > 1 ? `<span class="tag place"
-        title="Одна запись, видна в каждой своей ветке">в ${i.spheres.length} ветках</span>` : ""}
+        title="${tr("Одна запись, видна в каждой своей ветке")}">${tr("в")} ${i.spheres.length} ${tr("ветках")}</span>` : ""}
     ${dateLabel(i) ? `<span class="suggdate">${sandFor(i)}${dateLabel(i)}</span>` : ""}
-    ${takeable ? (pickedToday(i) ? `<span class="tag">в дне</span>`
-      : `<button class="linkbtn" data-act="pin" data-id="${i.id}">＋ в сегодня</button>`) : ""}
+    ${takeable ? (pickedToday(i) ? `<span class="tag">${tr("в дне")}</span>`
+      : `<button class="linkbtn" data-act="pin" data-id="${i.id}">＋ ${tr("в сегодня")}</button>`) : ""}
   </div>`;
 }
 
@@ -3196,7 +3350,7 @@ function fieldOf(el, id) {
 function nudge(inp) {
   if (!inp) return;
   if (inp.classList) inp.classList.add("needfill");
-  inp.placeholder = "Сначала впишите название";
+  inp.placeholder = tr("Сначала впишите название");
   if (inp.focus) inp.focus();
 }
 const dup = (list, t, self) => list.some(x => x !== self && String(x).toLowerCase() === t.toLowerCase());
@@ -3210,12 +3364,12 @@ function listSectionHTML(c) {
         <div class="nm">${esc(r.label)}<span style="color:var(--dim);font-weight:400"> · ${r.count}</span></div>
         ${r.note || ""}
         ${r.extra || ""}
-        <button class="linkbtn" data-act="${c.act}ren" data-v="${esc(r.id)}">переименовать</button>
-        <button class="linkbtn danger" data-act="${c.act}del" data-v="${esc(r.id)}">убрать</button>
+        <button class="linkbtn" data-act="${c.act}ren" data-v="${esc(r.id)}">${tr("переименовать")}</button>
+        <button class="linkbtn danger" data-act="${c.act}del" data-v="${esc(r.id)}">${tr("убрать")}</button>
       </div>`).join("")}
       <div class="brow addrow">
         <input type="text" id="${c.input}" placeholder="${c.ph}">
-        <button class="btn primary" data-act="${c.act}add">Добавить</button>
+        <button class="btn primary" data-act="${c.act}add">${tr("Добавить")}</button>
       </div>
     </div>`;
 }
@@ -3225,14 +3379,14 @@ function addSphere(el) {
   const inp = fieldOf(el, "dirNew");
   const t = (inp && inp.value ? inp.value : "").trim();
   if (!t) return nudge(inp);
-  if (dup(S.spheres, t)) return alert("Такая сфера уже есть.");
+  if (dup(S.spheres, t)) return alert(tr("Такая сфера уже есть."));
   S.spheres.push(t); inp.value = ""; save(); render(); if (host.innerHTML) openSettings();
 }
 function renameSphere(old) {
   const inp = document.getElementById("dirName");
   const t = (inp && inp.value ? inp.value : "").trim();
   if (!t || t === old) return;
-  if (dup(S.spheres, t, old)) return alert("Такая сфера уже есть.");
+  if (dup(S.spheres, t, old)) return alert(tr("Такая сфера уже есть."));
   S.items.forEach(i => { i.spheres = (i.spheres || []).map(x => x === old ? t : x); });
   S.spheres = S.spheres.map(x => x === old ? t : x);
   S.open = S.open.map(x => x === old ? t : x);
@@ -3242,9 +3396,9 @@ function removeSphere(name) {
   const used = S.items.filter(i => (i.spheres || []).indexOf(name) >= 0).length;
   const alone = S.items.filter(i => !i.done && (i.spheres || []).length === 1
     && i.spheres[0] === name).length;
-  if (!confirm("Убрать сферу «" + name + "»?" + (used
-    ? "\n\n" + used + " дел останутся на месте, но потеряют эту метку."
-      + (alone ? "\nИз них " + alone + " попадут в «Разобрать» — других сфер у них нет." : "")
+  if (!confirm(tr("Убрать сферу") + " «" + name + "»?" + (used
+    ? "\n\n" + used + " " + tr("дел останутся на месте, но потеряют эту метку.")
+      + (alone ? "\n" + tr("Из них") + " " + alone + " " + tr("попадут в «Разобрать» — других сфер у них нет.") : "")
     : ""))) return;
   S.items.forEach(i => { i.spheres = (i.spheres || []).filter(x => x !== name); });
   S.spheres = S.spheres.filter(x => x !== name);
@@ -3257,16 +3411,16 @@ function addPlace(el) {
   const inp = fieldOf(el, "dirNew");
   const t = (inp && inp.value ? inp.value : "").trim();
   if (!t) return nudge(inp);
-  if (t.toLowerCase() === NOPLACE) return alert("Так называется пустая ветка на карте. Выберите другое название.");
-  if (dup(S.places, t)) return alert("Такое место уже есть.");
+  if (t.toLowerCase() === NOPLACE) return alert(tr("Так называется пустая ветка на карте. Выберите другое название."));
+  if (dup(S.places, t)) return alert(tr("Такое место уже есть."));
   S.places.push(t); inp.value = ""; save(); render(); if (host.innerHTML) openSettings();
 }
 function renamePlace(p) {
   const inp = document.getElementById("dirName");
   const t = (inp && inp.value ? inp.value : "").trim();
   if (!t || t === p) return;
-  if (t.toLowerCase() === NOPLACE) return alert("Так называется пустая ветка на карте. Выберите другое название.");
-  if (dup(S.places, t, p)) return alert("Такое место уже есть.");
+  if (t.toLowerCase() === NOPLACE) return alert(tr("Так называется пустая ветка на карте. Выберите другое название."));
+  if (dup(S.places, t, p)) return alert(tr("Такое место уже есть."));
   S.items.forEach(i => { if (i.place === p) i.place = t; });
   S.places = S.places.map(x => x === p ? t : x);
   if (S.hereNow === p) S.hereNow = t;
@@ -3275,8 +3429,8 @@ function renamePlace(p) {
 }
 function removePlace(p) {
   const used = S.items.filter(i => i.place === p).length;
-  if (!confirm("Убрать место «" + p + "»?" + (used
-    ? "\n\n" + used + " дел останутся на месте, но потеряют привязку и снова будут видны отовсюду." : ""))) return;
+  if (!confirm(tr("Убрать место") + " «" + p + "»?" + (used
+    ? "\n\n" + used + " " + tr("дел останутся на месте, но потеряют привязку и снова будут видны отовсюду.") : ""))) return;
   S.items.forEach(i => { if (i.place === p) i.place = null; });
   S.places = S.places.filter(x => x !== p);
   if (S.hereNow === p) S.hereNow = null;
@@ -3289,14 +3443,14 @@ function addPerson(el) {
   const inp = fieldOf(el, "dirNew");
   const t = (inp && inp.value ? inp.value : "").trim();
   if (!t) return nudge(inp);
-  if (dup(S.people, t)) return alert("Такой человек уже есть.");
+  if (dup(S.people, t)) return alert(tr("Такой человек уже есть."));
   S.people.push(t); inp.value = ""; save(); render(); if (host.innerHTML) openSettings();
 }
 function renamePerson(p) {
   const inp = document.getElementById("dirName");
   const t = (inp && inp.value ? inp.value : "").trim();
   if (!t || t === p) return;
-  if (dup(S.people, t, p)) return alert("Такой человек уже есть.");
+  if (dup(S.people, t, p)) return alert(tr("Такой человек уже есть."));
   S.items.forEach(i => { if (i.person === p) i.person = t; });
   S.people = S.people.map(x => x === p ? t : x);
   S.open = S.open.map(x => x === p ? t : x);
@@ -3304,8 +3458,8 @@ function renamePerson(p) {
 }
 function removePerson(p) {
   const used = S.items.filter(i => i.person === p).length;
-  if (!confirm("Убрать «" + p + "» из списка людей?" + (used
-    ? "\n\n" + used + " дел останутся, но перестанут быть привязаны к человеку." : ""))) return;
+  if (!confirm(tr("Убрать") + " «" + p + "» " + tr("из списка людей?") + (used
+    ? "\n\n" + used + " " + tr("дел останутся, но перестанут быть привязаны к человеку.") : ""))) return;
   S.items.forEach(i => { if (i.person === p) i.person = null; });
   S.people = S.people.filter(x => x !== p);
   S.open = S.open.filter(x => x !== p);
@@ -3382,8 +3536,8 @@ function dirPageHTML() {
            <input type="text" id="dirName" value="${esc(label(v))}" autocomplete="off">
          </div>
          <div class="direditbtns">
-           <button class="btn primary" data-act="${d.act}ren" data-v="${esc(v)}">Готово</button>
-           <button class="btn link" data-act="dircancel">Отмена</button>
+           <button class="btn primary" data-act="${d.act}ren" data-v="${esc(v)}">${tr("Готово")}</button>
+           <button class="btn link" data-act="dircancel">${tr("Отмена")}</button>
            <div class="spacer"></div>
            <button class="btn link danger" data-act="${d.act}del" data-v="${esc(v)}">${tr("убрать")} ${tr(d.one)}</button>
          </div>
@@ -3393,8 +3547,8 @@ function dirPageHTML() {
          <span class="nm">${esc(label(v))}</span>
          <span class="qs cnt">${d.count(v)} ${plural(d.count(v), "дело", "дела", "дел")}</span>
          <span class="acts">
-           <button class="linkbtn" data-act="diredit" data-v="${esc(v)}">переименовать</button>
-           <button class="linkbtn danger" data-act="${d.act}del" data-v="${esc(v)}">убрать</button>
+           <button class="linkbtn" data-act="diredit" data-v="${esc(v)}">${tr("переименовать")}</button>
+           <button class="linkbtn danger" data-act="${d.act}del" data-v="${esc(v)}">${tr("убрать")}</button>
          </span>
        </div>`).join("")}
     <div class="diraddrow">
@@ -3404,10 +3558,10 @@ function dirPageHTML() {
   </div>
   <p class="qs" style="margin:14px 4px 0">${tr(d.note)}</p>
   <div class="row modalfoot">
-    <span class="qs" style="margin:0">${dirSaved && !dirDirty() ? "Изменения сохранены" : ""}</span>
+    <span class="qs" style="margin:0">${dirSaved && !dirDirty() ? tr("Изменения сохранены") : ""}</span>
     <div class="spacer"></div>
     <button class="btn ${dirDirty() ? "primary" : "ghost"}" data-act="dirsave"
-      ${dirDirty() ? "" : "disabled"}>Сохранить изменения</button>
+      ${dirDirty() ? "" : "disabled"}>${tr("Сохранить изменения")}</button>
   </div>`;
 }
 function wireDirectories() {
@@ -3459,12 +3613,12 @@ function ddTypeHTML(it) {
   const def = typeDef(it.type);
   return `<div class="ddwrap" data-ddwrap>
     <button class="ddbtn" data-act="dd" data-k="type:${it.id}">${iconSVG(kindToken(def),
-      kindColor(it))}<span>${esc(def.name)}</span><i class="caret">▾</i></button>
+      kindColor(it))}<span>${esc(typeLabel(def))}</span><i class="caret">▾</i></button>
     ${open ? `<div class="dd inline">${S.types.map(t => `
       <button class="ddrow ${t.key === it.type ? "on" : ""}" data-act="ddset" data-f="type"
         data-id="${it.id}" data-v="${esc(t.key)}">${iconSVG(kindToken(t),
-        "var(--kind-" + kindToken(t) + ")")}<span>${esc(t.name)}${
-        t.kind === "appt" ? " — со временем" : ""}</span>${t.key === it.type ? ddCheck : ""}</button>`).join("")}
+        "var(--kind-" + kindToken(t) + ")")}<span>${esc(typeLabel(t))}${
+        t.kind === "appt" ? " — " + tr("со временем") : ""}</span>${t.key === it.type ? ddCheck : ""}</button>`).join("")}
     </div>` : ""}</div>`;
 }
 
@@ -3500,12 +3654,12 @@ function ddTimeHTML(it) {
           v === val ? ddCheck : ""}</button>`).join("")}
       <div class="dddiv"></div>
       <button class="ddrow dim ${cur ? "" : "on"}" data-act="ttime" data-f="clear"
-        data-id="${it.id}" data-v=""><span>без времени</span>${cur ? "" : ddCheck}</button>
+        data-id="${it.id}" data-v=""><span>${tr("без времени")}</span>${cur ? "" : ddCheck}</button>
     </div>` : ""}</span>`;
   return `<div style="display:flex;gap:7px;align-items:center">
-    ${part("th:" + it.id, HOURS, cur.slice(0, 2), "час", "h")}
+    ${part("th:" + it.id, HOURS, cur.slice(0, 2), tr("час"), "h")}
     <span class="qs" style="margin:0">:</span>
-    ${part("tm:" + it.id, MINS5, cur.slice(3, 5), "мин", "m")}</div>`;
+    ${part("tm:" + it.id, MINS5, cur.slice(3, 5), tr("мин"), "m")}</div>`;
 }
 
 /* Число месяца и месяц — теми же списками, что часы и минуты.
@@ -3515,7 +3669,7 @@ function ddNumHTML(it, key, list, cur, label, f) {
   const k = key + ":" + it.id, has = cur !== null && cur !== undefined;
   return `<div class="ddwrap" data-ddwrap>
     <button class="ddbtn ${has ? "" : "dim"}" data-act="dd" data-k="${k}"><span>${
-      has ? label(cur) : "выбрать"}</span><i class="caret">▾</i></button>
+      has ? label(cur) : tr("выбрать")}</span><i class="caret">▾</i></button>
     ${DD === k ? `<div class="dd inline" style="max-height:232px;overflow-y:auto">
       ${list.map(v => `<button class="ddrow ${v === cur ? "on" : ""}" data-act="rdate"
           data-f="${f}" data-id="${it.id}" data-v="${v}"><span>${label(v)}</span>${
@@ -3529,13 +3683,13 @@ function ddMinsHTML(it) {
   const key = "mins:" + it.id, open = DD === key;
   return `<div class="ddwrap" data-ddwrap>
     <button class="ddbtn ${it.mins ? "" : "dim"}" data-act="dd" data-k="${key}"><span>${
-      it.mins ? minsLabel(it.mins) : "не важно"}</span><i class="caret">▾</i></button>
+      it.mins ? minsLabel(it.mins) : tr("не важно")}</span><i class="caret">▾</i></button>
     ${open ? `<div class="dd inline">
       ${MINCHOICES.map(n => `<button class="ddrow ${it.mins === n ? "on" : ""}" data-act="ddset"
           data-f="mins" data-id="${it.id}" data-v="${n}"><span>${minsLabel(n)}</span>${
           it.mins === n ? ddCheck : ""}</button>`).join("")}
       <button class="ddrow dim ${it.mins ? "" : "on"}" data-act="ddset" data-f="mins"
-        data-id="${it.id}" data-v=""><span>не важно</span>${it.mins ? "" : ddCheck}</button>
+        data-id="${it.id}" data-v=""><span>${tr("не важно")}</span>${it.mins ? "" : ddCheck}</button>
     </div>` : ""}</div>`;
 }
 
@@ -3547,18 +3701,18 @@ function ddPickHTML(it, field) {
   const icon = v => isPlace ? iconSVG("pin", "var(--pin)") : iconSVG("person", "currentColor");
   return `<div class="ddwrap" data-ddwrap>
     <button class="ddbtn ${cur ? "" : "dim"}" data-act="dd" data-k="${key}">${icon()}<span>${
-      cur ? esc(cur) : (isPlace ? "без места" : "без человека")}</span><i class="caret">▾</i></button>
+      cur ? esc(cur) : (isPlace ? tr("без места") : tr("без человека"))}</span><i class="caret">▾</i></button>
     ${open ? `<div class="dd inline">
       ${list.map(v => `<button class="ddrow ${v === cur ? "on" : ""}" data-act="ddset"
           data-f="${field}" data-id="${it.id}" data-v="${esc(v)}">${icon(v)}<span>${esc(v)}</span>${
           v === cur ? ddCheck : ""}</button>`).join("")}
       <button class="ddrow dim ${cur ? "" : "on"}" data-act="ddset" data-f="${field}"
-        data-id="${it.id}" data-v=""><span>${isPlace ? "без места" : "без человека"}</span>${cur ? "" : ddCheck}</button>
+        data-id="${it.id}" data-v=""><span>${isPlace ? tr("без места") : tr("без человека")}</span>${cur ? "" : ddCheck}</button>
       <div class="dddiv"></div>
       ${DDADD ? `<div class="ddaddrow"><input type="text" id="ddAddInp" autocomplete="off"
-          data-f="${field}" data-id="${it.id}" placeholder="${isPlace ? "Новое место" : "Имя"}">
-          <button class="btn primary" data-act="ddaddgo" data-f="${field}" data-id="${it.id}">Добавить</button></div>`
-        : `<button class="ddrow ddadd" data-act="ddaddshow">＋ добавить ${isPlace ? "место" : "человека"}</button>`}
+          data-f="${field}" data-id="${it.id}" placeholder="${isPlace ? tr("Новое место") : tr("Имя")}">
+          <button class="btn primary" data-act="ddaddgo" data-f="${field}" data-id="${it.id}">${tr("Добавить")}</button></div>`
+        : `<button class="ddrow ddadd" data-act="ddaddshow">＋ ${tr("добавить")} ${isPlace ? tr("место") : tr("человека")}</button>`}
     </div>` : ""}</div>`;
 }
 
@@ -3605,16 +3759,16 @@ function ddDueHTML(it) {
   const key = "due:" + it.id, open = DD === key;
   return `<div class="ddwrap" data-ddwrap>
     <button class="ddbtn ${it.due ? "" : "dim"}" data-act="dd" data-k="${key}">${SAND}<span>${
-      it.due ? dateLabel(it) : "без срока"}</span><i class="caret">▾</i></button>
+      it.due ? dateLabel(it) : tr("без срока")}</span><i class="caret">▾</i></button>
     ${open ? `<div class="dd inline duedd">
       <div class="ddquick">
-        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="today">сегодня</button>
-        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="tomorrow">завтра</button>
-        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="week">через неделю</button>
-        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="none">без срока</button>
+        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="today">${tr("сегодня")}</button>
+        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="tomorrow">${tr("завтра")}</button>
+        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="week">${tr("через неделю")}</button>
+        <button class="chip" data-act="duequick" data-id="${it.id}" data-v="none">${tr("без срока")}</button>
       </div>
       ${ddCalHTML(it)}
-      <p class="qs" style="margin:6px 10px 6px">сегодня — в кольце · выбранное — залито</p>
+      <p class="qs" style="margin:6px 10px 6px">${tr("сегодня — в кольце · выбранное — залито")}</p>
     </div>` : ""}</div>`;
 }
 
@@ -3634,7 +3788,7 @@ function openModal(html, key, close) {
   const keep = (prev && key && key === lastModalKey) ? prev.scrollTop : 0;
   host.innerHTML = `<div class="veil"><div class="modal">${close
     ? `<div class="modalbar"><button class="modalx" data-act="${close.act}"${
-        close.id ? ` data-id="${close.id}"` : ""} title="${close.title || "Закрыть"}">×</button></div>`
+        close.id ? ` data-id="${close.id}"` : ""} title="${close.title || tr("Закрыть")}">×</button></div>`
     : ""}${html}</div></div>`;
   const now = host.querySelector ? host.querySelector(".modal") : null;
   if (now) now.scrollTop = keep;
@@ -3650,42 +3804,42 @@ function openDone(id, when) {
   const rout = isRoutine(it);
   const hasSteps = it.multi && it.steps.length;
   openModal(`<h3>${kindIcon(it)}${esc(it.title)}</h3>
-    <p class="qs" style="margin:-10px 0 16px">${rout ? "Отмечено"
-      : isAppt(it) ? "Состоялась" : "Сделано"}:
+    <p class="qs" style="margin:-10px 0 16px">${rout ? tr("Отмечено")
+      : isAppt(it) ? tr("Состоялась") : tr("Сделано")}:
       <b style="color:var(--good)">${formatDay(when)}</b>${when ? " · " + esc(when) : ""}</p>
 
     <div class="readmeta">
       ${sphereTags(it)}
       ${it.place ? placeTag(it.place) : ""}
-      ${it.person && it.person !== "Я" ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(it.person)}</span>` : ""}
-      ${it.due && !rout ? `<span class="tag when">дедлайн был ${esc(it.due)}${
+      ${it.person && !isSelf(it.person) ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(it.person)}</span>` : ""}
+      ${it.due && !rout ? `<span class="tag when">${tr("дедлайн был")} ${esc(it.due)}${
         it.time ? " " + esc(it.time) : ""}</span>` : ""}
     </div>
 
-    ${(schedDays(it) || []).length ? `<p class="lbl">В какие дни</p>
+    ${(schedDays(it) || []).length ? `<p class="lbl">${tr("В какие дни")}</p>
       ${daysRowHTML(schedDays(it))}
-      <p class="qs" style="margin:-4px 0 16px">Сделано ${routineScore(it).hit}
-        из ${routineScore(it).of} за последнюю неделю.</p>` : ""}
+      <p class="qs" style="margin:-4px 0 16px">${tr("Сделано")} ${routineScore(it).hit}
+        ${tr("из")} ${routineScore(it).of} ${tr("за последнюю неделю.")}</p>` : ""}
 
-    ${hasSteps ? `<p class="lbl">Шаги</p>
+    ${hasSteps ? `<p class="lbl">${tr("Шаги")}</p>
       <div style="margin-bottom:16px">${it.steps.map(s =>
         `<div class="readstep ${s.done ? "done" : ""}">
            <span class="m" style="color:${s.done ? "var(--good)" : "var(--dim)"}">${s.done ? "✓" : "○"}</span>
            <span class="tx">${esc(s.text)}</span></div>`).join("")}</div>` : ""}
 
-    ${it.options && it.options.length ? `<p class="lbl">Варианты</p>
+    ${it.options && it.options.length ? `<p class="lbl">${tr("Варианты")}</p>
       <div style="margin-bottom:16px">${it.options.map(o =>
         `<div class="readstep"><span class="m">·</span><span class="tx">${linkify(o.text)}</span></div>`).join("")}</div>` : ""}
 
-    ${hasNotes(it) ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
+    ${hasNotes(it) ? `<p class="lbl">${isAppt(it) ? tr("Адрес, телефон, заметки") : tr("Заметка")}</p>
       <div class="readnote">${linkify(it.notes)}</div>` : ""}
 
     ${!it.notes && !hasSteps && !rout && !(it.options || []).length
-      ? `<p class="qs" style="margin-bottom:16px">Ни шагов, ни заметок — просто сделано.</p>` : ""}
+      ? `<p class="qs" style="margin-bottom:16px">${tr("Ни шагов, ни заметок — просто сделано.")}</p>` : ""}
 
-    <p class="qs" style="margin:0 0 14px">Здесь только просмотр. Чтобы снова править — верните дело.</p>
+    <p class="qs" style="margin:0 0 14px">${tr("Здесь только просмотр. Чтобы снова править — верните дело.")}</p>
     <div class="row">
-      <button class="btn ghost" data-act="undo" data-id="${it.id}">Вернуть в дела</button>
+      <button class="btn ghost" data-act="undo" data-id="${it.id}">${tr("Вернуть в дела")}</button>
     </div>`, "done:" + id, { act: "close" });
 }
 
@@ -3699,19 +3853,19 @@ function askSwap(newId) {
   /* Встречу убрать нельзя — она назначена, а не выбрана. */
   const free = mine.filter(m => !isTodayAppt(m));
   const appts = mine.length - free.length;
-  openModal(`<h3>На сегодня уже ${mine.length}</h3>
-    <p class="qs" style="margin:-10px 0 16px">Добавляем «<b>${esc(it.title)}</b>».
-      ${free.length ? "Что уберём, чтобы день остался реальным?"
-        : "Но день занят встречами — их не отложишь."}</p>
-    ${appts ? `<p class="qs" style="margin:-8px 0 12px">Встреч сегодня: ${appts}.
-      Они назначены, поэтому в обмен не идут.</p>` : ""}
+  openModal(`<h3>${tr("На сегодня уже")} ${mine.length}</h3>
+    <p class="qs" style="margin:-10px 0 16px">${tr("Добавляем")} «<b>${esc(it.title)}</b>».
+      ${free.length ? tr("Что уберём, чтобы день остался реальным?")
+        : tr("Но день занят встречами — их не отложишь.")}</p>
+    ${appts ? `<p class="qs" style="margin:-8px 0 12px">${tr("Встреч сегодня:")} ${appts}.
+      ${tr("Они назначены, поэтому в обмен не идут.")}</p>` : ""}
     ${free.map(m => `<button class="swaprow" data-act="swap" data-id="${newId}" data-out="${m.id}">
       <span class="pickmark" style="color:var(--warm)">−</span>
       <span class="picktitle">${esc(m.title)}</span>
       ${sphereTags(m)}</button>`).join("")}
-    <p class="qs" style="margin:12px 0 0">Убранное не пропадёт — вернётся в «Предлагаю».</p>
+    <p class="qs" style="margin:12px 0 0">${tr("Убранное не пропадёт — вернётся в «Предлагаю».")}</p>
     <div class="row">
-      <button class="btn ghost" data-act="swapskip" data-id="${newId}">Всё равно добавить</button>
+      <button class="btn ghost" data-act="swapskip" data-id="${newId}">${tr("Всё равно добавить")}</button>
     </div>`, "swap", { act: "close" });
 }
 
@@ -3750,7 +3904,7 @@ function exportData() {
   if (typeof Blob === "undefined" || typeof URL === "undefined") return;
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([exportPayload()], { type: "application/json" }));
-  a.download = "организатор-данные-" + today() + ".json";
+  a.download = tr("организатор-данные-") + today() + ".json";
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
@@ -3760,7 +3914,7 @@ function applyImport(text) {
   let data;
   try { data = JSON.parse(text); } catch (e) { data = null; }
   if (!data || !Array.isArray(data.items))
-    return { error: "Это не файл с данными организатора." };
+    return { error: tr("Это не файл с данными организатора.") };
   return { data, count: data.items.filter(i => i && !i.draft).length };
 }
 
@@ -3768,11 +3922,11 @@ function importData(text) {
   const r = applyImport(text);
   if (r.error) return alert(r.error);
   const here = S.items.filter(i => !i.draft).length;
-  if (!confirm("Заменить данные в приложении теми, что в файле?\n\nСейчас в приложении "
-      + here + " " + plural(here, "запись", "записи", "записей") + ", в файле "
+  if (!confirm(tr("Заменить данные в приложении теми, что в файле?") + "\n\n" + tr("Сейчас в приложении") + " "
+      + here + " " + plural(here, "запись", "записи", "записей") + ", " + tr("в файле") + " "
       + r.count + " " + plural(r.count, "запись", "записи", "записей") + ".")) return;
   try { localStorage.setItem(KEY, JSON.stringify(r.data)); }
-  catch (e) { return alert("Не получилось сохранить — данные не тронуты."); }
+  catch (e) { return alert(tr("Не получилось сохранить — данные не тронуты.")); }
   if (typeof location !== "undefined" && location.reload) location.reload();
 }
 
@@ -3877,16 +4031,16 @@ function itemFormHTML(it, ids) {
   /* data-id обязателен: без него перерисовка не знает, какое дело
      открыто, и блок молча не раскрывался.                          */
   const bNotes = `<button class="addtoday" data-act="formopen" data-k="notes"
-    data-id="${it.id}">＋ заметка</button>`;
+    data-id="${it.id}">＋ ${tr("заметка")}</button>`;
   const bOpts = `<button class="addtoday" data-act="formopen" data-k="options"
-    data-id="${it.id}">＋ варианты</button>`;
-  const bSteps = `<button class="addtoday" data-act="emulti" data-id="${it.id}">＋ шаги</button>`;
+    data-id="${it.id}">＋ ${tr("варианты")}</button>`;
+  const bSteps = `<button class="addtoday" data-act="emulti" data-id="${it.id}">＋ ${tr("шаги")}</button>`;
   /* Когда пусто, отдельная плашка «Пока ничего нет» не нужна: поле
      ввода само говорит, что здесь делать.                          */
-  const optsHTML = `<p class="lbl">Варианты</p>
+  const optsHTML = `<p class="lbl">${tr("Варианты")}</p>
       ${(it.options || []).length
         ? `<div>${it.options.map(o => `<div class="opt">· ${esc(o.text)}</div>`).join("")}</div>` : ""}
-      <input type="text" id="newOpt" placeholder="Добавить вариант и нажать Enter"${
+      <input type="text" id="newOpt" placeholder="${tr("Добавить вариант и нажать Enter")}"${
         (it.options || []).length ? ` style="margin-top:10px"` : ""}>`;
   /* Раскрытые блоки идут сверху во всю ширину, свёрнутые — рядом
      пунктирными кнопками.                                          */
@@ -3907,43 +4061,43 @@ function itemFormHTML(it, ids) {
      последним зияла бы пустая клетка.                               */
   const cell = (label, body, wide) => `<div class="cfgitem${wide ? " wide" : ""}">
       <p class="lbl">${label}</p>${body}</div>`;
-  const kindItem = cell("Вид", ddTypeHTML(it));
+  const kindItem = cell(tr("Вид"), ddTypeHTML(it));
   /* Семь плиток — самый широкий элемент формы. В половине строки они
      сжимались вдвое против того, как выглядят в просмотре.          */
-  const daysItem = days => cell("В какие дни", daysRowHTML(days, it.id), true);
-  const partItem = cell("Часть дня",
+  const daysItem = days => cell(tr("В какие дни"), daysRowHTML(days, it.id), true);
+  const partItem = cell(tr("Часть дня"),
     `<div class="seg">${PARTS.concat([["", "—"]]).map(([k, L]) =>
       `<button data-act="rpart" data-id="${it.id}" data-v="${k}"${
-        k ? "" : ` title="Часть дня не важна"`}
-        class="${(it.partOfDay || "") === k ? "on" : ""}">${L}</button>`).join("")}</div>`, true);
+        k ? "" : ` title="${tr("Часть дня не важна")}"`}
+        class="${(it.partOfDay || "") === k ? "on" : ""}">${k ? tr(L) : L}</button>`).join("")}</div>`, true);
   /* Одна дата или расписание — два ответа на «когда», а не два поля.
      У сессии по вторникам и четвергам одной даты не существует.      */
-  const whenSwitch = cell("Когда",
-    `<div class="seg">${[["once", "Одна дата"], ["days", "По расписанию"]].map(([k, L]) =>
+  const whenSwitch = cell(tr("Когда"),
+    `<div class="seg">${[["once", tr("Одна дата")], ["days", tr("По расписанию")]].map(([k, L]) =>
       `<button data-act="arepeat" data-id="${it.id}" data-v="${k}"
         class="${(it.repeat ? "days" : "once") === k ? "on" : ""}">${L}</button>`).join("")}</div>`);
 
   const cells = kindItem + (
     isRoutine(it)
-      ? cell("Сколько занимает", ddMinsHTML(it))
+      ? cell(tr("Сколько занимает"), ddMinsHTML(it))
         + daysItem(it.routine && it.routine.days) + partItem
     : isAppt(it) || isRemind(it)
       ? whenSwitch + (it.repeat
-          ? cell("Как часто", `<div class="seg">${REPEATS.map(([k, L]) =>
+          ? cell(tr("Как часто"), `<div class="seg">${REPEATS.map(([k, L]) =>
               `<button data-act="rmode" data-id="${it.id}" data-v="${k}"
-                class="${everyOf(it) === k ? "on" : ""}">${L}</button>`).join("")}</div>`, true)
+                class="${everyOf(it) === k ? "on" : ""}">${tr(L)}</button>`).join("")}</div>`, true)
             + (everyOf(it) === "week" ? daysItem(it.repeat.days)
                : everyOf(it) === "year"
-                 ? cell("День", ddNumHTML(it, "rnum", NUMS31, it.repeat.day, v => v, "day"))
-                   + cell("Месяц", ddNumHTML(it, "rmon", MONTHNUMS, it.repeat.month,
+                 ? cell(tr("День"), ddNumHTML(it, "rnum", NUMS31, it.repeat.day, v => v, "day"))
+                   + cell(tr("Месяц"), ddNumHTML(it, "rmon", MONTHNUMS, it.repeat.month,
                        v => MONTHS_NOM[v], "month"))
-                 : cell("Число месяца",
-                     ddNumHTML(it, "rnum", NUMS31, it.repeat.day, v => v + "-го", "day")))
+                 : cell(tr("Число месяца"),
+                     ddNumHTML(it, "rnum", NUMS31, it.repeat.day, dayNum, "day")))
             /* Время занимает строку целиком только там, где иначе рядом
                осталась бы пустая клетка: при выборе числа месяца оно
                встаёт с ним в пару.                                    */
             /* У напоминания времени нет: оно про день, а не про час. */
-            + (isRemind(it) ? "" : cell("Время", ddTimeHTML(it),
+            + (isRemind(it) ? "" : cell(tr("Время"), ddTimeHTML(it),
                 everyOf(it) !== "month" && everyOf(it) !== "quarter"))
           /* Дата, часы и минуты стоят в одну линию — втроём в половину
              строки они не помещаются: кнопка даты сжималась до одной
@@ -3955,28 +4109,26 @@ function itemFormHTML(it, ids) {
   return `<div class="cfggrid">
       ${cells}
     </div>
-    ${isAppt(it) && it.repeat ? `<p class="qs" style="margin:-8px 0 16px">Повторяется
-      бессрочно, пока не удалите. Каждый раз отмечается отдельно — запись не закрывается.</p>` : ""}
+    ${isAppt(it) && it.repeat ? `<p class="qs" style="margin:-8px 0 16px">${tr("Повторяется бессрочно, пока не удалите. Каждый раз отмечается отдельно — запись не закрывается.")}</p>` : ""}
 
-    <p class="lbl">Сфера
-      <span class="qs" style="text-transform:none;letter-spacing:0;margin-left:8px">можно несколько</span></p>
+    <p class="lbl">${tr("Сфера")}
+      <span class="qs" style="text-transform:none;letter-spacing:0;margin-left:8px">${tr("можно несколько")}</span></p>
     <div class="chips">${S.spheres.map(v =>
       `<button class="chip ${it.spheres.indexOf(v) >= 0 ? "on" : ""}" data-act="esphere"
         data-id="${it.id}" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div>
-    ${(it.spheres || []).length > 1 ? `<div class="dupe">Это по-прежнему <b>одна запись</b>.
-      Она видна во всех выбранных ветках, а отметите сделанной — исчезнет сразу отовсюду.</div>` : ""}
+    ${(it.spheres || []).length > 1 ? `<div class="dupe">${tr("Это по-прежнему")} <b>${tr("одна запись")}</b>.
+      ${tr("Она видна во всех выбранных ветках, а отметите сделанной — исчезнет сразу отовсюду.")}</div>` : ""}
 
     <div class="cfggrid">
-      <div class="cfgitem"><p class="lbl">Место</p>${ddPickHTML(it, "place")}</div>
-      <div class="cfgitem"><p class="lbl">Человек</p>${ddPickHTML(it, "person")}</div>
+      <div class="cfgitem"><p class="lbl">${tr("Место")}</p>${ddPickHTML(it, "place")}</div>
+      <div class="cfgitem"><p class="lbl">${tr("Человек")}</p>${ddPickHTML(it, "person")}</div>
     </div>
 
-    ${isRoutine(it) || isIdea(it) || isRemind(it) ? "" : `<p class="lbl">Важность</p>
-      <div class="chips">${[["imp", "важное"], ["not", "неважное"]].map(([k, L]) =>
+    ${isRoutine(it) || isIdea(it) || isRemind(it) ? "" : `<p class="lbl">${tr("Важность")}</p>
+      <div class="chips">${[["imp", tr("важное")], ["not", tr("неважное")]].map(([k, L]) =>
         `<button class="chip ${(isImportant(it) ? "imp" : "not") === k ? "on" : ""}"
           data-act="equad" data-id="${it.id}" data-q="${k}">${L}</button>`).join("")}</div>
-      <p class="qs" style="margin:-6px 0 4px">Срочность сюда не входит —
-        она считается из дедлайна.</p>`}
+      <p class="qs" style="margin:-6px 0 4px">${tr("Срочность сюда не входит — она считается из дедлайна.")}</p>`}
 
     ${extra}`;
 }
@@ -4006,20 +4158,20 @@ function drawCapture() {
     list.map(v => `<button class="chip ${cur(v) ? "on" : ""}" data-act="${act}"
       data-id="${it.id}" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div>`;
 
-  openModal(`<h3>Новое дело</h3>
-    <input type="text" id="capText" placeholder="Что нужно сделать?"
+  openModal(`<h3>${tr("Новое дело")}</h3>
+    <input type="text" id="capText" placeholder="${tr("Что нужно сделать?")}"
       autocomplete="off" value="${esc(it.title)}">
     <div id="capDupe"></div>
 
     ${itemFormHTML(it, { date: "capDate", time: "capTime", notes: "capNotes" })}
 
     <div class="row modalfoot">
-      <button class="btn primary" data-act="capsave">Добавить</button>
+      <button class="btn primary" data-act="capsave">${tr("Добавить")}</button>
       ${isRoutine(it) || isAppt(it) || isIdea(it) ? ""
-        : `<button class="btn soft" data-act="capsavetake">добавить и взять</button>`}
+        : `<button class="btn soft" data-act="capsavetake">${tr("добавить и взять")}</button>`}
       <div class="spacer"></div>
-      <button class="btn link" data-act="capcancel">Отмена</button>
-    </div>`, "capture", { act: "capcancel", title: "Отменить и закрыть" });
+      <button class="btn link" data-act="capcancel">${tr("Отмена")}</button>
+    </div>`, "capture", { act: "capcancel", title: tr("Отменить и закрыть") });
 
   const inp = document.getElementById("capText");
   if (inp && inp.addEventListener) {
@@ -4028,9 +4180,9 @@ function drawCapture() {
       const d = findDupes(inp.value, it.id);
       const box = document.getElementById("capDupe");
       if (box) box.innerHTML = d.length
-        ? `<div class="dupe"><b>Похоже, это уже есть:</b><br>${d.map(x =>
-            `«${esc(x.title)}»${(x.spheres || []).length ? " — " + esc(x.spheres.join(", ")) : ""}, записано ${esc(x.created)}`).join("<br>")}
-           <br><span style="opacity:.75">Если это другое дело — просто добавляйте.</span></div>`
+        ? `<div class="dupe"><b>${tr("Похоже, это уже есть:")}</b><br>${d.map(x =>
+            `«${esc(x.title)}»${(x.spheres || []).length ? " — " + esc(x.spheres.join(", ")) : ""}, ${tr("записано")} ${esc(x.created)}`).join("<br>")}
+           <br><span style="opacity:.75">${tr("Если это другое дело — просто добавляйте.")}</span></div>`
         : "";
     });
     inp.addEventListener("keydown", e => { if (e.key === "Enter") saveCapture(); });
@@ -4073,13 +4225,13 @@ function cancelCapture() {
 /* ── Разобрать: всё, что записано без ветки ──────────────────────── */
 function openInbox() {
   const inb = here().filter(inInbox);
-  openModal(`<h3>Разобрать · ${inb.length}</h3>
-    <p class="sub">Записать сразу, разложить потом — так мысли не теряются.</p>
+  openModal(`<h3>${tr("Разобрать")} · ${inb.length}</h3>
+    <p class="sub">${tr("Записать сразу, разложить потом — так мысли не теряются.")}</p>
     ${inb.map(i => `<div class="card" style="box-shadow:none">
       <div class="title">${esc(i.title)}</div>
       <div class="chips" style="margin-top:10px">${S.spheres.map(sp =>
         `<button class="chip" data-act="assign" data-id="${i.id}" data-v="${esc(sp)}">${esc(sp)}</button>`).join("")}</div>
-    </div>`).join("") || `<div class="empty">Пусто — всё разобрано.</div>`}
+    </div>`).join("") || `<div class="empty">${tr("Пусто — всё разобрано.")}</div>`}
     `, "inbox", { act: "close" });
 }
 
@@ -4095,10 +4247,10 @@ function quadPickHTML(it) {
   const cur = isImportant(it) ? "imp" : "not";
   const opt = (k, label) => `<button class="chip ${cur === k ? "on" : ""}" data-act="equad"
     data-id="${it.id}" data-q="${k}">${label}</button>`;
-  return `<p class="lbl">Важность</p>
-    <div class="chips">${opt("imp", "важное")}${opt("not", "неважное")}</div>
-    <p class="qs" style="margin:-8px 0 12px">Это ваше решение и ничьё больше.
-      Срочность сюда не входит — она считается из дедлайна.</p>`;
+  return `<p class="lbl">${tr("Важность")}</p>
+    <div class="chips">${opt("imp", tr("важное"))}${opt("not", tr("неважное"))}</div>
+    <p class="qs" style="margin:-8px 0 12px">${tr("Это ваше решение и ничьё больше.")}
+      ${tr("Срочность сюда не входит — она считается из дедлайна.")}</p>`;
 }
 
 /* ── Когда: дедлайн, дата выбора или точные дата и время ────────────
@@ -4114,20 +4266,18 @@ const minDate = it => (it.due && it.due < today()) ? it.due : today();
 
 function whenFieldsHTML(it, dateId, timeId) {
   if (isRoutine(it)) return "";
-  if (isIdea(it)) return `<p class="qs" style="margin:24px 0 0">Идея ничего не требует
-    и сама в «Сегодня» не просится. Захотите взяться — смените вид.</p>`;
-  if (isRemind(it)) return `<p class="lbl">Когда</p>${ddDueHTML(it)}
-    <p class="qs" style="margin:8px 0 0">Напоминание ничего не требует: придёт
-      в свой день и просто скажет.</p>`;
-  if (isAppt(it)) return `<p class="lbl">Дата и время</p>
+  if (isIdea(it)) return `<p class="qs" style="margin:24px 0 0">${tr("Идея ничего не требует и сама в «Сегодня» не просится. Захотите взяться — смените вид.")}</p>`;
+  if (isRemind(it)) return `<p class="lbl">${tr("Когда")}</p>${ddDueHTML(it)}
+    <p class="qs" style="margin:8px 0 0">${tr("Напоминание ничего не требует: придёт в свой день и просто скажет.")}</p>`;
+  if (isAppt(it)) return `<p class="lbl">${tr("Дата и время")}</p>
     <div style="display:flex;gap:8px;align-items:center">
       <div style="flex:1;min-width:0">${ddDueHTML(it)}</div>
       ${ddTimeHTML(it)}
     </div>
     <p class="qs" style="margin:8px 0 0">${it.due === today()
-      ? "Встреча сегодня — поэтому она стоит в дне и убрать её оттуда нельзя. Смените дату, и она уйдёт сама."
-      : "Время видно в списках: «завтра в 14:30»."}</p>`;
-  return `<p class="lbl">Дедлайн</p>${ddDueHTML(it)}`;
+      ? tr("Встреча сегодня — поэтому она стоит в дне и убрать её оттуда нельзя. Смените дату, и она уйдёт сама.")
+      : tr("Время видно в списках: «завтра в 14:30».")}</p>`;
+  return `<p class="lbl">${tr("Дедлайн")}</p>${ddDueHTML(it)}`;
 }
 
 function wireWhen(id, dateId, timeId, after) {
@@ -4146,11 +4296,11 @@ function wireWhen(id, dateId, timeId, after) {
    Пишется сразу, без перерисовки, чтобы не терялся курсор.          */
 function notesBlockHTML(it, id) {
   return `<p class="lbl">${isAppt(it)
-    ? "Адрес, телефон, что взять с собой"
-    : "Заметки"}</p>
+    ? tr("Адрес, телефон, что взять с собой")
+    : tr("Заметки")}</p>
     <textarea class="notebox" id="${id}" placeholder="${isAppt(it)
-      ? "Кайзерсграхт 12, 2 этаж · +31 20 123 45 67 · взять страховку"
-      : "Что угодно, что пригодится"}">${esc(it.notes || "")}</textarea>`;
+      ? tr("улица Садовая 12, 2 этаж · +7 900 123 45 67 · взять страховку")
+      : tr("Что угодно, что пригодится")}">${esc(it.notes || "")}</textarea>`;
 }
 
 function wireNotes(itemId, fieldId) {
@@ -4171,10 +4321,10 @@ function wireNotes(itemId, fieldId) {
 function stepsBlockHTML(it) {
   if (isRoutine(it) || !it.multi) return "";
   const doneN = it.steps.filter(s => s.done).length;
-  return `<p class="lbl">Шаги${it.steps.length
-    ? ` · закрыто ${doneN} из ${it.steps.length}` : ""}
+  return `<p class="lbl">${tr("Шаги")}${it.steps.length
+    ? ` · ${tr("закрыто")} ${doneN} ${tr("из")} ${it.steps.length}` : ""}
       <button class="linkbtn" data-act="emulti" data-id="${it.id}"
-        title="Вернуть дело к одному действию">убрать шаги</button></p>
+        title="${tr("Вернуть дело к одному действию")}">${tr("убрать шаги")}</button></p>
     ${true ? `<div class="steps">${it.steps.map((s, i) => {
       const editing = EDITSTEP === it.id + ":" + i;
       return `<div class="step ${s.done ? "done" : ""} ${editing ? "editing" : ""}"${
@@ -4186,13 +4336,13 @@ function stepsBlockHTML(it) {
           ? `<input type="text" class="stepedit" id="stepEdit" value="${esc(s.text)}"
                autocomplete="off">`
           : `<span class="steptext" data-act="editstep" data-id="${it.id}" data-i="${i}"
-               title="Нажмите, чтобы поправить">${esc(s.text)}</span>`}
+               title="${tr("Нажмите, чтобы поправить")}">${esc(s.text)}</span>`}
         ${editing ? "" : `<button class="linkbtn danger" data-act="delstep"
-          data-id="${it.id}" data-i="${i}">убрать</button>`}
+          data-id="${it.id}" data-i="${i}">${tr("убрать")}</button>`}
       </div>`; }).join("")}</div>
-      <input type="text" id="newStep" placeholder="Добавить шаг и нажать Enter"
-        title="В списках виден только следующий незакрытый шаг${it.steps.length > 1
-          ? ". Порядок меняется перетаскиванием" : ""}">` : ""}`;
+      <input type="text" id="newStep" placeholder="${tr("Добавить шаг и нажать Enter")}"
+        title="${tr("В списках виден только следующий незакрытый шаг")}${it.steps.length > 1
+          ? ". " + tr("Порядок меняется перетаскиванием") : ""}">` : ""}`;
 }
 
 /* Записать поправленный шаг. Пустой текст не принимаем — для удаления
@@ -4243,11 +4393,11 @@ function openItem(id) {
      заранее — если их нет, разделитель не рисуем вовсе, иначе окно
      показывало две линии подряд с пустотой между ними.              */
   const details =
-    (it.multi && (it.steps || []).length ? `<p class="lbl">Шаги · сделано ${doneSteps} из ${it.steps.length}</p>
+    (it.multi && (it.steps || []).length ? `<p class="lbl">${tr("Шаги")} · ${tr("сделано")} ${doneSteps} ${tr("из")} ${it.steps.length}</p>
       <div class="readsteps">${it.steps.map((st, k) => `<div class="readstep ${
         st.done ? "done" : ""}"><span class="stepnum">${k + 1}</span><span class="tx">${
         esc(st.text)}</span></div>`).join("")}</div>` : "")
-    + ((isChoice(it) || isIdea(it)) && (it.options || []).length ? `<p class="lbl">Варианты</p>
+    + ((isChoice(it) || isIdea(it)) && (it.options || []).length ? `<p class="lbl">${tr("Варианты")}</p>
       <div>${it.options.map(o => `<div class="opt">· ${linkify(o.text)}</div>`).join("")}</div>` : "")
     /* У встречи по расписанию нет ни доли, ни тепловой карты: пропуск
        встречи — не статистика, а отдельное событие. Достаточно дней,
@@ -4256,53 +4406,53 @@ function openItem(id) {
       const hist = (it.repeat.history || []).slice().sort();
       const last = hist[hist.length - 1];
       const n = hist.length;
-      return `${everyOf(it) === "week" ? `<p class="lbl">В какие дни</p>
+      return `${everyOf(it) === "week" ? `<p class="lbl">${tr("В какие дни")}</p>
       ${daysRowHTML(it.repeat.days)}` : ""}
       <p class="qs" style="margin:11px 0 0">${n
-        ? `Состоялась ${n} ${plural(n, "раз", "раза", "раз")}, последний раз — ${formatDay(last)}`
-        : "Пока не состоялась ни разу"}. Повторяется бессрочно, пока не удалите.</p>`; })() : "")
+        ? `${tr("Состоялась")} ${n} ${plural(n, "раз", "раза", "раз")}, ${tr("последний раз —")} ${formatDay(last)}`
+        : tr("Пока не состоялась ни разу")}. ${tr("Повторяется бессрочно, пока не удалите.")}</p>`; })() : "")
     + (isRoutine(it) && it.routine ? (() => { const wi = weekInfo(it), mo = monthInfo(it);
-      const over = n => n ? ` · +${n} сверх расписания` : "";
-      return `<p class="lbl">В какие дни</p>
+      const over = n => n ? ` · +${n} ${tr("сверх расписания")}` : "";
+      return `<p class="lbl">${tr("В какие дни")}</p>
       ${daysRowHTML(it.routine.days)}
       ${it.partOfDay || it.mins ? `<p class="qs" style="margin:11px 0 0">${
         [partName(it.partOfDay), minsLabel(it.mins)].filter(Boolean).join(" · ")}</p>` : ""}
-      <p class="qs" style="margin:12px 0 4px">На этой неделе: <b style="color:var(--good)">${
-        wi.hit} из ${wi.of}</b> уже сделано${over(wi.extra)}</p>
+      <p class="qs" style="margin:12px 0 4px">${tr("На этой неделе:")} <b style="color:var(--good)">${
+        wi.hit} ${tr("из")} ${wi.of}</b> ${tr("уже сделано")}${over(wi.extra)}</p>
       ${weekDotsHTML(it)}
-      <p class="qs" style="margin:15px 0 6px">За 4 недели: <b style="color:var(--good)">${
-        mo.hit} из ${mo.of}</b>${over(mo.extra)}</p>
+      <p class="qs" style="margin:15px 0 6px">${tr("За 4 недели:")} <b style="color:var(--good)">${
+        mo.hit} ${tr("из")} ${mo.of}</b>${over(mo.extra)}</p>
       ${heatHTML(mo)}`; })() : "")
     /* Класс .readnote, а не .opt: у вариантов есть верхняя граница,
        и она рисовала лишнюю линию под заголовком «Заметка».        */
-    + (hasNotes(it) ? `<p class="lbl">${isAppt(it) ? "Адрес, телефон, заметки" : "Заметка"}</p>
+    + (hasNotes(it) ? `<p class="lbl">${isAppt(it) ? tr("Адрес, телефон, заметки") : tr("Заметка")}</p>
       <div class="readnote">${linkify(it.notes)}</div>` : "");
 
   openModal(`<h3>${kindIcon(it)}${esc(it.title)}</h3>
     <div class="readmeta" style="margin-top:-4px">
       ${sphereTags(it)}
-      ${inInbox(it) && !isIdea(it) ? `<span class="tag place">без категории</span>` : ""}
+      ${inInbox(it) && !isIdea(it) ? `<span class="tag place">${tr("без категории")}</span>` : ""}
       ${it.place ? placeTag(it.place) : ""}
-      ${it.person && it.person !== "Я" ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(it.person)}</span>` : ""}
+      ${it.person && !isSelf(it.person) ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(it.person)}</span>` : ""}
       ${dateLabel(it) && !isRoutine(it) ? `<span class="tag when">${sandFor(it)}${dateLabel(it)}</span>` : ""}
       ${!isRoutine(it) && !isIdea(it) && !isRemind(it)
-        ? `<span class="tag quadtag" title="Клетка матрицы: срочность из дедлайна, важность — ваша">${
-          esc(QUADS[quadrant(it)])}</span>` : ""}
+        ? `<span class="tag quadtag" title="${tr("Клетка матрицы: срочность из дедлайна, важность — ваша")}">${
+          esc(tr(QUADS[quadrant(it)]))}</span>` : ""}
     </div>
     ${details ? `<div class="sep"></div>${details}` : ""}
 
     <div class="row modalfoot">
-      <button class="btn link" data-act="edit" data-id="${it.id}">Редактировать</button>
+      <button class="btn link" data-act="edit" data-id="${it.id}">${tr("Редактировать")}</button>
       <div class="spacer"></div>
       ${isRoutine(it) || isAppt(it) || isIdea(it) || isRemind(it) ? "" : `<button class="btn ${
         it.working ? "link" : "primary"}" data-act="work" data-id="${it.id}">${
-        it.working ? "Отложить" : "Взяться"}</button>
+        it.working ? tr("Отложить") : tr("Взяться")}</button>
       ${/* У дела в работе «убрать из сегодня» нет: для этого есть
             «Отложить», которое и снимает признак, и уносит из дня. */
         it.working ? "" : `<button class="btn ${
         pickedToday(it) ? "link" : "primary"}" data-act="pin" data-id="${it.id}">${
-        pickedToday(it) ? "Убрать из сегодня" : "Сделать сегодня"}</button>`}`}
-    </div>`, "view:" + it.id, { act: "close", title: "Закрыть" });
+        pickedToday(it) ? tr("Убрать из сегодня") : tr("Сделать сегодня")}</button>`}`}
+    </div>`, "view:" + it.id, { act: "close", title: tr("Закрыть") });
 }
 
 function openEdit(id) {
@@ -4319,10 +4469,10 @@ function openEdit(id) {
     ${itemFormHTML(it, { date: "edDate", time: "edTime", notes: "edNotes" })}
 
     <div class="row modalfoot">
-      <button class="btn primary" data-act="esave" data-id="${it.id}">Готово</button>
+      <button class="btn primary" data-act="esave" data-id="${it.id}">${tr("Готово")}</button>
       <div class="spacer"></div>
-      <button class="btn outline danger" data-act="del" data-id="${it.id}">Удалить</button>
-    </div>`, "item:" + it.id, { act: "ecancel", id: it.id, title: "Отменить правки и закрыть" });
+      <button class="btn outline danger" data-act="del" data-id="${it.id}">${tr("Удалить")}</button>
+    </div>`, "item:" + it.id, { act: "ecancel", id: it.id, title: tr("Отменить правки и закрыть") });
 
   wireStepsInput(id);
   wireNotes(id, "edNotes");
@@ -4382,8 +4532,8 @@ function celebrate(it) {
   host.innerHTML = `<div class="cheer" data-act="cheerhide">
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
       stroke-linecap="round" stroke-linejoin="round"><path d="${c.ic}"/></svg>
-    <b>${c.t}</b>
-    <span>${n === 1 ? "первое за сегодня" : n + " " + plural(n, "дело", "дела", "дел") + " за сегодня"}</span>
+    <b>${tr(c.t)}</b>
+    <span>${n === 1 ? tr("первое за сегодня") : n + " " + plural(n, "дело", "дела", "дел") + " " + tr("за сегодня")}</span>
   </div>`;
   if (cheerTimer) clearTimeout(cheerTimer);
   cheerTimer = setTimeout(() => { const h = document.getElementById("cheerHost");
@@ -4675,7 +4825,7 @@ document.addEventListener("click", e => {
     case "undostep": if (it) { const st2 = it.steps[+el.dataset.i];
                        if (st2) { st2.done = false; delete st2.doneAt; }
                        save(); render(); } break;
-    case "del":     if (it && confirm("Удалить «" + it.title + "»?")) {
+    case "del":     if (it && confirm(tr("Удалить") + " «" + it.title + "»?")) {
                       S.items = S.items.filter(x => x.id !== id); save(); closeModal(); render(); } break;
   }
 });

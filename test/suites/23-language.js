@@ -6,7 +6,7 @@
 
    Экраны перечислены в DONE. Перевод идёт частями: сделанное сюда
    вписывается и назад уже не отваливается.                          */
-var DONE = ["settings"];
+var DONE = ["settings", "today", "calendar", "map", "matrix", "all", "item", "capture"];
 
 T.head("СЛОВАРЬ ЦЕЛ");
 T.ok("английский словарь не пуст", Object.keys(EN).length > 50,
@@ -26,7 +26,19 @@ T.ok("после переключения — английский", tr("Нас�
 T.ok("непереведённое остаётся русским, а не пропадает",
   tr("такой фразы в словаре нет") === "такой фразы в словаре нет");
 
+T.head("УТОЧНЕНИЕ ПЕРЕВОДА ПО МЕСТУ");
+S.cfg.lang = "en"; setLang();
+T.ok("в списке выбора — no deadline", tr("без срока") === "no deadline");
+T.ok("а в итоге дня — with no deadline",
+  tr("без срока", "итог") === "with no deadline");
+T.ok("уточнение без перевода падает на обычный ключ",
+  tr("без срока", "такого-места-нет") === "no deadline");
+S.cfg.lang = "ru"; setLang();
+T.ok("по-русски уточнение ничего не меняет",
+  tr("без срока", "итог") === "без срока");
+
 T.head("МНОЖЕСТВЕННОЕ ЧИСЛО ПО-АНГЛИЙСКИ");
+S.cfg.lang = "en"; setLang();
 T.ok("1 minute", plural(1, "минута", "минуты", "минут") === "minute");
 T.ok("2 minutes", plural(2, "минута", "минуты", "минут") === "minutes");
 T.ok("5 minutes", plural(5, "минута", "минуты", "минут") === "minutes");
@@ -73,12 +85,78 @@ function ruLeft(html) {
     .filter(function (v) { return v !== "Русский"; });
 }
 
-if (DONE.indexOf("settings") >= 0) {
-  openSettings();
-  var left = ruLeft(host.innerHTML);
-  T.ok("настройки полностью по-английски", left.length === 0, left.join(" | "));
-  closeModal();
+function screenClean(name, draw, where) {
+  if (DONE.indexOf(name) < 0) return;
+  draw();
+  var left = ruLeft(where());
+  T.ok(name + ": по-английски", left.length === 0, left.join(" | "));
 }
+
+screenClean("settings", function () { openSettings(); }, function () { return host.innerHTML; });
+closeModal();
+["today", "calendar", "map", "matrix", "all"].forEach(function (tab) {
+  screenClean(tab, function () { TAB = tab; render(); }, function () { return view.innerHTML; });
+});
+TAB = "today"; render();
+screenClean("item", function () { openItem(T.tasks()[0].id); },
+  function () { return host.innerHTML; });
+closeModal();
+screenClean("capture", function () { clickOn({ act: "cap" }); },
+  function () { return host.innerHTML; });
+clickOn({ act: "capcancel" });
+
+/* Половина текста живёт в состояниях, а не на первом экране: пустые
+   списки, открытые списки выбора, окна правки, карточка рутины. */
+T.head("СОСТОЯНИЯ, А НЕ ТОЛЬКО ПЕРВЫЙ ЭКРАН");
+function clean(name, html) {
+  var left = ruLeft(html);
+  T.ok(name, left.length === 0, left.join(" | "));
+}
+
+var task = T.tasks()[0];
+openItem(task.id); clickOn({ act: "edit", id: task.id });
+clean("окно правки", host.innerHTML);
+clickOn({ act: "dd", k: "place:" + task.id });
+clean("выбор места раскрыт", host.innerHTML);
+clickOn({ act: "dd", k: "place:" + task.id });
+clickOn({ act: "dd", k: "due:" + task.id });
+clean("выбор срока раскрыт", host.innerHTML);
+clickOn({ act: "ecancel", id: task.id }); closeModal();
+
+var rout = T.routine();
+openItem(rout.id);
+clean("карточка рутины", host.innerHTML);
+clickOn({ act: "edit", id: rout.id });
+clean("правка рутины", host.innerHTML);
+clickOn({ act: "ecancel", id: rout.id }); closeModal();
+
+var ap = T.appt();
+openItem(ap.id); clickOn({ act: "edit", id: ap.id });
+clickOn({ act: "arepeat", id: ap.id, v: "days" });
+clean("встреча по расписанию", host.innerHTML);
+["month", "quarter", "year"].forEach(function (m) {
+  clickOn({ act: "rmode", id: ap.id, v: m });
+  clean("повтор: " + m, host.innerHTML);
+});
+clickOn({ act: "arepeat", id: ap.id, v: "once" });
+clickOn({ act: "ecancel", id: ap.id }); closeModal();
+
+/* Сделанное дело: окно просмотра архива. */
+var d2 = T.tasks()[1];
+clickOn({ act: "toggle", id: d2.id });
+clickOn({ act: "opendone", id: d2.id, when: today() });
+clean("просмотр сделанного", host.innerHTML);
+closeModal();
+clickOn({ act: "toggle", id: d2.id });
+
+/* Пустое приложение — там живут все объяснения пустоты. */
+var keep = S.items;
+S.items = []; T.reset();
+["today", "calendar", "map", "matrix", "all"].forEach(function (tab) {
+  TAB = tab; render();
+  clean("пусто: " + TABS[tab], view.innerHTML);
+});
+S.items = keep; T.reset(); TAB = "today"; render();
 S.cfg.lang = "ru"; setLang(); T.reset();
 
 T.done();

@@ -110,8 +110,8 @@ function dateLabel(it) {
   if (repeats(it)) {
     const r = it.repeat, clock = it.time ? " · " + esc(it.time) : "";
     if (r.every === "year")    return r.day + " " + MONTHS[r.month] + " " + tr("каждый год") + clock;
-    if (r.every === "month")   return tr("#-го каждый месяц").replace("#", r.day) + clock;
-    if (r.every === "quarter") return tr("#-го раз в квартал").replace("#", r.day) + clock;
+    if (r.every === "month")   return tr("# каждый месяц").replace("#", dayNum(r.day)) + clock;
+    if (r.every === "quarter") return tr("# раз в квартал").replace("#", dayNum(r.day)) + clock;
     return tr("по") + " " + wdOrder().filter(d => (r.days || []).indexOf(d) >= 0)
       .map(d => WD_BY_DAY[d]).join(", ") + clock;
   }
@@ -331,7 +331,7 @@ function todayItems() {
   if (nMine) parts.push(nMine + " " + tr("уже в дне"));
   if (nSkip) parts.push(nSkip + " " + plural(nSkip, "вернётся", "вернутся", "вернутся") + " " + tr("завтра"));
   if (nLater) parts.push(nLater + " " + plural(nLater, "ждёт", "ждут", "ждут") + " " + tr("своего срока"));
-  if (nQuiet) parts.push(nQuiet + " " + plural(nQuiet, "молчит", "молчат", "молчат") + " " + tr("без срока"));
+  if (nQuiet) parts.push(nQuiet + " " + plural(nQuiet, "молчит", "молчат", "молчат") + " " + tr("без срока", "итог"));
   if (nAway) parts.push(nAway + " " + tr("в других местах"));
   const whyRest = parts.join(" · ");
   const whyEmpty = parts.length ? whyRest : tr("живых дел нет. Новые появятся здесь сами");
@@ -442,10 +442,10 @@ function routParts(list) {
   const out = [];
   PARTS.forEach(([k, L]) => {
     const n = list.filter(i => (i.partOfDay || "") === k).length;
-    if (n) out.push([k, L, n]);
+    if (n) out.push([k, tr(L), n]);
   });
   const n0 = list.filter(i => !i.partOfDay).length;
-  if (n0) out.push(["", PART_ANY, n0]);
+  if (n0) out.push(["", tr(PART_ANY), n0]);
   return out;
 }
 /* Открытая створка: выбранная, иначе текущая по часам, иначе первая
@@ -1091,7 +1091,7 @@ function renderCalendar() {
     }).join("")}</div>
     <div class="callegend">
       ${S.types.filter(t => t.kind !== "routine" && t.kind !== "idea").map(t =>
-        `<span><i style="background:var(--kind-${kindToken(t)})"></i>${esc(t.name)}</span>`).join("")}
+        `<span><i style="background:var(--kind-${kindToken(t)})"></i>${esc(typeLabel(t))}</span>`).join("")}
       <span style="margin-left:10px"><i style="background:var(--accent-soft);border:1px solid var(--accent)"></i>${tr("фон: со временем")}</span>
       <span><i style="background:var(--warm-soft);border:1px solid var(--warm)"></i>${tr("фон: к сроку")}</span>
     </div>

@@ -24,8 +24,8 @@ function celebrate(it) {
   host.innerHTML = `<div class="cheer" data-act="cheerhide">
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
       stroke-linecap="round" stroke-linejoin="round"><path d="${c.ic}"/></svg>
-    <b>${c.t}</b>
-    <span>${n === 1 ? "первое за сегодня" : n + " " + plural(n, "дело", "дела", "дел") + " за сегодня"}</span>
+    <b>${tr(c.t)}</b>
+    <span>${n === 1 ? tr("первое за сегодня") : n + " " + plural(n, "дело", "дела", "дел") + " " + tr("за сегодня")}</span>
   </div>`;
   if (cheerTimer) clearTimeout(cheerTimer);
   cheerTimer = setTimeout(() => { const h = document.getElementById("cheerHost");
@@ -317,7 +317,7 @@ document.addEventListener("click", e => {
     case "undostep": if (it) { const st2 = it.steps[+el.dataset.i];
                        if (st2) { st2.done = false; delete st2.doneAt; }
                        save(); render(); } break;
-    case "del":     if (it && confirm("Удалить «" + it.title + "»?")) {
+    case "del":     if (it && confirm(tr("Удалить") + " «" + it.title + "»?")) {
                       S.items = S.items.filter(x => x.id !== id); save(); closeModal(); render(); } break;
   }
 });

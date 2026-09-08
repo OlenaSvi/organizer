@@ -13,9 +13,9 @@ const axisValues = a => a === "place" ? S.places.concat([NOPLACE])
 /* Ветка вида хранится ключом, а показывается именем — имена в «Что это»
    переименовываются, и подписи на карте следуют за ними сами.        */
 const axisLabel = v => AXIS === "type"
-  ? (S.types.find(t => t.key === v) || { name: v }).name : v;
+  ? typeLabel(S.types.find(t => t.key === v) || { name: v, key: v }) : tr(v);
 const inAxis = (it, v) => AXIS === "place" ? (it.place || NOPLACE) === v
-  : AXIS === "person" ? (it.person || "Я") === v   // без пометки — значит моё
+  : AXIS === "person" ? (it.person || S.people[0]) === v   // без пометки — значит моё
   : AXIS === "type" ? typeDef(it.type).key === v   // с запасом: битый вид падает на первый
   : (it.spheres || []).indexOf(v) >= 0;      // на оси сфер дело бывает в нескольких
 /* Дело без сферы на осях мест и людей видно как любое другое: место и
@@ -88,7 +88,7 @@ function renderMap() {
     bb.x1 = Math.max(bb.x1, x1); bb.y1 = Math.max(bb.y1, y1);
   };
 
-  const rootLabel = AXES[AXIS];
+  const rootLabel = tr(AXES[AXIS]);
   const rSide = Math.max(textW(rootLabel, 17, 800) + 46, 104), rHalf = rSide / 2;
   grow(-rHalf, -rHalf, rHalf, rHalf);
 
@@ -162,23 +162,22 @@ function renderMap() {
   const halfH = Math.max(Math.abs(bb.y0), Math.abs(bb.y1)) + 26;
 
   const openVals = vals.filter(isOpen);
-  view.innerHTML = `<h2>Карта</h2>
-    <p class="sub">Здесь ничего не теряется. Раскрытые ветки такими и остаются —
-      можно раскрыть все сразу и увидеть картину целиком.</p>
+  view.innerHTML = `<h2>${tr("Карта")}</h2>
+    <p class="sub">${tr("Здесь ничего не теряется. Раскрытые ветки такими и остаются — можно раскрыть все сразу и увидеть картину целиком.")}</p>
     ${awayNote(awayAll())}
     <div class="mapstage${MAPFULL ? " full" : ""}">
       <div class="maprow">
         <div class="axis">${Object.keys(AXES).map(a =>
-          `<button data-act="axis" data-a="${a}" class="${AXIS === a ? "on" : ""}">${AXES[a]}</button>`).join("")}</div>
+          `<button data-act="axis" data-a="${a}" class="${AXIS === a ? "on" : ""}">${tr(AXES[a])}</button>`).join("")}</div>
         <div class="maptools">
-          <button data-act="openall" data-v="all" class="wide">раскрыть все</button>
-          <button data-act="openall" data-v="none" class="wide">свернуть все</button>
-          <button data-act="zoom" data-d="out" title="Отдалить">−</button>
-          <button data-act="zoom" data-d="in" title="Приблизить">+</button>
-          <button data-act="zoom" data-d="fit" class="wide" title="Показать всё">уместить</button>
+          <button data-act="openall" data-v="all" class="wide">${tr("раскрыть все")}</button>
+          <button data-act="openall" data-v="none" class="wide">${tr("свернуть все")}</button>
+          <button data-act="zoom" data-d="out" title="${tr("Отдалить")}">−</button>
+          <button data-act="zoom" data-d="in" title="${tr("Приблизить")}">+</button>
+          <button data-act="zoom" data-d="fit" class="wide" title="${tr("Показать всё")}">${tr("уместить")}</button>
           <button data-act="mapfull" class="wide" title="${MAPFULL
-            ? "Вернуть карту в страницу" : "Отдать карте всё окно"}">${
-            MAPFULL ? "свернуть" : "во весь экран"}</button>
+            ? tr("Вернуть карту в страницу") : tr("Отдать карте всё окно")}">${
+            MAPFULL ? tr("свернуть") : tr("во весь экран")}</button>
         </div>
       </div>
       <svg id="map" viewBox="${-halfW} ${-halfH} ${halfW * 2} ${halfH * 2}"
@@ -191,12 +190,12 @@ function renderMap() {
                  : AXIS === "type" ? `data-type="${esc(v)}"` : `data-sphere="${esc(v)}"`;
       return `<div class="branchhead">
           <h2><span style="display:inline-block;width:11px;height:11px;border-radius:50%;
-            background:${colorOf(AXIS, v)};margin-right:9px"></span>Ветка «${esc(axisLabel(v))}»</h2>
+            background:${colorOf(AXIS, v)};margin-right:9px"></span>${tr("Ветка")} «${esc(axisLabel(v))}»</h2>
           <button class="addhere" data-act="newhere" ${v === NOPLACE ? "" : attr}
-            title="Создать дело в этой ветке">＋</button>
+            title="${tr("Создать дело в этой ветке")}">＋</button>
         </div>
-        <p class="sub">${list.length} ${list.length === 1 ? "дело" : "дел"}</p>
-        ${list.map(mapRowHTML).join("") || `<div class="empty">Пока ничего нет</div>`}`;
+        <p class="sub">${list.length} ${plural(list.length, "дело", "дела", "дел")}</p>
+        ${list.map(mapRowHTML).join("") || `<div class="empty">${tr("Пока ничего нет")}</div>`}`;
     }).join("")}`;
 
   wireMap(halfW * 2, halfH * 2);
@@ -217,15 +216,15 @@ function mapRowHTML(i) {
   const takeable = !isRoutine(i) && !isAppt(i) && !isIdea(i);
   return `<div class="allrow">
     ${isRoutine(i) ? `<span class="tick" style="opacity:.35"></span>`
-      : `<button class="tick" data-act="toggle" data-id="${i.id}" title="Отметить сделанным"></button>`}
+      : `<button class="tick" data-act="toggle" data-id="${i.id}" title="${tr("Отметить сделанным")}"></button>`}
     ${kindIcon(i)}
     <button class="suggname" data-act="open" data-id="${i.id}">${esc(i.title)}</button>
     ${stepBadge(i)}
     ${(i.spheres || []).length > 1 ? `<span class="tag place"
-        title="Одна запись, видна в каждой своей ветке">в ${i.spheres.length} ветках</span>` : ""}
+        title="${tr("Одна запись, видна в каждой своей ветке")}">${tr("в")} ${i.spheres.length} ${tr("ветках")}</span>` : ""}
     ${dateLabel(i) ? `<span class="suggdate">${sandFor(i)}${dateLabel(i)}</span>` : ""}
-    ${takeable ? (pickedToday(i) ? `<span class="tag">в дне</span>`
-      : `<button class="linkbtn" data-act="pin" data-id="${i.id}">＋ в сегодня</button>`) : ""}
+    ${takeable ? (pickedToday(i) ? `<span class="tag">${tr("в дне")}</span>`
+      : `<button class="linkbtn" data-act="pin" data-id="${i.id}">＋ ${tr("в сегодня")}</button>`) : ""}
   </div>`;
 }
 
@@ -298,7 +297,7 @@ function fieldOf(el, id) {
 function nudge(inp) {
   if (!inp) return;
   if (inp.classList) inp.classList.add("needfill");
-  inp.placeholder = "Сначала впишите название";
+  inp.placeholder = tr("Сначала впишите название");
   if (inp.focus) inp.focus();
 }
 const dup = (list, t, self) => list.some(x => x !== self && String(x).toLowerCase() === t.toLowerCase());
@@ -312,12 +311,12 @@ function listSectionHTML(c) {
         <div class="nm">${esc(r.label)}<span style="color:var(--dim);font-weight:400"> · ${r.count}</span></div>
         ${r.note || ""}
         ${r.extra || ""}
-        <button class="linkbtn" data-act="${c.act}ren" data-v="${esc(r.id)}">переименовать</button>
-        <button class="linkbtn danger" data-act="${c.act}del" data-v="${esc(r.id)}">убрать</button>
+        <button class="linkbtn" data-act="${c.act}ren" data-v="${esc(r.id)}">${tr("переименовать")}</button>
+        <button class="linkbtn danger" data-act="${c.act}del" data-v="${esc(r.id)}">${tr("убрать")}</button>
       </div>`).join("")}
       <div class="brow addrow">
         <input type="text" id="${c.input}" placeholder="${c.ph}">
-        <button class="btn primary" data-act="${c.act}add">Добавить</button>
+        <button class="btn primary" data-act="${c.act}add">${tr("Добавить")}</button>
       </div>
     </div>`;
 }
@@ -327,14 +326,14 @@ function addSphere(el) {
   const inp = fieldOf(el, "dirNew");
   const t = (inp && inp.value ? inp.value : "").trim();
   if (!t) return nudge(inp);
-  if (dup(S.spheres, t)) return alert("Такая сфера уже есть.");
+  if (dup(S.spheres, t)) return alert(tr("Такая сфера уже есть."));
   S.spheres.push(t); inp.value = ""; save(); render(); if (host.innerHTML) openSettings();
 }
 function renameSphere(old) {
   const inp = document.getElementById("dirName");
   const t = (inp && inp.value ? inp.value : "").trim();
   if (!t || t === old) return;
-  if (dup(S.spheres, t, old)) return alert("Такая сфера уже есть.");
+  if (dup(S.spheres, t, old)) return alert(tr("Такая сфера уже есть."));
   S.items.forEach(i => { i.spheres = (i.spheres || []).map(x => x === old ? t : x); });
   S.spheres = S.spheres.map(x => x === old ? t : x);
   S.open = S.open.map(x => x === old ? t : x);
@@ -344,9 +343,9 @@ function removeSphere(name) {
   const used = S.items.filter(i => (i.spheres || []).indexOf(name) >= 0).length;
   const alone = S.items.filter(i => !i.done && (i.spheres || []).length === 1
     && i.spheres[0] === name).length;
-  if (!confirm("Убрать сферу «" + name + "»?" + (used
-    ? "\n\n" + used + " дел останутся на месте, но потеряют эту метку."
-      + (alone ? "\nИз них " + alone + " попадут в «Разобрать» — других сфер у них нет." : "")
+  if (!confirm(tr("Убрать сферу") + " «" + name + "»?" + (used
+    ? "\n\n" + used + " " + tr("дел останутся на месте, но потеряют эту метку.")
+      + (alone ? "\n" + tr("Из них") + " " + alone + " " + tr("попадут в «Разобрать» — других сфер у них нет.") : "")
     : ""))) return;
   S.items.forEach(i => { i.spheres = (i.spheres || []).filter(x => x !== name); });
   S.spheres = S.spheres.filter(x => x !== name);
@@ -359,16 +358,16 @@ function addPlace(el) {
   const inp = fieldOf(el, "dirNew");
   const t = (inp && inp.value ? inp.value : "").trim();
   if (!t) return nudge(inp);
-  if (t.toLowerCase() === NOPLACE) return alert("Так называется пустая ветка на карте. Выберите другое название.");
-  if (dup(S.places, t)) return alert("Такое место уже есть.");
+  if (t.toLowerCase() === NOPLACE) return alert(tr("Так называется пустая ветка на карте. Выберите другое название."));
+  if (dup(S.places, t)) return alert(tr("Такое место уже есть."));
   S.places.push(t); inp.value = ""; save(); render(); if (host.innerHTML) openSettings();
 }
 function renamePlace(p) {
   const inp = document.getElementById("dirName");
   const t = (inp && inp.value ? inp.value : "").trim();
   if (!t || t === p) return;
-  if (t.toLowerCase() === NOPLACE) return alert("Так называется пустая ветка на карте. Выберите другое название.");
-  if (dup(S.places, t, p)) return alert("Такое место уже есть.");
+  if (t.toLowerCase() === NOPLACE) return alert(tr("Так называется пустая ветка на карте. Выберите другое название."));
+  if (dup(S.places, t, p)) return alert(tr("Такое место уже есть."));
   S.items.forEach(i => { if (i.place === p) i.place = t; });
   S.places = S.places.map(x => x === p ? t : x);
   if (S.hereNow === p) S.hereNow = t;
@@ -377,8 +376,8 @@ function renamePlace(p) {
 }
 function removePlace(p) {
   const used = S.items.filter(i => i.place === p).length;
-  if (!confirm("Убрать место «" + p + "»?" + (used
-    ? "\n\n" + used + " дел останутся на месте, но потеряют привязку и снова будут видны отовсюду." : ""))) return;
+  if (!confirm(tr("Убрать место") + " «" + p + "»?" + (used
+    ? "\n\n" + used + " " + tr("дел останутся на месте, но потеряют привязку и снова будут видны отовсюду.") : ""))) return;
   S.items.forEach(i => { if (i.place === p) i.place = null; });
   S.places = S.places.filter(x => x !== p);
   if (S.hereNow === p) S.hereNow = null;
@@ -391,14 +390,14 @@ function addPerson(el) {
   const inp = fieldOf(el, "dirNew");
   const t = (inp && inp.value ? inp.value : "").trim();
   if (!t) return nudge(inp);
-  if (dup(S.people, t)) return alert("Такой человек уже есть.");
+  if (dup(S.people, t)) return alert(tr("Такой человек уже есть."));
   S.people.push(t); inp.value = ""; save(); render(); if (host.innerHTML) openSettings();
 }
 function renamePerson(p) {
   const inp = document.getElementById("dirName");
   const t = (inp && inp.value ? inp.value : "").trim();
   if (!t || t === p) return;
-  if (dup(S.people, t, p)) return alert("Такой человек уже есть.");
+  if (dup(S.people, t, p)) return alert(tr("Такой человек уже есть."));
   S.items.forEach(i => { if (i.person === p) i.person = t; });
   S.people = S.people.map(x => x === p ? t : x);
   S.open = S.open.map(x => x === p ? t : x);
@@ -406,8 +405,8 @@ function renamePerson(p) {
 }
 function removePerson(p) {
   const used = S.items.filter(i => i.person === p).length;
-  if (!confirm("Убрать «" + p + "» из списка людей?" + (used
-    ? "\n\n" + used + " дел останутся, но перестанут быть привязаны к человеку." : ""))) return;
+  if (!confirm(tr("Убрать") + " «" + p + "» " + tr("из списка людей?") + (used
+    ? "\n\n" + used + " " + tr("дел останутся, но перестанут быть привязаны к человеку.") : ""))) return;
   S.items.forEach(i => { if (i.person === p) i.person = null; });
   S.people = S.people.filter(x => x !== p);
   S.open = S.open.filter(x => x !== p);
@@ -484,8 +483,8 @@ function dirPageHTML() {
            <input type="text" id="dirName" value="${esc(label(v))}" autocomplete="off">
          </div>
          <div class="direditbtns">
-           <button class="btn primary" data-act="${d.act}ren" data-v="${esc(v)}">Готово</button>
-           <button class="btn link" data-act="dircancel">Отмена</button>
+           <button class="btn primary" data-act="${d.act}ren" data-v="${esc(v)}">${tr("Готово")}</button>
+           <button class="btn link" data-act="dircancel">${tr("Отмена")}</button>
            <div class="spacer"></div>
            <button class="btn link danger" data-act="${d.act}del" data-v="${esc(v)}">${tr("убрать")} ${tr(d.one)}</button>
          </div>
@@ -495,8 +494,8 @@ function dirPageHTML() {
          <span class="nm">${esc(label(v))}</span>
          <span class="qs cnt">${d.count(v)} ${plural(d.count(v), "дело", "дела", "дел")}</span>
          <span class="acts">
-           <button class="linkbtn" data-act="diredit" data-v="${esc(v)}">переименовать</button>
-           <button class="linkbtn danger" data-act="${d.act}del" data-v="${esc(v)}">убрать</button>
+           <button class="linkbtn" data-act="diredit" data-v="${esc(v)}">${tr("переименовать")}</button>
+           <button class="linkbtn danger" data-act="${d.act}del" data-v="${esc(v)}">${tr("убрать")}</button>
          </span>
        </div>`).join("")}
     <div class="diraddrow">
@@ -506,10 +505,10 @@ function dirPageHTML() {
   </div>
   <p class="qs" style="margin:14px 4px 0">${tr(d.note)}</p>
   <div class="row modalfoot">
-    <span class="qs" style="margin:0">${dirSaved && !dirDirty() ? "Изменения сохранены" : ""}</span>
+    <span class="qs" style="margin:0">${dirSaved && !dirDirty() ? tr("Изменения сохранены") : ""}</span>
     <div class="spacer"></div>
     <button class="btn ${dirDirty() ? "primary" : "ghost"}" data-act="dirsave"
-      ${dirDirty() ? "" : "disabled"}>Сохранить изменения</button>
+      ${dirDirty() ? "" : "disabled"}>${tr("Сохранить изменения")}</button>
   </div>`;
 }
 function wireDirectories() {
