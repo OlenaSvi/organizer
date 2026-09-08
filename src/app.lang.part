@@ -28,6 +28,12 @@ const PL_EN = {
   "неделя|недели|недель":   ["week", "weeks"],
   "раз|раза|раз":           ["time", "times"],
   "шаг|шага|шагов":         ["step", "steps"],
+  "встреча|встречи|встреч": ["appointment", "appointments"],
+  "дело ждёт|дела ждут|дел ждут": ["task waiting", "tasks waiting"],
+  "запись|записи|записей":  ["entry", "entries"],
+  "вернётся|вернутся|вернутся": ["comes back", "come back"],
+  "ждёт|ждут|ждут":         ["is waiting", "are waiting"],
+  "молчит|молчат|молчат":   ["is quiet", "are quiet"],
 };
 
 const EN = {
@@ -54,6 +60,137 @@ const EN = {
   "Отмена": "Cancel",
   "Закрыть без сохранения": "Close without saving",
   "‹ Настройки": "‹ Settings",
+
+  /* ── шапка и вкладки ───────────────────────────────────────── */
+  "Сегодня": "Today", "Календарь": "Calendar", "Карта": "Map",
+  "Матрица": "Matrix", "Список": "List",
+  "Я сейчас:": "I am in:", "везде": "everywhere", "здесь": "here",
+  "Везде · без учёта места": "Everywhere · ignore places",
+  "Разобрать": "Sort out",
+
+  /* ── карточка дела ─────────────────────────────────────────── */
+  "в работе": "in progress", "Готово": "Done",
+  "сегодня": "today", "завтра": "tomorrow", "вчера": "yesterday",
+  "шаг": "step", "Шаг": "Step", "из": "of", "в": "in",
+  "не сегодня": "not today", "в предложения": "back to suggestions",
+  "в сегодня": "to today",
+  "Убрать из дня. Срок остаётся — завтра дело придёт в предложения":
+    "Take it out of today. The deadline stays — tomorrow it comes back as a suggestion.",
+  "Убрать из дня. Дело вернётся в «Предлагаю» и его можно взять снова":
+    "Take it out of today. It goes back to “Suggested” and you can pick it again.",
+  "Это одна запись, а не две": "This is one task, not two",
+  "одно дело в": "one task in", "ветках": "branches",
+
+  /* ── предложения и итог дня ────────────────────────────────── */
+  "не успели": "didn't get to it", "давно ждёт": "waiting a while",
+  "уже в дне": "already in today", "своего срока": "for their date",
+  "без срока": "with no deadline", "в других местах": "in other places",
+  "живых дел нет. Новые появятся здесь сами":
+    "no live tasks. New ones will show up here on their own",
+
+  /* ── рутины, сделанное, предложения ────────────────────────── */
+  "сделано": "done", "сделано сверх расписания": "done, off schedule",
+  "не отмечено (и это не страшно)": "not ticked (and that's fine)",
+  "рутины ещё не было": "the routine didn't exist yet",
+  "ещё впереди": "still ahead", "не по расписанию": "not on the schedule",
+  "Эта неделя. Бледная точка — не по расписанию. Расписание — в карточке рутины":
+    "This week. A pale dot means off schedule. The schedule is in the routine's card.",
+  "Рутина заведена сегодня": "The routine was created today",
+  "Сделано на этой неделе": "Done this week", "новая": "new",
+  "Вернуть в работу": "Put back", "Посмотреть": "Open",
+  "Вернуть шаг в работу": "Put the step back",
+  "Посмотреть детали": "See the details", "без сферы": "no area",
+  "взять": "take it",
+  "Не предлагать сегодня. Завтра вернётся": "Don't suggest today. It comes back tomorrow.",
+
+  /* ── экран «Сегодня» ───────────────────────────────────────── */
+  "Дела": "Tasks", "взято": "taken", "со сроком": "with a deadline",
+  "Сделано из поставленных на сегодня. Полоски — лимит дня:":
+    "Done out of what you took on today. The bars are the day's limit:",
+  "Взято больше, чем помещается в день.": "You've taken more than fits in a day.",
+  "вместе это больше, чем помещается в день.": "together that is more than fits in a day.",
+  "Встречу не отложить, а срок можно сдвинуть: откройте дело и поменяйте дату.":
+    "An appointment can't be moved, but a deadline can: open the task and change the date.",
+  "Пока ничего не взято.": "Nothing taken yet.",
+  "Возьмите из предложенного — или ничего, если сегодня не тот день.":
+    "Take something from the suggestions — or nothing, if today isn't the day.",
+  "На сегодня всё.": "That's all for today.",
+
+  /* ── предложения, панели дня ───────────────────────────────── */
+  "Показать предложения": "Show suggestions",
+  "Свернуть — предложения подождут молча": "Collapse — the suggestions will wait quietly",
+  "Предлагаю": "Suggested", "в очереди ещё": "in the queue:",
+  "«не сегодня» показывает следующее": "“not today” brings up the next one",
+  "Остальное сейчас не предлагается:": "The rest isn't being suggested right now:",
+  "Предлагать нечего:": "Nothing to suggest:",
+  "Рутина": "Routine", "всего": "in total", "без времени": "with no time set",
+  "без заданного времени": "with no time set",
+  "События дня": "Today's events",
+  "На сегодня ничего не назначено": "Nothing is scheduled for today",
+  "Это не «ничего» — день дышит свободнее.": "That's not nothing — the day breathes easier.",
+
+  /* ── «Список»: срезы, период, порядок ──────────────────────── */
+  "Состоялась": "It happened", "Период": "Period", "Порядок": "Order",
+  "за всё время": "all time", "за неделю": "past week", "за месяц": "past month",
+  "по сроку": "by deadline", "сначала важные": "important first",
+  "сначала новые": "newest first", "по алфавиту": "alphabetically",
+  "все": "everything", "с шагами": "with steps", "сделанные": "done",
+  "срок прошёл": "deadline passed",
+
+  "Отметить сделанной сегодня": "Tick it off for today",
+  "Отметить сделанным": "Mark as done", "без категории": "no area",
+  "дней": "days", "без дедлайна": "no deadline",
+  "Ничего не нашлось.": "Nothing found.",
+  "Плоский список: по умолчанию видно всё живое — дела, рутина, идеи и встречи. Срезом можно оставить что-то одно.":
+    "A flat list: by default you see everything alive — tasks, routines, ideas and appointments. Narrow it down with a filter.",
+  "Поиск по названию": "Search by name",
+
+  /* ── даты ──────────────────────────────────────────────────── */
+  /* Решётка — место числа: в английском порядок слов свой.       */
+  "каждый год": "every year",
+  "#-го каждый месяц": "the #th, every month",
+  "#-го раз в квартал": "the #th, every quarter",
+  "по": "on", "через #": "in #", "# назад": "# ago",
+  "когда-то раньше": "some time ago",
+
+  /* ── календарь, архив, матрица ─────────────────────────────── */
+  "вернуть": "undo",
+  "Здесь появится всё, что вы отметите сделанным.":
+    "Everything you tick off will show up here.",
+  "Один день целиком.": "One whole day.",
+  "Назначено на этот день": "Scheduled for this day",
+  "На этот день ничего не назначено.": "Nothing is scheduled for this day.",
+  "Взято на сегодня": "Taken on for today", "срок у них другой": "their deadline is another day",
+  "день": "day", "неделя": "week", "месяц": "month",
+  "Назад": "Back", "Вперёд": "Forward",
+  "Встречи и дедлайны.": "Appointments and deadlines.",
+  "Дело можно перетащить на другой день — дедлайн переедет вместе с ним.":
+    "You can drag a task to another day — the deadline moves with it.",
+  "Открыть этот день целиком": "Open this whole day", "и ещё": "and",
+  "Создать дело на этот день": "Create a task for this day",
+  "фон: со временем": "shaded: has a time", "фон: к сроку": "shaded: has a deadline",
+  "В этом периоде ничего не назначено.": "Nothing is scheduled in this period.",
+  "Отметить, что состоялась в этот день": "Mark it as happened on this day",
+  "Создать дело сразу в этой клетке": "Create a task right in this cell",
+  "Главная клетка:": "The cell that matters:", "Пока ничего нет": "Nothing here yet",
+  "Важное и срочное": "Important and urgent",
+  "Строки — срочность: считается из дедлайна и меняется только вместе с ним. Столбцы — важность: это всегда ваше решение. По умолчанию дело важное — вы его записали, значит оно зачем-то нужно.":
+    "Rows are urgency: worked out from the deadline, and it changes only when the deadline does. Columns are importance: that is always your call. By default a task is important — you wrote it down, so it matters for something.",
+  "Перетащите дело в соседний столбец, чтобы сменить важность. Строку перетаскиванием не изменить — для этого нужен другой дедлайн.":
+    "Drag a task to the next column to change its importance. Rows can't be changed by dragging — that takes a different deadline.",
+  "важное": "important", "неважное": "not important",
+  "срочное": "urgent", "несрочное": "not urgent",
+  "Срочное важное": "Urgent and important",
+  "Делать сейчас. Больше ничего в этой клетке решать не надо":
+    "Do it now. There is nothing else to decide in this cell",
+  "Срочное неважное": "Urgent, not important",
+  "Дата подошла у того, что вы сами назвали неважным. Кандидаты отдать или отпустить":
+    "The date has come for something you yourself called unimportant. Candidates to hand off or let go",
+  "Несрочное важное": "Important, not urgent",
+  "Здесь лежит вся ваша жизнь — и именно это вечно проигрывает срочной ерунде. Поэтому одно дело отсюда каждый день стоит в «Предлагаю»":
+    "This is where your whole life sits — and it is exactly what keeps losing to urgent nonsense. That's why one task from here is suggested every day",
+  "Несрочное неважное": "Not urgent, not important",
+  "Пусть лежит. Ничего страшного не происходит": "Let it sit. Nothing bad is happening",
 
   /* ── справочники ───────────────────────────────────────────── */
   "Сферы": "Areas", "Места": "Places", "Люди": "People",

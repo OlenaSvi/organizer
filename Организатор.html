@@ -941,7 +941,7 @@ button.ddday:hover{background:var(--bg)}
   <div class="spacer"></div>
   <div class="headdate" id="headDate"></div>
   <div class="spacer"></div>
-  <div class="here">Я сейчас:
+  <div class="here"><span id="hereLabel">Я сейчас:</span>
     <span id="hereBox"></span>
   </div>
   <button class="inbox-pill" id="inboxBtn" hidden></button>
@@ -982,6 +982,12 @@ const PL_EN = {
   "неделя|недели|недель":   ["week", "weeks"],
   "раз|раза|раз":           ["time", "times"],
   "шаг|шага|шагов":         ["step", "steps"],
+  "встреча|встречи|встреч": ["appointment", "appointments"],
+  "дело ждёт|дела ждут|дел ждут": ["task waiting", "tasks waiting"],
+  "запись|записи|записей":  ["entry", "entries"],
+  "вернётся|вернутся|вернутся": ["comes back", "come back"],
+  "ждёт|ждут|ждут":         ["is waiting", "are waiting"],
+  "молчит|молчат|молчат":   ["is quiet", "are quiet"],
 };
 
 const EN = {
@@ -1008,6 +1014,137 @@ const EN = {
   "Отмена": "Cancel",
   "Закрыть без сохранения": "Close without saving",
   "‹ Настройки": "‹ Settings",
+
+  /* ── шапка и вкладки ───────────────────────────────────────── */
+  "Сегодня": "Today", "Календарь": "Calendar", "Карта": "Map",
+  "Матрица": "Matrix", "Список": "List",
+  "Я сейчас:": "I am in:", "везде": "everywhere", "здесь": "here",
+  "Везде · без учёта места": "Everywhere · ignore places",
+  "Разобрать": "Sort out",
+
+  /* ── карточка дела ─────────────────────────────────────────── */
+  "в работе": "in progress", "Готово": "Done",
+  "сегодня": "today", "завтра": "tomorrow", "вчера": "yesterday",
+  "шаг": "step", "Шаг": "Step", "из": "of", "в": "in",
+  "не сегодня": "not today", "в предложения": "back to suggestions",
+  "в сегодня": "to today",
+  "Убрать из дня. Срок остаётся — завтра дело придёт в предложения":
+    "Take it out of today. The deadline stays — tomorrow it comes back as a suggestion.",
+  "Убрать из дня. Дело вернётся в «Предлагаю» и его можно взять снова":
+    "Take it out of today. It goes back to “Suggested” and you can pick it again.",
+  "Это одна запись, а не две": "This is one task, not two",
+  "одно дело в": "one task in", "ветках": "branches",
+
+  /* ── предложения и итог дня ────────────────────────────────── */
+  "не успели": "didn't get to it", "давно ждёт": "waiting a while",
+  "уже в дне": "already in today", "своего срока": "for their date",
+  "без срока": "with no deadline", "в других местах": "in other places",
+  "живых дел нет. Новые появятся здесь сами":
+    "no live tasks. New ones will show up here on their own",
+
+  /* ── рутины, сделанное, предложения ────────────────────────── */
+  "сделано": "done", "сделано сверх расписания": "done, off schedule",
+  "не отмечено (и это не страшно)": "not ticked (and that's fine)",
+  "рутины ещё не было": "the routine didn't exist yet",
+  "ещё впереди": "still ahead", "не по расписанию": "not on the schedule",
+  "Эта неделя. Бледная точка — не по расписанию. Расписание — в карточке рутины":
+    "This week. A pale dot means off schedule. The schedule is in the routine's card.",
+  "Рутина заведена сегодня": "The routine was created today",
+  "Сделано на этой неделе": "Done this week", "новая": "new",
+  "Вернуть в работу": "Put back", "Посмотреть": "Open",
+  "Вернуть шаг в работу": "Put the step back",
+  "Посмотреть детали": "See the details", "без сферы": "no area",
+  "взять": "take it",
+  "Не предлагать сегодня. Завтра вернётся": "Don't suggest today. It comes back tomorrow.",
+
+  /* ── экран «Сегодня» ───────────────────────────────────────── */
+  "Дела": "Tasks", "взято": "taken", "со сроком": "with a deadline",
+  "Сделано из поставленных на сегодня. Полоски — лимит дня:":
+    "Done out of what you took on today. The bars are the day's limit:",
+  "Взято больше, чем помещается в день.": "You've taken more than fits in a day.",
+  "вместе это больше, чем помещается в день.": "together that is more than fits in a day.",
+  "Встречу не отложить, а срок можно сдвинуть: откройте дело и поменяйте дату.":
+    "An appointment can't be moved, but a deadline can: open the task and change the date.",
+  "Пока ничего не взято.": "Nothing taken yet.",
+  "Возьмите из предложенного — или ничего, если сегодня не тот день.":
+    "Take something from the suggestions — or nothing, if today isn't the day.",
+  "На сегодня всё.": "That's all for today.",
+
+  /* ── предложения, панели дня ───────────────────────────────── */
+  "Показать предложения": "Show suggestions",
+  "Свернуть — предложения подождут молча": "Collapse — the suggestions will wait quietly",
+  "Предлагаю": "Suggested", "в очереди ещё": "in the queue:",
+  "«не сегодня» показывает следующее": "“not today” brings up the next one",
+  "Остальное сейчас не предлагается:": "The rest isn't being suggested right now:",
+  "Предлагать нечего:": "Nothing to suggest:",
+  "Рутина": "Routine", "всего": "in total", "без времени": "with no time set",
+  "без заданного времени": "with no time set",
+  "События дня": "Today's events",
+  "На сегодня ничего не назначено": "Nothing is scheduled for today",
+  "Это не «ничего» — день дышит свободнее.": "That's not nothing — the day breathes easier.",
+
+  /* ── «Список»: срезы, период, порядок ──────────────────────── */
+  "Состоялась": "It happened", "Период": "Period", "Порядок": "Order",
+  "за всё время": "all time", "за неделю": "past week", "за месяц": "past month",
+  "по сроку": "by deadline", "сначала важные": "important first",
+  "сначала новые": "newest first", "по алфавиту": "alphabetically",
+  "все": "everything", "с шагами": "with steps", "сделанные": "done",
+  "срок прошёл": "deadline passed",
+
+  "Отметить сделанной сегодня": "Tick it off for today",
+  "Отметить сделанным": "Mark as done", "без категории": "no area",
+  "дней": "days", "без дедлайна": "no deadline",
+  "Ничего не нашлось.": "Nothing found.",
+  "Плоский список: по умолчанию видно всё живое — дела, рутина, идеи и встречи. Срезом можно оставить что-то одно.":
+    "A flat list: by default you see everything alive — tasks, routines, ideas and appointments. Narrow it down with a filter.",
+  "Поиск по названию": "Search by name",
+
+  /* ── даты ──────────────────────────────────────────────────── */
+  /* Решётка — место числа: в английском порядок слов свой.       */
+  "каждый год": "every year",
+  "#-го каждый месяц": "the #th, every month",
+  "#-го раз в квартал": "the #th, every quarter",
+  "по": "on", "через #": "in #", "# назад": "# ago",
+  "когда-то раньше": "some time ago",
+
+  /* ── календарь, архив, матрица ─────────────────────────────── */
+  "вернуть": "undo",
+  "Здесь появится всё, что вы отметите сделанным.":
+    "Everything you tick off will show up here.",
+  "Один день целиком.": "One whole day.",
+  "Назначено на этот день": "Scheduled for this day",
+  "На этот день ничего не назначено.": "Nothing is scheduled for this day.",
+  "Взято на сегодня": "Taken on for today", "срок у них другой": "their deadline is another day",
+  "день": "day", "неделя": "week", "месяц": "month",
+  "Назад": "Back", "Вперёд": "Forward",
+  "Встречи и дедлайны.": "Appointments and deadlines.",
+  "Дело можно перетащить на другой день — дедлайн переедет вместе с ним.":
+    "You can drag a task to another day — the deadline moves with it.",
+  "Открыть этот день целиком": "Open this whole day", "и ещё": "and",
+  "Создать дело на этот день": "Create a task for this day",
+  "фон: со временем": "shaded: has a time", "фон: к сроку": "shaded: has a deadline",
+  "В этом периоде ничего не назначено.": "Nothing is scheduled in this period.",
+  "Отметить, что состоялась в этот день": "Mark it as happened on this day",
+  "Создать дело сразу в этой клетке": "Create a task right in this cell",
+  "Главная клетка:": "The cell that matters:", "Пока ничего нет": "Nothing here yet",
+  "Важное и срочное": "Important and urgent",
+  "Строки — срочность: считается из дедлайна и меняется только вместе с ним. Столбцы — важность: это всегда ваше решение. По умолчанию дело важное — вы его записали, значит оно зачем-то нужно.":
+    "Rows are urgency: worked out from the deadline, and it changes only when the deadline does. Columns are importance: that is always your call. By default a task is important — you wrote it down, so it matters for something.",
+  "Перетащите дело в соседний столбец, чтобы сменить важность. Строку перетаскиванием не изменить — для этого нужен другой дедлайн.":
+    "Drag a task to the next column to change its importance. Rows can't be changed by dragging — that takes a different deadline.",
+  "важное": "important", "неважное": "not important",
+  "срочное": "urgent", "несрочное": "not urgent",
+  "Срочное важное": "Urgent and important",
+  "Делать сейчас. Больше ничего в этой клетке решать не надо":
+    "Do it now. There is nothing else to decide in this cell",
+  "Срочное неважное": "Urgent, not important",
+  "Дата подошла у того, что вы сами назвали неважным. Кандидаты отдать или отпустить":
+    "The date has come for something you yourself called unimportant. Candidates to hand off or let go",
+  "Несрочное важное": "Important, not urgent",
+  "Здесь лежит вся ваша жизнь — и именно это вечно проигрывает срочной ерунде. Поэтому одно дело отсюда каждый день стоит в «Предлагаю»":
+    "This is where your whole life sits — and it is exactly what keeps losing to urgent nonsense. That's why one task from here is suggested every day",
+  "Несрочное неважное": "Not urgent, not important",
+  "Пусть лежит. Ничего страшного не происходит": "Let it sit. Nothing bad is happening",
 
   /* ── справочники ───────────────────────────────────────────── */
   "Сферы": "Areas", "Места": "Places", "Люди": "People",
@@ -1220,6 +1357,9 @@ const SPHERES0 = ["Быт","Здоровье","Работа","Семья","Фи�
                   "Развитие","Отдых","Другое"];
 const PLACES0  = ["Страна 1","Страна 2"];
 const PEOPLE0  = ["Я"];
+/* «Я» и «Me» — одно и то же: метку «кого касается» на себе не рисуем,
+   а справочник заводится на языке первого запуска.                  */
+const isSelf = p => p === "Я" || p === "Me";
 
 /* По одному делу каждого вида — как образец, а не как список задач.
    Названия самые обиходные: приложение открывает незнакомый человек,
@@ -1616,7 +1756,7 @@ function findDupes(text, skipId) {
    занимает. «В работе» не значит «сделано» нигде: ни в счёте дня, ни
    в архиве. Это про «я этим занимаюсь», а не про результат.        */
 const workDot = i => i && i.working && !i.done
-  ? `<span class="wdot" title="в работе"></span>` : "";
+  ? `<span class="wdot" title="${tr("в работе")}"></span>` : "";
 
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g,
   c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
@@ -1649,7 +1789,7 @@ const view = document.getElementById("view");
 /* Метка человека прячется, если такое же слово уже стоит сферой:
    имя может быть и сферой, и человеком — подряд выходило «имя имя».
    Значок отличает ось людей от оси сфер, когда слова всё же разные. */
-const personTag = it => (it.person && it.person !== "Я"
+const personTag = it => (it.person && !isSelf(it.person)
     && (it.spheres || []).indexOf(it.person) < 0)
   ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(it.person)}</span>` : "";
 const sphereTags = it => (it.spheres || []).map(s => {
@@ -1713,25 +1853,26 @@ const colorOf = (axis, name) => {
      19 августа · 3 дня назад           — прошедшее, без красного
    У встреч время идёт сразу после даты.                             */
 function dateLabel(it) {
-  if (isRoutine(it)) return dueToday(it) ? "сегодня" : "";
+  if (isRoutine(it)) return dueToday(it) ? tr("сегодня") : "";
   /* У встречи по расписанию нет одной даты — «когда» отвечает само
      расписание. Формулировка всё равно одна и живёт здесь.          */
   if (repeats(it)) {
     const r = it.repeat, clock = it.time ? " · " + esc(it.time) : "";
-    if (r.every === "year")    return r.day + " " + MONTHS[r.month] + " каждый год" + clock;
-    if (r.every === "month")   return r.day + "-го каждый месяц" + clock;
-    if (r.every === "quarter") return r.day + "-го раз в квартал" + clock;
-    return "по " + wdOrder().filter(d => (r.days || []).indexOf(d) >= 0)
+    if (r.every === "year")    return r.day + " " + MONTHS[r.month] + " " + tr("каждый год") + clock;
+    if (r.every === "month")   return tr("#-го каждый месяц").replace("#", r.day) + clock;
+    if (r.every === "quarter") return tr("#-го раз в квартал").replace("#", r.day) + clock;
+    return tr("по") + " " + wdOrder().filter(d => (r.days || []).indexOf(d) >= 0)
       .map(d => WD_BY_DAY[d]).join(", ") + clock;
   }
   const n = daysUntil(it.due);
   if (n === null) return "";
   const clock = it.time ? " " + esc(it.time) : "";
-  if (n === 0)  return "сегодня" + clock;
-  if (n === 1)  return "завтра" + clock;
-  if (n === -1) return "вчера" + clock;
+  if (n === 0)  return tr("сегодня") + clock;
+  if (n === 1)  return tr("завтра") + clock;
+  if (n === -1) return tr("вчера") + clock;
   return formatDay(it.due) + clock +
-    (n > 0 ? " · через " + daysWord(n) : " · " + daysWord(-n) + " назад");
+    (n > 0 ? " · " + tr("через #").replace("#", daysWord(n))
+           : " · " + tr("# назад").replace("#", daysWord(-n)));
 }
 
 /* Какой это шаг из скольки. Показывается везде, где встречается
@@ -1740,7 +1881,7 @@ function dateLabel(it) {
 const stepNo = it => (!it.done && it.multi && (it.steps || []).length)
   ? Math.min(it.steps.filter(s => s.done).length + 1, it.steps.length) : 0;
 const stepBadge = it => stepNo(it)
-  ? `<span class="tag steptag">шаг ${stepNo(it)} из ${it.steps.length}</span>` : "";
+  ? `<span class="tag steptag">${tr("шаг")} ${stepNo(it)} ${tr("из")} ${it.steps.length}</span>` : "";
 const stepMini = it => stepNo(it)
   ? `<span class="stepmini">${stepNo(it)}/${it.steps.length}</span>` : "";
 
@@ -1757,7 +1898,7 @@ function cardHTML(it, opts) {
     opts.chosen ? "chosen" : ""} ${opts.auto ? "appt" : ""}" data-id="${it.id}"${opts.sortable
       ? ` draggable="true" data-drag="${it.id}" data-drop-order="${it.id}"` : ""}>
     <div class="card-top">
-      <button class="tick" data-act="toggle" data-id="${it.id}" title="Готово"></button>
+      <button class="tick" data-act="toggle" data-id="${it.id}" title="${tr("Готово")}"></button>
       <div class="title" data-act="open" data-id="${it.id}">${kindIcon(it)}${
         leadStep ? esc(step.text) : esc(it.title)}${workDot(it)}</div>
       ${it.done || isRoutine(it) || isAppt(it) ? ""
@@ -1773,14 +1914,14 @@ function cardHTML(it, opts) {
         : it.working ? "" : `${TAB === "today" || inDay(it)
              ? (dueTodayTask(it) && !pickedToday(it)
                 ? `<button class="linkbtn danger" data-act="unpick" data-id="${it.id}"
-                     title="Убрать из дня. Срок остаётся — завтра дело придёт в предложения">не сегодня</button>`
+                     title="${tr("Убрать из дня. Срок остаётся — завтра дело придёт в предложения")}">${tr("не сегодня")}</button>`
                 : `<button class="linkbtn danger" data-act="unpick" data-id="${it.id}"
-                     title="Убрать из дня. Дело вернётся в «Предлагаю» и его можно взять снова">в предложения</button>`)
-             : `<button class="linkbtn" data-act="pin" data-id="${it.id}">＋ в сегодня</button>`}`}
+                     title="${tr("Убрать из дня. Дело вернётся в «Предлагаю» и его можно взять снова")}">${tr("в предложения")}</button>`)
+             : `<button class="linkbtn" data-act="pin" data-id="${it.id}">＋ ${tr("в сегодня")}</button>`}`}
     </div>
 
-    ${leadStep ? `<div class="nextstep"><span class="stepno">Шаг ${
-      it.steps.indexOf(step) + 1} из ${it.steps.length}</span> в «${esc(it.title)}»</div>` : ""}
+    ${leadStep ? `<div class="nextstep"><span class="stepno">${tr("Шаг")} ${
+      it.steps.indexOf(step) + 1} ${tr("из")} ${it.steps.length}</span> ${tr("в")} «${esc(it.title)}»</div>` : ""}
     ${hasNotes(it) ? `<div class="cardnote">${esc(String(it.notes).length > 90
       ? String(it.notes).slice(0, 89) + "…" : it.notes)}</div>` : ""}
     ${isRoutine(it) ? weekDotsHTML(it) : ""}
@@ -1788,7 +1929,7 @@ function cardHTML(it, opts) {
     <div class="meta">
       ${sphereTags(it)}
       ${(it.spheres || []).length > 1
-        ? `<span class="tag place" title="Это одна запись, а не две">одно дело в ${it.spheres.length} ветках</span>` : ""}
+        ? `<span class="tag place" title="${tr("Это одна запись, а не две")}">${tr("одно дело в")} ${it.spheres.length} ${tr("ветках")}</span>` : ""}
       ${it.place ? placeTag(it.place) : ""}
       ${personTag(it)}
       ${when ? `<span class="tag when">${sandFor(it)}${when}</span>` : ""}
@@ -1885,8 +2026,8 @@ function todayItems() {
      попадает в день само, и бронь стала не нужна.                   */
   /* Дело в работе возвращается молча: «не успели» про него неправда —
      вы им занимались. За него говорит кружок у названия.           */
-  const whyCarried = i => i.working ? "" : "не успели "
-    + (i.today === addDays(today(), -1) ? "вчера" : formatDay(i.today));
+  const whyCarried = i => i.working ? "" : tr("не успели") + " "
+    + (i.today === addDays(today(), -1) ? tr("вчера") : formatDay(i.today));
   const carried = visible.filter(i => i.today && i.today < today())
     .sort((a, b) => String(b.today).localeCompare(String(a.today)));
   const isNew = i => carried.indexOf(i) < 0;
@@ -1896,7 +2037,7 @@ function todayItems() {
 
   const pool = carried.map(i => ({ it: i, why: whyCarried(i) }))
     .concat(soon.map(i => ({ it: i, why: "" })))
-    .concat(waiting.map(i => ({ it: i, why: "давно ждёт" })));
+    .concat(waiting.map(i => ({ it: i, why: tr("давно ждёт") })));
 
   /* По умолчанию встречи идут первыми и по времени — они привязаны к часу,
      всё остальное можно двигать вокруг них.                          */
@@ -1915,7 +2056,7 @@ function todayItems() {
   /* Одно место всегда за «давно ждёт»: без дедлайна оно вечно в хвосте
      и иначе не показалось бы никогда — а именно оно и не делается
      годами. Это единственная бронь, которая осталась.               */
-  const w = pool.find(s => s.why === "давно ждёт");
+  const w = pool.find(s => s.why === tr("давно ждёт"));
   if (w && head.indexOf(w) < 0) head = head.slice(0, -1).concat([w]);
   /* Сколько ждёт за семёркой: видно, что «не сегодня» листает очередь. */
   const queued = pool.length - head.length;
@@ -1936,13 +2077,13 @@ function todayItems() {
   const nQuiet = rests.length - nLater;
   const nAway = S.hereNow ? cand.filter(i => !pickedToday(i) && !skippedToday(i)
     && !reachable(i)).length : 0;
-  if (nMine) parts.push(nMine + " уже в дне");
-  if (nSkip) parts.push(nSkip + " " + plural(nSkip, "вернётся", "вернутся", "вернутся") + " завтра");
-  if (nLater) parts.push(nLater + " " + plural(nLater, "ждёт", "ждут", "ждут") + " своего срока");
-  if (nQuiet) parts.push(nQuiet + " " + plural(nQuiet, "молчит", "молчат", "молчат") + " без срока");
-  if (nAway) parts.push(nAway + " в других местах");
+  if (nMine) parts.push(nMine + " " + tr("уже в дне"));
+  if (nSkip) parts.push(nSkip + " " + plural(nSkip, "вернётся", "вернутся", "вернутся") + " " + tr("завтра"));
+  if (nLater) parts.push(nLater + " " + plural(nLater, "ждёт", "ждут", "ждут") + " " + tr("своего срока"));
+  if (nQuiet) parts.push(nQuiet + " " + plural(nQuiet, "молчит", "молчат", "молчат") + " " + tr("без срока"));
+  if (nAway) parts.push(nAway + " " + tr("в других местах"));
   const whyRest = parts.join(" · ");
-  const whyEmpty = parts.length ? whyRest : "живых дел нет. Новые появятся здесь сами";
+  const whyEmpty = parts.length ? whyRest : tr("живых дел нет. Новые появятся здесь сами");
   return { routines, routDone, mine, doneTasks, doneSteps, apptDone,
            apptCount, chosenCount, dueCount, workCount, away,
            queued, whyEmpty, whyRest, proposals };
@@ -2003,19 +2144,19 @@ function heatHTML(mo) {
       const st = c.future || c.young ? "gone"
         : c.done ? (c.sched ? "done" : "extra")
         : c.sched ? "miss" : "off";
-      const why = st === "done" ? "сделано"
-        : st === "extra" ? "сделано сверх расписания"
-        : st === "miss" ? "не отмечено (и это не страшно)"
-        : c.young ? "рутины ещё не было" : c.future ? "ещё впереди" : "не по расписанию";
+      const why = st === "done" ? tr("сделано")
+        : st === "extra" ? tr("сделано сверх расписания")
+        : st === "miss" ? tr("не отмечено (и это не страшно)")
+        : c.young ? tr("рутины ещё не было") : c.future ? tr("ещё впереди") : tr("не по расписанию");
       return `<i class="hc ${st}${c.d === today() ? " now" : ""}"
         title="${esc(formatDay(c.d) + " — " + why)}"></i>`;
     }).join("")).join("")}</div></div>`;
 }
 const weekDotsHTML = it => `<div class="rdots"
-    title="Эта неделя. Бледная точка — не по расписанию. Расписание — в карточке рутины">${
+    title="${tr("Эта неделя. Бледная точка — не по расписанию. Расписание — в карточке рутины")}">${
   weekInfo(it).days.map(x => `<i class="${x.done ? "on" : ""}${x.sched ? "" : " offday"}"
-    title="${esc(formatDay(x.d) + (x.done ? (x.sched ? " — сделано" : " — сделано сверх расписания")
-      : x.sched ? " — не отмечено (и это не страшно)" : " — не по расписанию"))}"></i>`).join("")}</div>`;
+    title="${esc(formatDay(x.d) + " — " + (x.done ? (x.sched ? tr("сделано") : tr("сделано сверх расписания"))
+      : x.sched ? tr("не отмечено (и это не страшно)") : tr("не по расписанию")))}"></i>`).join("")}</div>`;
 
 function routineRowHTML(i, sortable) {
   const sc = routineScore(i);
@@ -2031,8 +2172,8 @@ function routineRowHTML(i, sortable) {
     <div class="rmain">
       <div class="rtop">
         <button class="rname" data-act="open" data-id="${i.id}">${esc(i.title)}</button>
-        <span class="rscore" title="${sc.fresh ? "Рутина заведена сегодня"
-          : "Сделано на этой неделе"}">${sc.fresh ? "новая" : wi.hit + " из " + wi.of}</span>
+        <span class="rscore" title="${sc.fresh ? tr("Рутина заведена сегодня")
+          : tr("Сделано на этой неделе")}">${sc.fresh ? tr("новая") : wi.hit + " " + tr("из") + " " + wi.of}</span>
       </div>
       ${tags || i.mins ? `<div class="rmeta">${
         i.mins ? `<span class="rmins">${minsLabel(i.mins)}</span>` : ""}${tags}</div>` : ""}
@@ -2072,9 +2213,9 @@ function routineListHTML(list, sortable) {
    Галочка возвращает в работу, название открывает просмотр.         */
 function doneLineHTML(i, when) {
   return `<div class="doneline" draggable="true" data-drag="${i.id}" data-drop-order="${i.id}">
-    <button class="tick" data-act="toggle" data-id="${i.id}" title="Вернуть в работу"></button>
+    <button class="tick" data-act="toggle" data-id="${i.id}" title="${tr("Вернуть в работу")}"></button>
     <button class="donename" data-act="opendone" data-id="${i.id}" data-when="${when || ""}"
-      title="Посмотреть">${esc(i.title)}</button>
+      title="${tr("Посмотреть")}">${esc(i.title)}</button>
   </div>`;
 }
 
@@ -2083,9 +2224,9 @@ function doneLineHTML(i, when) {
 function stepDoneLineHTML(d) {
   return `<div class="doneline">
     <button class="tick" data-act="undostep" data-id="${d.it.id}" data-i="${d.k}"
-      title="Вернуть шаг в работу"></button>
+      title="${tr("Вернуть шаг в работу")}"></button>
     <button class="donename" data-act="open" data-id="${d.it.id}">${esc(d.st.text)}</button>
-    <span class="ofdeal">${esc(d.it.title)} · шаг ${d.k + 1} из ${d.it.steps.length}</span>
+    <span class="ofdeal">${esc(d.it.title)} · ${tr("шаг")} ${d.k + 1} ${tr("из")} ${d.it.steps.length}</span>
   </div>`;
 }
 
@@ -2095,21 +2236,21 @@ function suggestRowHTML(s) {
     <div class="suggmain">
       <div class="suggtitle">
         ${kindIcon(i)}
-        <button class="suggname" data-act="open" data-id="${i.id}" title="Посмотреть детали">${
+        <button class="suggname" data-act="open" data-id="${i.id}" title="${tr("Посмотреть детали")}">${
           esc(i.title)}${workDot(i)}</button>
       </div>
       <div class="suggmeta">
         ${stepBadge(i)}
         ${sphereTags(i)}
-        ${inInbox(i) ? `<span class="tag place">без сферы</span>` : ""}
+        ${inInbox(i) ? `<span class="tag place">${tr("без сферы")}</span>` : ""}
         ${i.place ? placeTag(i.place) : ""}
         ${s.why ? `<span class="suggwhy${s.quiet ? " quiet" : ""}">${esc(s.why)}</span>` : ""}
         ${dateLabel(i) ? `<span class="suggdate">${sandFor(i)}${dateLabel(i)}</span>` : ""}
       </div>
     </div>
-    <button class="btn take" data-act="takeone" data-id="${i.id}">взять</button>
+    <button class="btn take" data-act="takeone" data-id="${i.id}">${tr("взять")}</button>
     <button class="linkbtn danger" data-act="skip" data-id="${i.id}"
-      title="Не предлагать сегодня. Завтра вернётся">не сегодня</button>
+      title="${tr("Не предлагать сегодня. Завтра вернётся")}">${tr("не сегодня")}</button>
   </div>`;
 }
 
@@ -2151,29 +2292,29 @@ function renderToday() {
     `<i class="${k < doneN ? "dn" : k < takenN ? "on" : ""}${k === cap ? " edge" : ""}"></i>`).join("");
 
   view.innerHTML = `<div class="tgrid"><div class="tcol">` +
-    `<div class="todayhead"><h2>Дела</h2>
-      ${split ? `<span class="seg tabseg">${[["all", "взято", plain.length],
-        ["work", "в работе", inWork.length]].map(([k, L, n]) =>
+    `<div class="todayhead"><h2>${tr("Дела")}</h2>
+      ${split ? `<span class="seg tabseg">${[["all", tr("взято"), plain.length],
+        ["work", tr("в работе"), inWork.length]].map(([k, L, n]) =>
         `<button data-act="todayview" data-v="${k}" class="${TODAYVIEW === k ? "on" : ""}"
           >${L} · ${n}</button>`).join("")}</span>` : ""}
       <span class="capseg">${segs}</span>
       ${takenN ? `<span class="mineno ${over ? "over" : ""}"
-        title="Сделано из поставленных на сегодня. Полоски — лимит дня: ${cap}">сделано ${doneN} из ${takenN}</span>` : ""}</div>` +
+        title="${tr("Сделано из поставленных на сегодня. Полоски — лимит дня:")} ${cap}">${tr("сделано")} ${doneN} ${tr("из")} ${takenN}</span>` : ""}</div>` +
     `<div class="tscroll">` +
     awayNote(away) +
-    (over ? `<div class="toomany">Взято больше, чем помещается в день.</div>` : "") +
+    (over ? `<div class="toomany">${tr("Взято больше, чем помещается в день.")}</div>` : "") +
     (heavy ? `<div class="toomany">${[
         apptCount ? apptCount + " " + plural(apptCount, "встреча", "встречи", "встреч") : "",
-        dueCount ? dueCount + " " + plural(dueCount, "дело", "дела", "дел") + " со сроком" : "",
-        chosenCount ? chosenCount + " взято" : ""].filter(Boolean).join(", ")
-      } — вместе это больше, чем помещается в день.
-      Встречу не отложить, а срок можно сдвинуть: откройте дело и поменяйте дату.</div>` : "") +
+        dueCount ? dueCount + " " + plural(dueCount, "дело", "дела", "дел") + " " + tr("со сроком") : "",
+        chosenCount ? chosenCount + " " + tr("взято") : ""].filter(Boolean).join(", ")
+      } — ${tr("вместе это больше, чем помещается в день.")}
+      ${tr("Встречу не отложить, а срок можно сдвинуть: откройте дело и поменяйте дату.")}</div>` : "") +
     (tasks.length
       ? tasks.map(i => cardHTML(i, { sortable: tasks.length > 1, chosen: true })).join("")
       : (proposals.length
-        ? `<div class="empty" style="padding:26px 20px">Пока ничего не взято.<br>
-            Возьмите из предложенного — или ничего, если сегодня не тот день.</div>`
-        : `<div class="empty" style="padding:26px 20px">На сегодня всё.</div>`)) +
+        ? `<div class="empty" style="padding:26px 20px">${tr("Пока ничего не взято.")}<br>
+            ${tr("Возьмите из предложенного — или ничего, если сегодня не тот день.")}</div>`
+        : `<div class="empty" style="padding:26px 20px">${tr("На сегодня всё.")}</div>`)) +
 
     (doneTasks.length || doneSteps.length ? `<div class="donebox">${
       doneTasks.map(i => doneLineHTML(i, i.doneAt)).join("")
@@ -2182,20 +2323,20 @@ function renderToday() {
     (proposals.length ? `<div class="suggbox">
       <div class="suggtop">
         <button class="suggfold" data-act="suggfold" title="${S.suggCollapsed
-          ? "Показать предложения" : "Свернуть — предложения подождут молча"}">
+          ? tr("Показать предложения") : tr("Свернуть — предложения подождут молча")}">
           <svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor"
             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="${
-            S.suggCollapsed ? "M6.5 4l4 4-4 4" : "M4 6.5l4 4 4-4"}"/></svg>Предлагаю${S.suggCollapsed
+            S.suggCollapsed ? "M6.5 4l4 4-4 4" : "M4 6.5l4 4 4-4"}"/></svg>${tr("Предлагаю")}${S.suggCollapsed
           ? ` · ${proposals.length + queued} ${plural(proposals.length + queued,
               "дело ждёт", "дела ждут", "дел ждут")}` : ""}</button>
         ${S.suggCollapsed ? "" : queued ? `<span class="qs" style="margin:0 0 0 auto"
-          title="«не сегодня» показывает следующее">в очереди ещё ${queued} ${
+          title="${tr("«не сегодня» показывает следующее")}">${tr("в очереди ещё")} ${queued} ${
           plural(queued, "дело", "дела", "дел")}</span>` : `<span class="spacer"></span>`}
       </div>
       ${S.suggCollapsed ? "" : proposals.map(suggestRowHTML).join("")
-        + (whyRest ? `<p class="qs" style="margin:10px 2px 0">Остальное сейчас не предлагается: ${
+        + (whyRest ? `<p class="qs" style="margin:10px 2px 0">${tr("Остальное сейчас не предлагается:")} ${
           whyRest}.</p>` : "")}
-    </div>` : `<p class="qs" style="margin:16px 2px 0">Предлагать нечего: ${whyEmpty}.</p>`) +
+    </div>` : `<p class="qs" style="margin:16px 2px 0">${tr("Предлагать нечего:")} ${whyEmpty}.</p>`) +
 
     `</div></div><div class="tcol side">` +
 
@@ -2216,7 +2357,7 @@ function renderToday() {
          относилось ко всей панели и не говорило, к чему именно.
          В шапке остаётся название и сами створки у правого края.    */
       const mins = sumMins(shown);
-      return `<div class="sidepanel routines"><h3>Рутина${
+      return `<div class="sidepanel routines"><h3>${tr("Рутина")}${
         split ? `<span class="seg tabseg">${parts.map(([k, L]) =>
           `<button data-act="routview" data-v="${k}" class="${pick === k ? "on" : ""}"
             >${L}</button>`).join("")}</span>` : ""}</h3>
@@ -2230,11 +2371,11 @@ function renderToday() {
             const noMins = shown.filter(i => !i.mins).length;
             if (!mins && !noMins) return "";
             const bits = [];
-            if (mins) bits.push(`всего ${mins} ${
+            if (mins) bits.push(`${tr("всего")} ${mins} ${
               plural(mins, "минута", "минуты", "минут")}`);
-            if (noMins) bits.push(mins ? `+ ${noMins} без времени`
+            if (noMins) bits.push(mins ? `+ ${noMins} ${tr("без времени")}`
               : `${noMins} ${plural(noMins, "рутина", "рутины", "рутин")
-                } без заданного времени`);
+                } ${tr("без заданного времени")}`);
             return `<p class="rsum">${bits.join(" ")}</p>`;
           })()}
         ${routineListHTML(shown, anyRout > 1)}
@@ -2243,10 +2384,10 @@ function renderToday() {
 
     /* «События дня», а не «Аппоинтменты»: тут же живут напоминания, и
        день рождения — не встреча.                                   */
-    `<div class="sidepanel appts"><h3>События дня</h3>
+    `<div class="sidepanel appts"><h3>${tr("События дня")}</h3>
       <div class="panelscroll"><div class="apptbox">${appts.length ? appts.map(apptRowHTML).join("")
-        : `<div class="apptempty"><b>На сегодня ничего не назначено</b>
-             Это не «ничего» — день дышит свободнее.</div>`}</div></div></div>` +
+        : `<div class="apptempty"><b>${tr("На сегодня ничего не назначено")}</b>
+             ${tr("Это не «ничего» — день дышит свободнее.")}</div>`}</div></div></div>` +
     `</div></div>`;
 }
 
@@ -2261,11 +2402,11 @@ function apptRowHTML(i) {
      что галочка не сработала.                                       */
   const done = repeatDone(i, today()) || (i.done && i.doneAt === today());
   return `<div class="aline${done ? " done" : ""}">
-    <button class="tick" data-act="toggle" data-id="${i.id}" title="Состоялась"></button>
+    <button class="tick" data-act="toggle" data-id="${i.id}" title="${tr("Состоялась")}"></button>
     <div class="amain">
       <div class="atop">
         ${isRemind(i) ? "" : `<span class="atime${i.time ? "" : " none"}">${
-          i.time ? esc(i.time) : "без времени"}</span>`}
+          i.time ? esc(i.time) : tr("без времени")}</span>`}
         <button class="rname" data-act="open" data-id="${i.id}">${
           isRemind(i) ? kindIcon(i) : ""}${esc(i.title)}</button>
       </div>
@@ -2333,7 +2474,7 @@ const allFilters = () => [
      ровно одно и то же. Виды больше не заводятся, так что второй
      плоский вид не появится.                                        */
   ["all", "все", () => true],
-  ...S.types.map(t => ["type:" + t.key, t.name, i => i.type === t.key]),
+  ...S.types.map(d => ["type:" + d.key, typeLabel(d), i => i.type === d.key]),
   ["steps",   "с шагами",    i => i.multi && (i.steps || []).length > 0],
   ["done",    "сделанные",   null],   // особый: смотрит в архив, а не в живое
   ["overdue", "срок прошёл", i => i.due && daysUntil(i.due) < 0],
@@ -2359,18 +2500,18 @@ function allRowHTML(i) {
           есть, нажимаешь — ничего. Либо кнопка работает, либо её нет. */
       isRoutine(i)
       ? `<button class="tick${routineDoneToday(i) ? " on" : ""}" data-act="toggle"
-           data-id="${i.id}" title="Отметить сделанной сегодня"></button>`
-      : `<button class="tick" data-act="toggle" data-id="${i.id}" title="Отметить сделанным"></button>`}
+           data-id="${i.id}" title="${tr("Отметить сделанной сегодня")}"></button>`
+      : `<button class="tick" data-act="toggle" data-id="${i.id}" title="${tr("Отметить сделанным")}"></button>`}
     ${kindIcon(i)}
     <button class="suggname" data-act="open" data-id="${i.id}">${
       esc(i.title)}${workDot(i)}</button>
     ${sphereTags(i)}
-    ${inInbox(i) ? `<span class="tag place">без категории</span>` : ""}
+    ${inInbox(i) ? `<span class="tag place">${tr("без категории")}</span>` : ""}
     ${i.place ? placeTag(i.place) : ""}
     ${stepBadge(i)}
     <span class="suggdate">${isRoutine(i)
-      ? esc(i.routine.days.length + "/7 дней")
-      : (dateLabel(i) ? sandFor(i) + dateLabel(i) : "без дедлайна")}</span>
+      ? esc(i.routine.days.length + "/7 " + tr("дней"))
+      : (dateLabel(i) ? sandFor(i) + dateLabel(i) : tr("без дедлайна"))}</span>
   </div>`;
 }
 
@@ -2387,40 +2528,39 @@ function drawAllList() {
   const list = allItems();
   box.innerHTML = list.length
     ? list.map(allRowHTML).join("")
-    : `<div class="empty" style="padding:30px 20px">Ничего не нашлось.</div>`;
+    : `<div class="empty" style="padding:30px 20px">${tr("Ничего не нашлось.")}</div>`;
   if (c) c.textContent = list.length + " " + plural(list.length, "дело", "дела", "дел");
 }
 
 function renderAll() {
   /* Счётчик стоит над списком, а не у заголовка: после фильтрации важно
      видеть, сколько осталось, рядом с тем, что осталось.            */
-  view.innerHTML = `<div class="todayhead"><h2>Список</h2></div>
-    <p class="sub">Плоский список: по умолчанию видно всё живое — дела, рутина,
-      идеи и встречи. Срезом можно оставить что-то одно.</p>
+  view.innerHTML = `<div class="todayhead"><h2>${tr("Список")}</h2></div>
+    <p class="sub">${tr("Плоский список: по умолчанию видно всё живое — дела, рутина, идеи и встречи. Срезом можно оставить что-то одно.")}</p>
     ${awayNote(awayAll())}
     <div class="allbar">
-      <input type="text" id="allInput" class="allsearch" placeholder="Поиск по названию"
+      <input type="text" id="allInput" class="allsearch" placeholder="${tr("Поиск по названию")}"
         autocomplete="off" value="${esc(ALLQUERY)}">
       <span class="ddwrap" data-ddwrap>
         <button class="ddbtn wide" data-act="dd" data-k="allfilter"><span>${
-          esc((allFilters().find(x => x[0] === ALLFILTER) || allFilters()[0])[1])}</span><i class="caret">▾</i></button>
+          esc(tr((allFilters().find(x => x[0] === ALLFILTER) || allFilters()[0])[1]))}</span><i class="caret">▾</i></button>
         ${DD === "allfilter" ? `<div class="dd">${allFilters().map(([k, L]) =>
           `<button class="ddrow ${ALLFILTER === k ? "on" : ""}" data-act="allfilterset"
-             data-v="${k}"><span>${esc(L)}</span>${ALLFILTER === k ? ddCheck : ""}</button>`).join("")}</div>` : ""}
+             data-v="${k}"><span>${esc(tr(L))}</span>${ALLFILTER === k ? ddCheck : ""}</button>`).join("")}</div>` : ""}
       </span>
       <span class="ddwrap" data-ddwrap>
-        <button class="ddbtn" data-act="dd" data-k="allperiod" title="Период">${CALICON}<span>${
-          esc(periodDef()[1])}</span><i class="caret">▾</i></button>
+        <button class="ddbtn" data-act="dd" data-k="allperiod" title="${tr("Период")}">${CALICON}<span>${
+          esc(tr(periodDef()[1]))}</span><i class="caret">▾</i></button>
         ${DD === "allperiod" ? `<div class="dd right">${ALLPERIODS.map(([k, L]) =>
           `<button class="ddrow ${ALLPERIOD === k ? "on" : ""}" data-act="allperiodset"
-             data-v="${k}"><span>${esc(L)}</span>${ALLPERIOD === k ? ddCheck : ""}</button>`).join("")}</div>` : ""}
+             data-v="${k}"><span>${esc(tr(L))}</span>${ALLPERIOD === k ? ddCheck : ""}</button>`).join("")}</div>` : ""}
       </span>
       ${ALLFILTER === "done" ? "" : `<span class="ddwrap" data-ddwrap>
-        <button class="ddbtn" data-act="dd" data-k="allsort" title="Порядок">${SORTICON}<span>${
-          esc(sortDef()[1])}</span><i class="caret">▾</i></button>
+        <button class="ddbtn" data-act="dd" data-k="allsort" title="${tr("Порядок")}">${SORTICON}<span>${
+          esc(tr(sortDef()[1]))}</span><i class="caret">▾</i></button>
         ${DD === "allsort" ? `<div class="dd right">${ALLSORTS.map(([k, L]) =>
           `<button class="ddrow ${ALLSORT === k ? "on" : ""}" data-act="allsortset"
-             data-v="${k}"><span>${esc(L)}</span>${ALLSORT === k ? ddCheck : ""}</button>`).join("")}</div>` : ""}
+             data-v="${k}"><span>${esc(tr(L))}</span>${ALLSORT === k ? ddCheck : ""}</button>`).join("")}</div>` : ""}
       </span>`}
     </div>
     <p class="listcount" id="allCount"></p>
@@ -2438,13 +2578,19 @@ let ALLFOCUS = false;
    Сделанное не исчезает. Во-первых, чтобы можно было вернуть промах.
    Во-вторых, потому что «я сегодня ничего не сделала» — почти всегда
    неправда, и это единственный экран, который может это доказать.   */
-const MONTHS = ["января","февраля","марта","апреля","мая","июня","июля",
-                "августа","сентября","октября","ноября","декабря"];
+const MONTHS_RU = ["января","февраля","марта","апреля","мая","июня","июля",
+                   "августа","сентября","октября","ноября","декабря"];
+const MONTHS_EN = ["January","February","March","April","May","June","July",
+                   "August","September","October","November","December"];
+/* «5 ноября» и «5 November»: число впереди в обоих языках, разница
+   только в самом слове. Родительный падеж — забота русского списка. */
+const MONTHS = new Proxy({}, { get: (_, i) =>
+  (CURLANG === "en" ? MONTHS_EN : MONTHS_RU)[i] });
 function formatDay(iso) {
-  if (!iso) return "когда-то раньше";
-  if (iso === today()) return "сегодня";
-  if (iso === addDays(today(), -1)) return "вчера";
-  if (iso === addDays(today(), 1)) return "завтра";
+  if (!iso) return tr("когда-то раньше");
+  if (iso === today()) return tr("сегодня");
+  if (iso === addDays(today(), -1)) return tr("вчера");
+  if (iso === addDays(today(), 1)) return tr("завтра");
   const d = new Date(iso + "T12:00:00");
   return d.getDate() + " " + MONTHS[d.getMonth()];
 }
@@ -2475,9 +2621,9 @@ function doneRow(e, canUndo) {
     <div class="card-top">
       <button class="tick" ${canUndo ? `data-act="undo" data-id="${e.it.id}"` : ""}></button>
       <div class="title" data-act="opendone" data-id="${e.it.id}" data-when="${e.when || ""}"
-        style="cursor:pointer" title="Посмотреть">${esc(e.it.title)}</div>
+        style="cursor:pointer" title="${tr("Посмотреть")}">${esc(e.it.title)}</div>
       ${sphereTags(e.it)}
-      ${canUndo ? `<button class="undo" data-act="undo" data-id="${e.it.id}">вернуть</button>` : ""}
+      ${canUndo ? `<button class="undo" data-act="undo" data-id="${e.it.id}">${tr("вернуть")}</button>` : ""}
     </div></div>`;
 }
 
@@ -2496,16 +2642,24 @@ function doneListHTML(q) {
   const onDay = d => all.filter(e => e.when === d);
   return `${days.length ? days.slice(0, 40).map(d => `<div class="dayhead">${formatDay(d)}</div>` +
         onDay(d).map(e => doneRow(e, d === today() || !e.byDay)).join("")).join("")
-      : `<div class="empty" style="padding:30px 20px">Здесь появится всё, что вы отметите сделанным.</div>`}`;
+      : `<div class="empty" style="padding:30px 20px">${tr("Здесь появится всё, что вы отметите сделанным.")}</div>`}`;
 }
 
 /* ── КАЛЕНДАРЬ ───────────────────────────────────────────────────────
    Ось времени. Три приближения: день, неделя, месяц. Показывает то,
    у чего есть конкретный день — встречи и дедлайны.                 */
-const MONTHS_NOM = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль",
-                    "Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
-const WD_BY_DAY = ["вс","пн","вт","ср","чт","пт","сб"];
-const WD_FULL = ["воскресенье","понедельник","вторник","среда","четверг","пятница","суббота"];
+const MONTHS_NOM_RU = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль",
+                       "Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+const MONTHS_NOM = new Proxy({}, { get: (_, i) =>
+  (CURLANG === "en" ? MONTHS_EN : MONTHS_NOM_RU)[i] });
+const WD_BY_DAY_RU = ["вс","пн","вт","ср","чт","пт","сб"];
+const WD_BY_DAY_EN = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const WD_BY_DAY = new Proxy({}, { get: (_, i) =>
+  (CURLANG === "en" ? WD_BY_DAY_EN : WD_BY_DAY_RU)[i] });
+const WD_FULL_RU = ["воскресенье","понедельник","вторник","среда","четверг","пятница","суббота"];
+const WD_FULL_EN = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const WD_FULL = new Proxy({}, { get: (_, i) =>
+  (CURLANG === "en" ? WD_FULL_EN : WD_FULL_RU)[i] });
 const cap1 = s => s.charAt(0).toUpperCase() + s.slice(1);
 
 function todayWidget() {
@@ -2575,7 +2729,7 @@ function calItemHTML(i, compact, iso) {
   return `<div class="calrow${was ? " done" : ""}" draggable="true" data-drag="${i.id}">
     ${canTick ? `<button class="caltick${was ? " on" : ""}" data-act="${
       rep ? "toggleon" : "toggle"}" data-id="${i.id}" data-d="${iso}"
-      title="${rep ? "Отметить, что состоялась в этот день" : "Отметить сделанным"}"></button>`
+      title="${rep ? tr("Отметить, что состоялась в этот день") : tr("Отметить сделанным")}"></button>`
       : `<span class="caltick none"></span>`}
     <button class="calitem ${isAppt(i) ? "appt" : "dl"}" data-act="open" data-id="${i.id}"
       style="border-left-color:${col}" title="${esc(i.title)}">${
@@ -2590,7 +2744,7 @@ function dayRowHTML(i, iso) {
   return `<div class="dayrow${was ? " done" : ""}">
     ${canTick ? `<button class="tick${was ? " on" : ""}" data-act="${
       rep ? "toggleon" : "toggle"}" data-id="${i.id}" data-d="${iso}"
-      title="${rep ? "Отметить, что состоялась в этот день" : "Отметить сделанным"}"></button>`
+      title="${rep ? tr("Отметить, что состоялась в этот день") : tr("Отметить сделанным")}"></button>`
       : `<span class="tick none"></span>`}
     <span class="daytime${i.time ? "" : " none"}">${i.time ? esc(i.time) : ""}</span>
     ${kindIcon(i)}
@@ -2599,7 +2753,7 @@ function dayRowHTML(i, iso) {
     ${stepBadge(i)}
     ${sphereTags(i)}
     ${i.place ? placeTag(i.place) : ""}
-    ${i.person && i.person !== "Я" ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(i.person)}</span>` : ""}
+    ${i.person && !isSelf(i.person) ? `<span class="tag place">${iconSVG("person", "currentColor")}${esc(i.person)}</span>` : ""}
   </div>${i.notes ? `<div class="daynote">${esc(String(i.notes).slice(0, 120))}</div>` : ""}`;
   /* Заметка идёт отдельной строкой под делом — с воздухом сверху и без
      разделителя: она поясняет дело, а не начинает новый раздел.     */
@@ -2614,20 +2768,20 @@ function renderCalendarDay(bar) {
      — «что я делаю»; в дневном разрезе полезно видеть обе половины.   */
   const taken = d === today()
     ? todayItems().mine.filter(i => list.indexOf(i) < 0) : [];
-  view.innerHTML = `<h2>Календарь</h2>
-    <p class="sub">Один день целиком.</p>
+  view.innerHTML = `<h2>${tr("Календарь")}</h2>
+    <p class="sub">${tr("Один день целиком.")}</p>
     ${awayNote(awayAll())}
     ${bar}
     <div class="daybox">
       <div class="dayhd">
-        <p class="lbl" style="margin:0">Назначено на этот день</p>
+        <p class="lbl" style="margin:0">${tr("Назначено на этот день")}</p>
         ${past ? "" : `<button class="addhere" data-act="newhere" data-due="${d}"
-          title="Создать дело на этот день">＋</button>`}
+          title="${tr("Создать дело на этот день")}">＋</button>`}
       </div>
       ${list.length ? list.map(i => dayRowHTML(i, d)).join("")
-        : `<div class="empty" style="padding:24px 20px">На этот день ничего не назначено.</div>`}
-      ${taken.length ? `<p class="lbl" style="margin:22px 0 6px">Взято на сегодня
-          <span class="apptno">срок у них другой</span></p>
+        : `<div class="empty" style="padding:24px 20px">${tr("На этот день ничего не назначено.")}</div>`}
+      ${taken.length ? `<p class="lbl" style="margin:22px 0 6px">${tr("Взято на сегодня")}
+          <span class="apptno">${tr("срок у них другой")}</span></p>
         ${taken.map(i => dayRowHTML(i, d)).join("")}` : ""}
     </div>`;
 }
@@ -2638,20 +2792,20 @@ function renderCalendar() {
      что листают именно его.                                         */
   const bar = `<div class="calbar">
       <div class="axis">
-        ${[["day","день"],["week","неделя"],["month","месяц"]].map(([k, L]) =>
+        ${[["day",tr("день")],["week",tr("неделя")],["month",tr("месяц")]].map(([k, L]) =>
           `<button data-act="calmode" data-m="${k}" class="${CALMODE === k ? "on" : ""}">${L}</button>`).join("")}
       </div>
       <div class="calnav">
-        <button class="navarrow" data-act="calnav" data-d="prev" title="Назад">
+        <button class="navarrow" data-act="calnav" data-d="prev" title="${tr("Назад")}">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
             stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.5L5.5 8l4.5 4.5"/></svg></button>
         <div class="caltitle">${calTitle()}</div>
-        <button class="navarrow" data-act="calnav" data-d="next" title="Вперёд">
+        <button class="navarrow" data-act="calnav" data-d="next" title="${tr("Вперёд")}">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
             stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></button>
       </div>
       <button class="navtoday ${anchor() === today() ? "on" : ""}"
-        data-act="calnav" data-d="today">сегодня</button>
+        data-act="calnav" data-d="today">${tr("сегодня")}</button>
     </div>`;
   if (CALMODE === "day") return renderCalendarDay(bar);
 
@@ -2659,10 +2813,10 @@ function renderCalendar() {
   const cap = CALMODE === "week" ? 99 : 3;
   const total = days.reduce((n, d) => n + calItems(d).length, 0);
 
-  view.innerHTML = `<h2>Календарь</h2>
-    <p class="sub">Встречи и дедлайны.</p>
+  view.innerHTML = `<h2>${tr("Календарь")}</h2>
+    <p class="sub">${tr("Встречи и дедлайны.")}</p>
     ${awayNote(awayAll())}
-    <p class="draghint">Дело можно перетащить на другой день — дедлайн переедет вместе с ним.</p>
+    <p class="draghint">${tr("Дело можно перетащить на другой день — дедлайн переедет вместе с ним.")}</p>
     ${bar}
     <div class="calhead">${wdOrder().map(d => `<div>${WD_BY_DAY[d]}</div>`).join("")}</div>
     <div class="calgrid ${CALMODE}">${days.map(d => {
@@ -2673,24 +2827,24 @@ function renderCalendar() {
         past ? "past" : ""}"${past ? "" : ` data-drop-due="${d}"`}>
         <div class="caldate">
           <span data-act="calday" data-d="${d}" style="cursor:pointer"
-            title="Открыть этот день целиком">${dd.getDate()}${
+            title="${tr("Открыть этот день целиком")}">${dd.getDate()}${
             CALMODE === "week" ? " " + MONTHS[dd.getMonth()] : ""}</span>
           <span class="wd">${WD_BY_DAY[dd.getDay()]}</span>
           ${past ? "" : `<button class="addhere" data-act="newhere" data-due="${d}"
-            title="Создать дело на этот день">＋</button>`}
+            title="${tr("Создать дело на этот день")}">＋</button>`}
         </div>
         ${list.slice(0, cap).map(i => calItemHTML(i, CALMODE === "month", d)).join("")}
         ${list.length > cap ? `<div class="calmore" data-act="calday" data-d="${d}"
-          title="Открыть этот день целиком">и ещё ${list.length - cap}</div>` : ""}
+          title="${tr("Открыть этот день целиком")}">${tr("и ещё")} ${list.length - cap}</div>` : ""}
       </div>`;
     }).join("")}</div>
     <div class="callegend">
       ${S.types.filter(t => t.kind !== "routine" && t.kind !== "idea").map(t =>
         `<span><i style="background:var(--kind-${kindToken(t)})"></i>${esc(t.name)}</span>`).join("")}
-      <span style="margin-left:10px"><i style="background:var(--accent-soft);border:1px solid var(--accent)"></i>фон: со временем</span>
-      <span><i style="background:var(--warm-soft);border:1px solid var(--warm)"></i>фон: к сроку</span>
+      <span style="margin-left:10px"><i style="background:var(--accent-soft);border:1px solid var(--accent)"></i>${tr("фон: со временем")}</span>
+      <span><i style="background:var(--warm-soft);border:1px solid var(--warm)"></i>${tr("фон: к сроку")}</span>
     </div>
-    ${total ? "" : `<div class="empty">В этом периоде ничего не назначено.</div>`}`;
+    ${total ? "" : `<div class="empty">${tr("В этом периоде ничего не назначено.")}</div>`}`;
 }
 
 /* ── МАТРИЦА ─────────────────────────────────────────────────────────
@@ -2710,38 +2864,35 @@ function renderMatrix() {
     <div class="quad ${hero ? "hero" : ""}" data-drop-quad="${k}">
       <h3>${title}<span
         class="qcount">${q[k].length}</span><button class="addhere"
-        data-act="newhere" data-quad="${k}" title="Создать дело сразу в этой клетке">＋</button></h3>
-      <p class="qs">${hero ? `<b class="heromark">Главная клетка:</b> ` : ""}${sub}</p>
+        data-act="newhere" data-quad="${k}" title="${tr("Создать дело сразу в этой клетке")}">＋</button></h3>
+      <p class="qs">${hero ? `<b class="heromark">${tr("Главная клетка:")}</b> ` : ""}${sub}</p>
       <ul>${q[k].length
         ? q[k].map(i => `<li draggable="true" data-drag="${i.id}">
-            <button class="qtick" data-act="toggle" data-id="${i.id}" title="Отметить сделанным"></button>
+            <button class="qtick" data-act="toggle" data-id="${i.id}" title="${tr("Отметить сделанным")}"></button>
             <span class="qname" data-act="open" data-id="${i.id}">${kindIcon(i)}${esc(i.title)}${workDot(i)}
               <span style="color:var(--dim)">· ${esc((i.spheres || []).join(" · "))}</span>${
               ""}</span>
             ${stepBadge(i)}
             ${i.due ? `<span class="qdue">${sandFor(i)}${dateLabel(i)}</span>` : ""}</li>`).join("")
-        : `<li class="quadempty">Пока ничего нет</li>`}</ul>
+        : `<li class="quadempty">${tr("Пока ничего нет")}</li>`}</ul>
     </div>`;
 
-  view.innerHTML = `<h2>Важное и срочное</h2>
-    <p class="sub">Строки — срочность: считается из дедлайна и меняется только вместе с ним.
-      Столбцы — важность: это всегда ваше решение. По умолчанию дело важное —
-      вы его записали, значит оно зачем-то нужно.</p>
+  view.innerHTML = `<h2>${tr("Важное и срочное")}</h2>
+    <p class="sub">${tr("Строки — срочность: считается из дедлайна и меняется только вместе с ним. Столбцы — важность: это всегда ваше решение. По умолчанию дело важное — вы его записали, значит оно зачем-то нужно.")}</p>
     ${awayNote(awayAll())}
-    <p class="draghint">Перетащите дело в соседний столбец, чтобы сменить важность.
-      Строку перетаскиванием не изменить — для этого нужен другой дедлайн.</p>
+    <p class="draghint">${tr("Перетащите дело в соседний столбец, чтобы сменить важность. Строку перетаскиванием не изменить — для этого нужен другой дедлайн.")}</p>
     <div class="matrix">
       <div></div>
-      <div class="mhead">важное</div>
-      <div class="mhead">неважное</div>
+      <div class="mhead">${tr("важное")}</div>
+      <div class="mhead">${tr("неважное")}</div>
 
-      <div class="mside">срочное</div>
-      ${box("iu", "Срочное важное", "Делать сейчас. Больше ничего в этой клетке решать не надо")}
-      ${box("nu", "Срочное неважное", "Дата подошла у того, что вы сами назвали неважным. Кандидаты отдать или отпустить")}
+      <div class="mside">${tr("срочное")}</div>
+      ${box("iu", tr("Срочное важное"), tr("Делать сейчас. Больше ничего в этой клетке решать не надо"))}
+      ${box("nu", tr("Срочное неважное"), tr("Дата подошла у того, что вы сами назвали неважным. Кандидаты отдать или отпустить"))}
 
-      <div class="mside">несрочное</div>
-      ${box("in", "Несрочное важное", "Здесь лежит вся ваша жизнь — и именно это вечно проигрывает срочной ерунде. Поэтому одно дело отсюда каждый день стоит в «Предлагаю»", true)}
-      ${box("nn", "Несрочное неважное", "Пусть лежит. Ничего страшного не происходит")}
+      <div class="mside">${tr("несрочное")}</div>
+      ${box("in", tr("Несрочное важное"), tr("Здесь лежит вся ваша жизнь — и именно это вечно проигрывает срочной ерунде. Поэтому одно дело отсюда каждый день стоит в «Предлагаю»"), true)}
+      ${box("nn", tr("Несрочное неважное"), tr("Пусть лежит. Ничего страшного не происходит"))}
     </div>`;
 }
 
@@ -4675,29 +4826,35 @@ const TABS = { today: "Сегодня", calendar: "Календарь", map: "К
 
 function renderChrome() {
   document.getElementById("tabs").innerHTML = Object.keys(TABS).map(k =>
-    `<button data-act="tab" data-t="${k}" class="${TAB === k ? "on" : ""}">${TABS[k]}</button>`).join("");
+    `<button data-act="tab" data-t="${k}" class="${TAB === k ? "on" : ""}">${tr(TABS[k])}</button>`).join("");
   const hb = document.getElementById("hereBox");
   const cnt = p => live().filter(i => i.place === p).length;
   hb.innerHTML = `<span class="ddwrap" data-ddwrap>
     <button class="hereBtn" data-act="dd" data-k="here">${iconSVG("pin", "var(--pin)")}${
-      esc(S.hereNow || "везде")}<i class="caret">▾</i></button>
+      esc(S.hereNow || tr("везде"))}<i class="caret">▾</i></button>
     ${DD === "here" ? `<div class="dd right">
       ${S.places.map(p => `<button class="ddrow ${S.hereNow === p ? "on" : ""}"
           data-act="hereset" data-v="${esc(p)}">${iconSVG("pin", "var(--pin)")}<span>${esc(p)}</span>
-          <em>${cnt(p)} ${plural(cnt(p), "дело", "дела", "дел")} здесь</em>${
+          <em>${cnt(p)} ${plural(cnt(p), "дело", "дела", "дел")} ${tr("здесь")}</em>${
           S.hereNow === p ? ddCheck : ""}</button>`).join("")}
       <div class="dddiv"></div>
       <button class="ddrow ${S.hereNow ? "" : "on"}" data-act="hereset" data-v="">
-        <span>Везде · без учёта места</span>${S.hereNow ? "" : ddCheck}</button>
+        <span>${tr("Везде · без учёта места")}</span>${S.hereNow ? "" : ddCheck}</button>
     </div>` : ""}</span>`;
   /* Дата живёт в шапке — она общая для всех экранов, а не свойство
      одной панели. Обновляется на каждой отрисовке: приложение часто
      остаётся открытым за полночь.                                   */
   const hd = document.getElementById("headDate");
   if (hd) hd.innerHTML = todayWidget();
+  /* Надписи статичной шапки — из разметки, поэтому проставляются
+     здесь: переключение языка перерисовывает всё приложение.       */
+  const put = (id, f) => { const el = document.getElementById(id); if (el) f(el); };
+  put("hereLabel", el => { el.textContent = tr("Я сейчас:"); });
+  put("gearBtn",   el => { el.title = tr("Настройки"); });
+  put("capBtn",    el => { el.textContent = "＋ " + tr("Добавить"); });
   const n = here().filter(inInbox).length;
   const ib = document.getElementById("inboxBtn");
-  ib.hidden = !n; ib.textContent = "Разобрать · " + n;
+  ib.hidden = !n; ib.textContent = tr("Разобрать") + " · " + n;
 }
 
 /* Вкладка, ось карты, режим календаря и срез списка запоминаются.

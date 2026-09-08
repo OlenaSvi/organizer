@@ -468,29 +468,35 @@ const TABS = { today: "Сегодня", calendar: "Календарь", map: "К
 
 function renderChrome() {
   document.getElementById("tabs").innerHTML = Object.keys(TABS).map(k =>
-    `<button data-act="tab" data-t="${k}" class="${TAB === k ? "on" : ""}">${TABS[k]}</button>`).join("");
+    `<button data-act="tab" data-t="${k}" class="${TAB === k ? "on" : ""}">${tr(TABS[k])}</button>`).join("");
   const hb = document.getElementById("hereBox");
   const cnt = p => live().filter(i => i.place === p).length;
   hb.innerHTML = `<span class="ddwrap" data-ddwrap>
     <button class="hereBtn" data-act="dd" data-k="here">${iconSVG("pin", "var(--pin)")}${
-      esc(S.hereNow || "везде")}<i class="caret">▾</i></button>
+      esc(S.hereNow || tr("везде"))}<i class="caret">▾</i></button>
     ${DD === "here" ? `<div class="dd right">
       ${S.places.map(p => `<button class="ddrow ${S.hereNow === p ? "on" : ""}"
           data-act="hereset" data-v="${esc(p)}">${iconSVG("pin", "var(--pin)")}<span>${esc(p)}</span>
-          <em>${cnt(p)} ${plural(cnt(p), "дело", "дела", "дел")} здесь</em>${
+          <em>${cnt(p)} ${plural(cnt(p), "дело", "дела", "дел")} ${tr("здесь")}</em>${
           S.hereNow === p ? ddCheck : ""}</button>`).join("")}
       <div class="dddiv"></div>
       <button class="ddrow ${S.hereNow ? "" : "on"}" data-act="hereset" data-v="">
-        <span>Везде · без учёта места</span>${S.hereNow ? "" : ddCheck}</button>
+        <span>${tr("Везде · без учёта места")}</span>${S.hereNow ? "" : ddCheck}</button>
     </div>` : ""}</span>`;
   /* Дата живёт в шапке — она общая для всех экранов, а не свойство
      одной панели. Обновляется на каждой отрисовке: приложение часто
      остаётся открытым за полночь.                                   */
   const hd = document.getElementById("headDate");
   if (hd) hd.innerHTML = todayWidget();
+  /* Надписи статичной шапки — из разметки, поэтому проставляются
+     здесь: переключение языка перерисовывает всё приложение.       */
+  const put = (id, f) => { const el = document.getElementById(id); if (el) f(el); };
+  put("hereLabel", el => { el.textContent = tr("Я сейчас:"); });
+  put("gearBtn",   el => { el.title = tr("Настройки"); });
+  put("capBtn",    el => { el.textContent = "＋ " + tr("Добавить"); });
   const n = here().filter(inInbox).length;
   const ib = document.getElementById("inboxBtn");
-  ib.hidden = !n; ib.textContent = "Разобрать · " + n;
+  ib.hidden = !n; ib.textContent = tr("Разобрать") + " · " + n;
 }
 
 /* Вкладка, ось карты, режим календаря и срез списка запоминаются.
