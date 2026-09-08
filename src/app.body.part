@@ -26,8 +26,8 @@ const uid = () => Math.random().toString(36).slice(2, 10);
    неразличимы и «сначала новые» опять свалится на алфавит.          */
 let lastStamp = 0;
 const stamp = () => (lastStamp = Math.max(Date.now(), lastStamp + 1));
-/* Дата берётся по МЕСТНОМУ времени, а не по Гринвичу. Иначе в Амстердаме
-   до 02:00, а на Кипре и в Израиле до 03:00 приложение считало бы, что
+/* Дата берётся по МЕСТНОМУ времени, а не по Гринвичу. Иначе к востоку
+   от Гринвича до двух-трёх ночи приложение считало бы, что
    ещё вчера: дела отмечались бы вчерашним днём.                      */
 const isoDay = d => d.getFullYear() + "-" +
   (d.getMonth() < 9 ? "0" : "") + (d.getMonth() + 1) + "-" +
@@ -153,10 +153,13 @@ const QUADS = { iu: "Срочное важное",   nu: "Срочное нев�
 const PALETTE = ["var(--sph-1)","var(--sph-2)","var(--sph-3)","var(--sph-4)",
                  "var(--sph-5)","var(--sph-6)","var(--sph-7)","var(--sph-8)"];
 
-const SPHERES0 = ["Быт","мама","Йони","бюрократия","развитие",
-                  "здоровье физическое","здоровье ментальное","другое"];
-const PLACES0  = ["Амстердам","Кипр","Израиль"];
-const PEOPLE0  = ["Мама","Я","Йони","Нитай"];
+/* Стартовые справочники — общие, а не чьи-то: приложением делятся по
+   ссылке, и чужие имена и города в новом приложении неуместны. Своё
+   заводится в настройках за минуту.                                 */
+const SPHERES0 = ["Быт","Здоровье","Работа","Семья","Финансы",
+                  "Развитие","Отдых","Другое"];
+const PLACES0  = ["Дом","Работа","Город"];
+const PEOPLE0  = ["Я"];
 
 /* По одному делу каждого вида — как образец, а не как список задач. */
 function templateItems() {
@@ -167,36 +170,37 @@ function templateItems() {
     today: null, notToday: null,
   }, o);
   return [
-    t({ title: "Позвонить в банк", type: "task", spheres: ["бюрократия"],
+    t({ title: "Позвонить в банк", spheres: ["Финансы"],
         person: "Я", due: addDays(today(), 5) }),
-    t({ title: "Выбрать новый матрас", type: "task", spheres: ["Быт"],
-        place: "Амстердам", person: "Я", due: addDays(today(), 14),
-        options: [{ text: "подешевле, но жёстче" }, { text: "подороже, с доставкой" }] }),
-    t({ title: "Забрать посылку на почте", type: "task", spheres: ["другое"],
-        place: "Кипр", person: "Я", due: addDays(today(), 3), multi: true,
+    t({ title: "Выбрать новый чайник", spheres: ["Быт"],
+        place: "Дом", person: "Я", due: addDays(today(), 14),
+        options: [{ text: "подешевле, но шумный" }, { text: "подороже, тихий" }] }),
+    t({ title: "Забрать посылку", spheres: ["Другое"],
+        place: "Город", person: "Я", due: addDays(today(), 3), multi: true,
         steps: [{ text: "найти номер отправления", done: false },
-                { text: "съездить на почту", done: false }] }),
-    t({ title: "Зарядка 15 минут", type: "routine", spheres: ["здоровье физическое"],
-        person: "Я", routine: { days: [1,2,3,4,5], history: [] } }),
-    t({ title: "Приём у стоматолога", type: "appt", spheres: ["здоровье физическое"],
-        place: "Амстердам", person: "Я", due: addDays(today(), 7), time: "10:30",
-        notes: "Кайзерсграхт 12, 2 этаж · +31 20 123 45 67 · взять страховку" }),
-    t({ title: "Отвезти маму на анализы", type: "task", spheres: ["мама"],
-        place: "Израиль", person: "Мама", due: addDays(today(), 6) }),
-    t({ title: "Собрать документы в школу", type: "task", spheres: ["Йони"],
-        person: "Йони", due: addDays(today(), 10), multi: true,
+                { text: "съездить на пункт выдачи", done: false }] }),
+    t({ title: "Зарядка 15 минут", type: "routine", spheres: ["Здоровье"],
+        person: "Я", mins: 15, partOfDay: "morning",
+        routine: { days: [1,2,3,4,5], history: [] } }),
+    t({ title: "Приём у стоматолога", type: "appt", spheres: ["Здоровье"],
+        place: "Город", person: "Я", due: addDays(today(), 7), time: "10:30",
+        notes: "адрес, телефон и что взять с собой — сюда" }),
+    t({ title: "Разобрать шкаф", spheres: ["Быт"], person: "Я" }),
+    t({ title: "Собрать документы", spheres: ["Работа"],
+        person: "Я", due: addDays(today(), 10), multi: true,
         steps: [{ text: "список нужных справок", done: false },
                 { text: "заказать выписку", done: false },
-                { text: "отнести в школу", done: false }] }),
-    t({ title: "Читать 20 минут", type: "routine", spheres: ["развитие"],
-        person: "Я", routine: { days: [0,1,2,3,4,5,6], history: [] } }),
-    t({ title: "Найти психолога", type: "task", spheres: ["здоровье ментальное"],
-        person: "Я", due: addDays(today(), 21),
-        options: [{ text: "по рекомендации" }, { text: "через платформу онлайн" }] }),
-    t({ title: "Рассмотреть брекеты или инвизилайн", type: "idea",
-        spheres: ["здоровье физическое"], person: "Я",
-        options: [{ text: "брекеты — дешевле, заметнее" },
-                  { text: "инвизилайн — дороже, незаметно" }] }),
+                { text: "отнести", done: false }] }),
+    t({ title: "Читать 20 минут", type: "routine", spheres: ["Развитие"],
+        person: "Я", mins: 20, partOfDay: "evening",
+        routine: { days: [0,1,2,3,4,5,6], history: [] } }),
+    /* Напоминание — не дело: его не делают, про него помнят. */
+    t({ title: "День рождения подруги", type: "remind", spheres: ["Семья"],
+        repeat: { every: "year", day: 26, month: 8, history: [] } }),
+    t({ title: "Придумать, куда съездить летом", type: "idea",
+        spheres: ["Отдых"], person: "Я",
+        options: [{ text: "море, никуда не ходить" },
+                  { text: "город, музеи и еда" }] }),
   ];
 }
 
@@ -214,7 +218,6 @@ function seed() {
        иначе очистка дел (сделанная однажды для своих) стирала бы
        примеры и у него — приложение открывалось бы пустым, и показать
        его кому-то было бы нечего.                                   */
-    reset2026_08: true, apptTodayExample: true, itemsCleared: true,
   };
 }
 
@@ -241,7 +244,7 @@ delete S.cfg.tabs;
 delete S.cfg.decideDays; delete S.cfg.heroGuarantee; delete S.cfg.routinesInCalendar;
 
 /* Тема: только ручной выбор. Вариант «как в системе» убран по просьбе
-   Елены — старое значение тихо становится светлой.                  */
+   прежних версий — старое значение тихо становится светлой.                  */
 if (S.cfg.theme !== "dark" && S.cfg.theme !== "light") S.cfg.theme = "light";
 function applyTheme() {
   const root = typeof document !== "undefined" && document.documentElement;
@@ -250,181 +253,20 @@ function applyTheme() {
 }
 applyTheme();
 
-/* Однократный сброс к шаблону — по договорённости с Еленой. Идёт РАНЬШЕ
-   остальных одноразовых доносов: они дополняют собранную базу, и на
-   чистом старте сброс не должен стирать их работу (эта ошибка съедала
-   пример-встречу и заметку стоматолога у новых пользователей).      */
-if (!S.reset2026_08) {
-  S.spheres = SPHERES0.slice();
-  S.places  = PLACES0.slice();
-  S.people  = PEOPLE0.slice();
-  S.types   = JSON.parse(JSON.stringify(DEFAULT_TYPES));
-  S.open = [];
-  S.hereNow = null;
-  S.items = templateItems();
-  S.reset2026_08 = true;
-  save();
-}
 
 if (!Array.isArray(S.types) || !S.types.length)
   S.types = JSON.parse(JSON.stringify(DEFAULT_TYPES));
-if (!S.apptAdded) {          // однократно доносим новый вид тем, у кого данные старые
-  if (!S.types.some(t => t.kind === "appt"))
-    S.types.push(DEFAULT_TYPES.find(t => t.kind === "appt"));
-  S.apptAdded = true;
-}
 /* Вид «Сделать» — общее дело. Добавляем один раз: если его потом убрать
    в настройках, он больше не вернётся.                               */
-/* По одному делу в каждой сфере — как образец. Однократно. */
-if (!S.apptNoteAdded) {      // однократно показываем, зачем это поле
-  const a = S.items.find(i => i.title === "Приём у стоматолога");
-  if (a && !a.notes) a.notes = "Кайзерсграхт 12, 2 этаж · +31 20 123 45 67 · взять страховку";
-  S.apptNoteAdded = true;
-  save();
-}
-
-/* Демонстрационные дела удалены по просьбе Елены. Однократно.
-   Заодно снимаем пометки «взято на сегодня» и «не сегодня»: они были
-   расставлены для показа и создавали выдуманную историю вроде
-   «не успели вчера».                                                */
-if (!S.demoRemoved) {
-  S.items = S.items.filter(i => !i.demo);
-  S.items.forEach(i => { i.today = null; i.notToday = null; });
-  S.todayOrder = null;
-  S.demoRemoved = true;
-  save();
-}
-
-/* Встреча на сегодня — образец для новой области «Аппоинтменты».
-   Однократно; дата — день первого открытия.                        */
-if (!S.apptTodayExample) {
-  S.items.push({
-    id: uid(), title: "Созвон с бухгалтером", multi: false,
-    type: (S.types.find(t => t.kind === "appt") || { key: "appt" }).key,
-    spheres: ["бюрократия"], place: null, person: "Я",
-    due: today(), time: "16:00", steps: [], options: [], routine: null,
-    done: false, created: today(), notes: "по видео · ссылка в письме",
-    forceImp: null, today: null, notToday: null,
-  });
-  S.apptTodayExample = true;
-  save();
-}
-
-/* Пример для точек недели, по просьбе Елены: первая рутина живёт во все
-   дни, кроме вторника, а среда этой недели отмечена сделанной.
-   Однократно.                                                       */
-if (!S.routineWeekExample) {
-  const r = S.items.find(i => !i.draft && typeDef(i.type).kind === "routine" && i.routine);
-  if (r) {
-    r.routine.days = [0, 1, 3, 4, 5, 6];          // без вторника (2)
-    const t0 = new Date(today() + "T12:00:00");
-    const ws = S.cfg.weekStart;
-    const wkStart = addDays(today(), -((t0.getDay() - ws + 7) % 7));
-    const wed = addDays(wkStart, (3 - ws + 7) % 7); // среда текущей недели
-    if (r.routine.history.indexOf(wed) < 0) r.routine.history.push(wed);
-  }
-  S.routineWeekExample = true;
-  save();
-}
 
 
-if (!S.spheresFilled) {
-  const add = (o) => {
-    if (S.items.some(i => i.title === o.title)) return;
-    S.items.push(Object.assign({
-      id: uid(), title: "", type: "task", multi: false, spheres: [], place: null, person: null,
-      due: null, time: null, steps: [], options: [], routine: null, done: false,
-      created: today(), notes: "", forceImp: null, today: null, notToday: null,
-    }, o));
-  };
-  add({ title: "Отвезти маму на анализы", type: "errand", spheres: ["мама"],
-        place: "Израиль", person: "Мама", due: addDays(today(), 6) });
-  add({ title: "Собрать документы в школу", type: "task", spheres: ["Йони"],
-        person: "Йони", due: addDays(today(), 10), multi: true,
-        steps: [{ text: "список нужных справок", done: false },
-                { text: "заказать выписку", done: false },
-                { text: "отнести в школу", done: false }] });
-  add({ title: "Читать 20 минут", type: "routine", spheres: ["развитие"],
-        person: "Я", routine: { days: [0,1,2,3,4,5,6], history: [] } });
-  add({ title: "Найти психолога", type: "choice", spheres: ["здоровье ментальное"],
-        person: "Я", due: addDays(today(), 21),
-        options: [{ text: "по рекомендации" }, { text: "через платформу онлайн" }] });
-  S.spheresFilled = true;
-  save();
-}
 
-if (!S.ideaTypeAdded) {
-  if (!S.types.some(t => t.kind === "idea"))
-    S.types.push(JSON.parse(JSON.stringify(DEFAULT_TYPES.find(t => t.kind === "idea"))));
-  if (!S.items.some(i => i.title === "Рассмотреть брекеты или инвизилайн"))
-    S.items.push({
-      id: uid(), title: "Рассмотреть брекеты или инвизилайн", type: "idea", multi: false,
-      spheres: ["здоровье физическое"], place: null, person: "Я",
-      due: null, time: null, steps: [],
-      options: [{ text: "брекеты — дешевле, заметнее" }, { text: "инвизилайн — дороже, незаметно" }],
-      routine: null, done: false, created: today(), notes: "",
-      forceImp: null, today: null, notToday: null,
-    });
-  S.ideaTypeAdded = true;
-  save();
-}
-if (!S.taskTypeAdded) {
-  if (!S.types.some(t => t.key === "task"))
-    S.types.unshift(JSON.parse(JSON.stringify(DEFAULT_TYPES[0])));
-  if (!S.items.some(i => i.title === "Позвонить в банк"))
-    S.items.push({
-      id: uid(), title: "Позвонить в банк", type: "task", multi: false,
-      spheres: ["бюрократия"], place: null, person: "Я",
-      due: addDays(today(), 5), time: null, steps: [], options: [], routine: null,
-      done: false, created: today(), notes: "", forceImp: null,
-      today: null, notToday: null,
-    });
-  S.taskTypeAdded = true;
-  save();
-}
-/* Все дела удалены по просьбе Елены: приложение заселяется её собственными.
-   Стоит ПОСЛЕ всех блоков, которые создают образцы, — иначе они бы
-   досоздались следом. Справочники, настройки и виды дел не трогаем.
-   Однократно.                                                        */
-if (!S.itemsCleared) {
-  S.items = [];
-  S.todayOrder = null;
-  S.itemsCleared = true;
-  save();
-}
-/* Напоминания — 4 сентября 2026. Вид добавляется тем, у кого его ещё
-   нет: он появился позже, а справочник видов больше не правится руками.
-   Заодно два примера, о которых просила Елена. Ничего не удаляем и не
-   переписываем — только добавляем.                                  */
-if (!S.remindAdded) {
-  if (!S.types.some(t => t.kind === "remind"))
-    S.types.push({ key: "remind", name: "напоминание",
-      hint: "не делать — помнить: дата, о которой нельзя забыть", kind: "remind" });
-  const mk = o => Object.assign({
-    id: uid(), title: "", type: "remind", multi: false, spheres: [], place: null,
-    person: null, due: null, time: null, steps: [], options: [], routine: null,
-    repeat: null, done: false, created: today(), createdAt: stamp(), notes: "",
-    forceImp: null, today: null, notToday: null,
-  }, o);
-  S.items.push(mk({ title: "Мой день рождения", spheres: ["Семья"],
-    repeat: { every: "year", day: 26, month: 8, history: [] } }));
-  S.items.push(mk({ title: "Привезут машину", due: today() }));
-  S.remindAdded = true;
-  save();
-}
-/* «Сделать» переименовано в «дело» — 31 августа 2026, по просьбе Елены.
-   Меняем ТОЛЬКО подпись и только если она ещё стандартная: переименовал
-   человек сам — его слово важнее. Ни одного дела при этом не тронуто,
-   ключ вида прежний, так что все записи остаются на своих местах.   */
-if (!S.typeTaskRenamed) {
-  const t = S.types.find(x => x.key === "task" && x.name === "Сделать");
-  if (t) t.name = "дело";
-  S.typeTaskRenamed = true;
-  save();
-}
+
+
+
 
 if (!Array.isArray(S.open)) S.open = [];   // раскрытые ветки — их может быть сколько угодно
-/* Дело может относиться сразу к нескольким сферам (Йони + Юридическое).
+/* Дело может относиться сразу к нескольким сферам (Семья + Финансы).
    Раньше сфера была одна — и это заставляло записывать дело дважды,
    то есть само порождало дубликаты. Переносим старые данные.        */
 S.items.forEach(i => {

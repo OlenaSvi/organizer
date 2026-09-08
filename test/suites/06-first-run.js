@@ -8,9 +8,14 @@ T.head("ПЕРВЫЙ ЗАПУСК: ЕСТЬ ЧТО ПОСМОТРЕТЬ");
    пустым, и показать его кому-нибудь было нечего. */
 var fresh = seed();
 T.ok("примеры дел есть", fresh.items.length > 0, fresh.items.length + " записей");
-T.ok("разовые правки отмечены пройденными",
-  fresh.itemsCleared === true && fresh.reset2026_08 === true
-  && fresh.apptTodayExample === true);
+/* Разовых правок в коде больше нет вовсе — чинить у новичка нечего. */
+T.ok("разовых правок в приложении не осталось", (function () {
+  try { ObjC.import("Foundation");
+    var src = $.NSString.stringWithContentsOfFileEncodingError(
+      "Организатор.html", 4, null).js;
+    return !/if \(!S\.[a-zA-Z0-9_]+\)\s*\{/.test(src.replace(/S\.types|S\.todayOrder|S\.hereNow/g, "X"));
+  } catch (e) { return false; }
+})());
 T.ok("справочники на месте", fresh.spheres.length >= 8 && fresh.places.length >= 3);
 
 T.head("СТАРТОВЫЙ НАБОР ВИДОВ");
@@ -49,7 +54,9 @@ S.items = S.items.filter(function (i) { return i.id !== "mine1"; });
 T.head("СПРАВОЧНИКИ И НАСТРОЙКИ СОХРАНЕНЫ");
 T.ok("сферы на месте", S.spheres.length >= 8, S.spheres.join(", "));
 T.ok("места на месте", S.places.length >= 3, S.places.join(", "));
-T.ok("люди на месте", S.people.length >= 4, S.people.join(", "));
+/* Людей в стартовом наборе один — «Я»: имена близких у каждого свои,
+   и подставлять чужие в новое приложение неуместно. */
+T.ok("человек «Я» на месте", S.people.indexOf("Я") >= 0, S.people.join(", "));
 T.ok("виды дел на месте", S.types.length >= 4,
   S.types.map(function (t) { return t.name; }).join(", "));
 T.ok("настройки не сброшены", S.cfg.todayCap > 0 && S.cfg.urgentDays > 0
