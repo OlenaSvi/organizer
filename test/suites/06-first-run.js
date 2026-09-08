@@ -16,7 +16,19 @@ T.ok("разовых правок в приложении не осталось"
     return !/if \(!S\.[a-zA-Z0-9_]+\)\s*\{/.test(src.replace(/S\.types|S\.todayOrder|S\.hereNow/g, "X"));
   } catch (e) { return false; }
 })());
-T.ok("справочники на месте", fresh.spheres.length >= 8 && fresh.places.length >= 3);
+T.ok("справочники на месте", fresh.spheres.length >= 8 && fresh.places.length >= 2);
+/* Места — заготовки «Страна 1» и «Страна 2», а не чьи-то города:
+   приложение разводит дела по странам, и новичку показывают саму
+   механику, а не чужую географию. Переименование в настройках тянет
+   за собой и дела, так что заготовку достаточно назвать своим. */
+T.ok("места — безымянные заготовки стран",
+  fresh.places.join("|") === "Страна 1|Страна 2", fresh.places.join(", "));
+T.ok("примеры разложены по обеим странам", (function () {
+  var used = {};
+  fresh.items.forEach(function (i) { if (i.place) used[i.place] = 1; });
+  return used["Страна 1"] && used["Страна 2"];
+})(), fresh.items.filter(function (i) { return i.place; })
+  .map(function (i) { return i.title + " → " + i.place; }).join(", "));
 
 T.head("СТАРТОВЫЙ НАБОР ВИДОВ");
 var names = fresh.types.map(function (t) { return t.name; });
@@ -53,7 +65,7 @@ S.items = S.items.filter(function (i) { return i.id !== "mine1"; });
 
 T.head("СПРАВОЧНИКИ И НАСТРОЙКИ СОХРАНЕНЫ");
 T.ok("сферы на месте", S.spheres.length >= 8, S.spheres.join(", "));
-T.ok("места на месте", S.places.length >= 3, S.places.join(", "));
+T.ok("места на месте", S.places.length >= 2, S.places.join(", "));
 /* Людей в стартовом наборе один — «Я»: имена близких у каждого свои,
    и подставлять чужие в новое приложение неуместно. */
 T.ok("человек «Я» на месте", S.people.indexOf("Я") >= 0, S.people.join(", "));
