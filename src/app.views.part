@@ -25,8 +25,8 @@ function linkify(text) {
   while ((m = URLRE.exec(s))) {
     let url = m[0], tail = "";
     /* Точка или скобка в конце — знак препинания, а не часть адреса. */
-    const tr = /[.,;:!?)\]»}]+$/.exec(url);
-    if (tr) { tail = tr[0]; url = url.slice(0, -tail.length); }
+    const punct = /[.,;:!?)\]»}]+$/.exec(url);
+    if (punct) { tail = punct[0]; url = url.slice(0, -tail.length); }
     if (!url.replace(/^https?:\/\/|^www\./i, "")) continue;   // остался один протокол
     const href = /^www\./i.test(url) ? "https://" + url : url;
     out += esc(s.slice(last, m.index))

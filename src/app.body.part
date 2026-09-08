@@ -1,21 +1,3 @@
-<body>
-<header>
-  <div class="tabs" id="tabs"></div>
-  <div class="spacer"></div>
-  <div class="headdate" id="headDate"></div>
-  <div class="spacer"></div>
-  <div class="here">Я сейчас:
-    <span id="hereBox"></span>
-  </div>
-  <button class="inbox-pill" id="inboxBtn" hidden></button>
-  <button class="gear" id="gearBtn" title="Настройки"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="4.6"></circle><circle cx="8" cy="8" r="1.6"></circle><path d="M8 3.4V1.6M8 12.6v1.8M3.4 8H1.6M12.6 8h1.8M4.75 4.75 3.47 3.47M11.25 11.25l1.28 1.28M11.25 4.75l1.28-1.28M4.75 11.25l-1.28 1.28"></path></svg></button>
-  <button class="capture-btn" id="capBtn">＋ Добавить</button>
-</header>
-<main id="view"></main>
-<div id="modalHost"></div>
-<div id="cheerHost"></div>
-<script>
-"use strict";
 /* ══════════════════════════════════════════════════════════════════
    ХРАНЕНИЕ — всё лежит в браузере на этом компьютере, никуда не уходит
    ══════════════════════════════════════════════════════════════════ */
@@ -37,8 +19,13 @@ const addDays = (iso, n) => {
   const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n);
   return isoDay(d);
 };
-/* 1 день, 2 дня, 5 дней, 11 дней, 21 день — как в русском языке. */
+/* 1 день, 2 дня, 5 дней, 11 дней, 21 день — как в русском языке.
+   В английском форм две, и берутся они из PL_EN по русским формам. */
 const plural = (n, one, few, many) => {
+  if (CURLANG === "en") {
+    const p = PL_EN[one + "|" + few + "|" + many];
+    return p ? (Math.abs(n) === 1 ? p[0] : p[1]) : one;
+  }
   const a = Math.abs(n) % 100, b = a % 10;
   return (a > 10 && a < 20) ? many : b > 1 && b < 5 ? few : b === 1 ? one : many;
 };
@@ -70,7 +57,11 @@ const DEFAULT_TYPES = [
    «выбрать / купить», новое дело зря получало бы его логику.        */
 const defaultType = () => (S.types.find(t => t.kind === "plain") || S.types[0]).key;
 const typeDef   = k  => S.types.find(t => t.key === k) || S.types[0];
-const typeName  = it => typeDef(it.type).name;
+/* Название вида — данные: его можно переименовать, и тогда оно
+   остаётся как записали. Пока стоит стандартное — переводим. */
+const stockName = d => DEFAULT_TYPES.some(x => x.key === d.key && x.name === d.name);
+const typeLabel = d => stockName(d) ? tr(d.name) : d.name;
+const typeName  = it => typeLabel(typeDef(it.type));
 const kindOf    = it => typeDef(it.type).kind;
 const isRoutine = it => kindOf(it) === "routine";
 const isChoice  = it => kindOf(it) === "choice";
@@ -179,43 +170,43 @@ function templateItems() {
     today: null, notToday: null,
   }, o);
   return [
-    t({ title: "Оплатить счета", spheres: ["Финансы"],
-        person: "Я", due: addDays(today(), 3) }),
-    t({ title: "Купить продукты", spheres: ["Быт"],
-        place: "Страна 1", person: "Я", due: addDays(today(), 2), multi: true,
-        steps: [{ text: "составить список", done: false },
-                { text: "зайти в магазин", done: false }] }),
-    t({ title: "Выбрать подарок", spheres: ["Семья"],
-        person: "Я", due: addDays(today(), 14),
-        options: [{ text: "книга" }, { text: "что-нибудь для дома" }] }),
-    t({ title: "Зарядка", type: "routine", spheres: ["Здоровье"],
-        person: "Я", mins: 10, partOfDay: "morning",
+    t({ title: tr("Оплатить счета"), spheres: [tr("Финансы")],
+        person: tr("Я"), due: addDays(today(), 3) }),
+    t({ title: tr("Купить продукты"), spheres: [tr("Быт")],
+        place: tr("Страна 1"), person: tr("Я"), due: addDays(today(), 2), multi: true,
+        steps: [{ text: tr("составить список"), done: false },
+                { text: tr("зайти в магазин"), done: false }] }),
+    t({ title: tr("Выбрать подарок"), spheres: [tr("Семья")],
+        person: tr("Я"), due: addDays(today(), 14),
+        options: [{ text: tr("книга") }, { text: tr("что-нибудь для дома") }] }),
+    t({ title: tr("Зарядка"), type: "routine", spheres: [tr("Здоровье")],
+        person: tr("Я"), mins: 10, partOfDay: "morning",
         routine: { days: [1,2,3,4,5], history: [] } }),
-    t({ title: "Приём у врача", type: "appt", spheres: ["Здоровье"],
-        place: "Страна 2", person: "Я", due: addDays(today(), 7), time: "10:30",
-        notes: "адрес, телефон и что взять с собой — сюда" }),
-    t({ title: "Разобрать шкаф", spheres: ["Быт"], person: "Я" }),
-    t({ title: "Обновить резюме", spheres: ["Работа"],
-        person: "Я", due: addDays(today(), 10), multi: true,
-        steps: [{ text: "собрать список проектов", done: false },
-                { text: "поправить текст", done: false },
-                { text: "отправить", done: false }] }),
-    t({ title: "Читать перед сном", type: "routine", spheres: ["Развитие"],
-        person: "Я", mins: 20, partOfDay: "evening",
+    t({ title: tr("Приём у врача"), type: "appt", spheres: [tr("Здоровье")],
+        place: tr("Страна 2"), person: tr("Я"), due: addDays(today(), 7), time: "10:30",
+        notes: tr("адрес, телефон и что взять с собой — сюда") }),
+    t({ title: tr("Разобрать шкаф"), spheres: [tr("Быт")], person: tr("Я") }),
+    t({ title: tr("Обновить резюме"), spheres: [tr("Работа")],
+        person: tr("Я"), due: addDays(today(), 10), multi: true,
+        steps: [{ text: tr("собрать список проектов"), done: false },
+                { text: tr("поправить текст"), done: false },
+                { text: tr("отправить"), done: false }] }),
+    t({ title: tr("Читать перед сном"), type: "routine", spheres: [tr("Развитие")],
+        person: tr("Я"), mins: 20, partOfDay: "evening",
         routine: { days: [0,1,2,3,4,5,6], history: [] } }),
     /* Напоминание — не дело: его не делают, про него помнят. */
-    t({ title: "День рождения", type: "remind", spheres: ["Семья"],
+    t({ title: tr("День рождения"), type: "remind", spheres: [tr("Семья")],
         repeat: { every: "year", day: 26, month: 8, history: [] } }),
-    t({ title: "Куда поехать летом", type: "idea",
-        spheres: ["Отдых"], person: "Я",
-        options: [{ text: "к морю" }, { text: "в горы" }] }),
+    t({ title: tr("Куда поехать летом"), type: "idea",
+        spheres: [tr("Отдых")], person: tr("Я"),
+        options: [{ text: tr("к морю") }, { text: tr("в горы") }] }),
   ];
 }
 
 function seed() {
-  const S = SPHERES0.slice();
-  const P = PLACES0.slice();
-  const H = PEOPLE0.slice();
+  const S = SPHERES0.map(tr);
+  const P = PLACES0.map(tr);
+  const H = PEOPLE0.map(tr);
   return {
     spheres: S, places: P, people: H,
     types: JSON.parse(JSON.stringify(DEFAULT_TYPES)),
@@ -225,7 +216,20 @@ function seed() {
 }
 
 let S;
-try { S = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch (e) { S = seed(); }
+/* Язык у первого запуска берётся у браузера — иначе человек, которому
+   дали ссылку, упирается в незнакомый алфавит и до настроек не дойдёт.
+   Дальше язык только из настроек: у заведённого приложения состояние
+   уже сохранено, и трогать его смена браузера не должна.             */
+const stored = (() => {
+  try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; }
+})();
+if (stored) S = stored;
+else {
+  const nav = (typeof navigator !== "undefined" && navigator.language) || "ru";
+  CURLANG = /^ru/i.test(nav) ? "ru" : "en";
+  S = seed();
+  S.cfg = { lang: CURLANG };
+}
 delete S.branch;   // состояние ветки убрано: пауза не значила «неважно»
 /* Числа, которые раньше были зашиты в код. Теперь их видно и можно менять. */
 const DEFAULT_CFG = {
@@ -233,10 +237,13 @@ const DEFAULT_CFG = {
   urgentDays: 3,          // за сколько дней до дедлайна дело считается срочным
   weekStart: 1,           // 1 — понедельник, 0 — воскресенье
   theme: "light",         // light | dark — по выбору, система не вмешивается
+  lang: "ru",             // ru | en — язык интерфейса, не данных
 };
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 
 S.cfg = Object.assign({}, DEFAULT_CFG, S.cfg || {});
+if (S.cfg.lang !== "en") S.cfg.lang = "ru";
+setLang();
 /* Настройка «какие вкладки показывать» убрана: спрятанная карта уносила
    с собой фокус и паузу веток — единственное место, где они
    переключаются. Все виды всегда на месте.                          */

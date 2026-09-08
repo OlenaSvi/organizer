@@ -954,6 +954,115 @@ button.ddday:hover{background:var(--bg)}
 <script>
 "use strict";
 /* ══════════════════════════════════════════════════════════════════
+   ЯЗЫК — русский родной, английский переводом
+   ══════════════════════════════════════════════════════════════════
+
+   Ключ перевода — сама русская фраза: tr("Сделать сегодня"). Так не
+   нужно выдумывать имена ключам и незачем держать русский словарь: без
+   перевода фраза просто остаётся русской, а не исчезает и не ломает
+   вёрстку. Проверка `23-language.js` следит, чтобы непереведённого не
+   осталось.
+
+   Язык — про интерфейс, не про данные. Названия дел, сферы, места и
+   люди остаются такими, как их записали: переводить чужие слова
+   приложение не берётся. Примеры и стартовые справочники — исключение:
+   они создаются приложением, поэтому создаются сразу на том языке, на
+   котором приложение открыли впервые.                               */
+let CURLANG = "ru";
+const setLang = () => { CURLANG = (S && S.cfg && S.cfg.lang === "en") ? "en" : "ru"; };
+const tr = s => (CURLANG === "en" && EN[s] !== undefined) ? EN[s] : s;
+
+/* Множественное число: в русском три формы, в английском две.
+   Ключ — русские формы через палку, значение — английская пара.    */
+const PL_EN = {
+  "день|дня|дней":          ["day", "days"],
+  "дело|дела|дел":          ["task", "tasks"],
+  "минута|минуты|минут":    ["minute", "minutes"],
+  "рутина|рутины|рутин":    ["routine", "routines"],
+  "неделя|недели|недель":   ["week", "weeks"],
+  "раз|раза|раз":           ["time", "times"],
+  "шаг|шага|шагов":         ["step", "steps"],
+};
+
+const EN = {
+  /* ── настройки ─────────────────────────────────────────────── */
+  "Настройки": "Settings",
+  "Дел в день": "Tasks per day",
+  "Больше семи в день не помещается ни у кого — экран короткий намеренно.":
+    "Nobody fits more than seven in a day — the screen is short on purpose.",
+  "Горит за": "Due soon",
+  "1 день": "1 day", "3 дня": "3 days", "неделя": "a week",
+  "Сколько дней до дедлайна дело считается срочным. Пересчитывается каждый день.":
+    "How many days before the deadline a task counts as urgent. Recalculated daily.",
+  "Тема": "Theme", "светлая": "light", "тёмная": "dark",
+  "Начало недели": "Week starts", "пн": "Mon", "вс": "Sun",
+  "Язык": "Language",
+  "Данные": "Data",
+  "Сохранить в файл": "Save to file",
+  "Загрузить из файла": "Load from file",
+  "Всё хранится в этом браузере. Файл-копия — способ перенести данные или подстраховаться.":
+    "Everything is kept in this browser. A file copy is how you move your data or keep a backup.",
+  "Есть неприменённые изменения": "Unapplied changes",
+  "Всё применено": "All applied",
+  "Применить": "Apply",
+  "Отмена": "Cancel",
+  "Закрыть без сохранения": "Close without saving",
+  "‹ Настройки": "‹ Settings",
+
+  /* ── справочники ───────────────────────────────────────────── */
+  "Сферы": "Areas", "Места": "Places", "Люди": "People",
+  "сферу": "an area", "место": "a place", "человека": "a person",
+  "«Убрать сферу» не удаляет дела — они попадают в «Разобрать».":
+    "“Remove area” does not delete tasks — they move to “Sort out”.",
+  "Дела не пропадут — просто останутся без привязки к месту.":
+    "Tasks stay — they simply lose their place.",
+  "Кого касается дело. Дела при убирании остаются на месте.":
+    "Who the task involves. Removing a person leaves the tasks alone.",
+  "убрать": "remove", "Добавить": "Add", "и нажать Enter": "and press Enter",
+  "Применить изменения": "Apply changes",
+  "Закрыть, не применяя изменения": "Close without applying",
+  "Сохранить изменения": "Save changes",
+
+  /* ── виды дел ──────────────────────────────────────────────── */
+  "дело": "task",
+  "обычное дело с дедлайном": "an ordinary task with a deadline",
+  "рутина": "routine",
+  "повторяется, пропуск не страшен": "repeats; missing one is fine",
+  "аппоинтмент": "appointment",
+  "точные дата и время": "an exact date and time",
+  "идея на будущее": "idea for later",
+  "мысль без срока — ничего не требует": "a thought with no deadline — it asks nothing of you",
+  "напоминание": "reminder",
+  "не делать — помнить: дата, о которой нельзя забыть":
+    "nothing to do — just remember: a date you must not miss",
+
+  /* ── стартовые справочники и примеры ───────────────────────── */
+  "Быт": "Home", "Здоровье": "Health", "Работа": "Work", "Семья": "Family",
+  "Финансы": "Money", "Развитие": "Learning", "Отдых": "Rest", "Другое": "Other",
+  "Страна 1": "Country 1", "Страна 2": "Country 2", "Я": "Me",
+  "Оплатить счета": "Pay the bills",
+  "Купить продукты": "Buy groceries",
+  "составить список": "make a list",
+  "зайти в магазин": "go to the shop",
+  "Выбрать подарок": "Choose a gift",
+  "книга": "a book",
+  "что-нибудь для дома": "something for the house",
+  "Зарядка": "Morning exercise",
+  "Приём у врача": "Doctor's appointment",
+  "адрес, телефон и что взять с собой — сюда":
+    "address, phone number and what to bring — put it here",
+  "Разобрать шкаф": "Sort out the wardrobe",
+  "Обновить резюме": "Update my CV",
+  "собрать список проектов": "list the projects",
+  "поправить текст": "fix the wording",
+  "отправить": "send it",
+  "Читать перед сном": "Read before bed",
+  "День рождения": "A birthday",
+  "Куда поехать летом": "Where to go this summer",
+  "к морю": "to the sea",
+  "в горы": "to the mountains",
+};
+/* ══════════════════════════════════════════════════════════════════
    ХРАНЕНИЕ — всё лежит в браузере на этом компьютере, никуда не уходит
    ══════════════════════════════════════════════════════════════════ */
 const KEY = "organizer.v1";
@@ -974,8 +1083,13 @@ const addDays = (iso, n) => {
   const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n);
   return isoDay(d);
 };
-/* 1 день, 2 дня, 5 дней, 11 дней, 21 день — как в русском языке. */
+/* 1 день, 2 дня, 5 дней, 11 дней, 21 день — как в русском языке.
+   В английском форм две, и берутся они из PL_EN по русским формам. */
 const plural = (n, one, few, many) => {
+  if (CURLANG === "en") {
+    const p = PL_EN[one + "|" + few + "|" + many];
+    return p ? (Math.abs(n) === 1 ? p[0] : p[1]) : one;
+  }
   const a = Math.abs(n) % 100, b = a % 10;
   return (a > 10 && a < 20) ? many : b > 1 && b < 5 ? few : b === 1 ? one : many;
 };
@@ -1007,7 +1121,11 @@ const DEFAULT_TYPES = [
    «выбрать / купить», новое дело зря получало бы его логику.        */
 const defaultType = () => (S.types.find(t => t.kind === "plain") || S.types[0]).key;
 const typeDef   = k  => S.types.find(t => t.key === k) || S.types[0];
-const typeName  = it => typeDef(it.type).name;
+/* Название вида — данные: его можно переименовать, и тогда оно
+   остаётся как записали. Пока стоит стандартное — переводим. */
+const stockName = d => DEFAULT_TYPES.some(x => x.key === d.key && x.name === d.name);
+const typeLabel = d => stockName(d) ? tr(d.name) : d.name;
+const typeName  = it => typeLabel(typeDef(it.type));
 const kindOf    = it => typeDef(it.type).kind;
 const isRoutine = it => kindOf(it) === "routine";
 const isChoice  = it => kindOf(it) === "choice";
@@ -1116,43 +1234,43 @@ function templateItems() {
     today: null, notToday: null,
   }, o);
   return [
-    t({ title: "Оплатить счета", spheres: ["Финансы"],
-        person: "Я", due: addDays(today(), 3) }),
-    t({ title: "Купить продукты", spheres: ["Быт"],
-        place: "Страна 1", person: "Я", due: addDays(today(), 2), multi: true,
-        steps: [{ text: "составить список", done: false },
-                { text: "зайти в магазин", done: false }] }),
-    t({ title: "Выбрать подарок", spheres: ["Семья"],
-        person: "Я", due: addDays(today(), 14),
-        options: [{ text: "книга" }, { text: "что-нибудь для дома" }] }),
-    t({ title: "Зарядка", type: "routine", spheres: ["Здоровье"],
-        person: "Я", mins: 10, partOfDay: "morning",
+    t({ title: tr("Оплатить счета"), spheres: [tr("Финансы")],
+        person: tr("Я"), due: addDays(today(), 3) }),
+    t({ title: tr("Купить продукты"), spheres: [tr("Быт")],
+        place: tr("Страна 1"), person: tr("Я"), due: addDays(today(), 2), multi: true,
+        steps: [{ text: tr("составить список"), done: false },
+                { text: tr("зайти в магазин"), done: false }] }),
+    t({ title: tr("Выбрать подарок"), spheres: [tr("Семья")],
+        person: tr("Я"), due: addDays(today(), 14),
+        options: [{ text: tr("книга") }, { text: tr("что-нибудь для дома") }] }),
+    t({ title: tr("Зарядка"), type: "routine", spheres: [tr("Здоровье")],
+        person: tr("Я"), mins: 10, partOfDay: "morning",
         routine: { days: [1,2,3,4,5], history: [] } }),
-    t({ title: "Приём у врача", type: "appt", spheres: ["Здоровье"],
-        place: "Страна 2", person: "Я", due: addDays(today(), 7), time: "10:30",
-        notes: "адрес, телефон и что взять с собой — сюда" }),
-    t({ title: "Разобрать шкаф", spheres: ["Быт"], person: "Я" }),
-    t({ title: "Обновить резюме", spheres: ["Работа"],
-        person: "Я", due: addDays(today(), 10), multi: true,
-        steps: [{ text: "собрать список проектов", done: false },
-                { text: "поправить текст", done: false },
-                { text: "отправить", done: false }] }),
-    t({ title: "Читать перед сном", type: "routine", spheres: ["Развитие"],
-        person: "Я", mins: 20, partOfDay: "evening",
+    t({ title: tr("Приём у врача"), type: "appt", spheres: [tr("Здоровье")],
+        place: tr("Страна 2"), person: tr("Я"), due: addDays(today(), 7), time: "10:30",
+        notes: tr("адрес, телефон и что взять с собой — сюда") }),
+    t({ title: tr("Разобрать шкаф"), spheres: [tr("Быт")], person: tr("Я") }),
+    t({ title: tr("Обновить резюме"), spheres: [tr("Работа")],
+        person: tr("Я"), due: addDays(today(), 10), multi: true,
+        steps: [{ text: tr("собрать список проектов"), done: false },
+                { text: tr("поправить текст"), done: false },
+                { text: tr("отправить"), done: false }] }),
+    t({ title: tr("Читать перед сном"), type: "routine", spheres: [tr("Развитие")],
+        person: tr("Я"), mins: 20, partOfDay: "evening",
         routine: { days: [0,1,2,3,4,5,6], history: [] } }),
     /* Напоминание — не дело: его не делают, про него помнят. */
-    t({ title: "День рождения", type: "remind", spheres: ["Семья"],
+    t({ title: tr("День рождения"), type: "remind", spheres: [tr("Семья")],
         repeat: { every: "year", day: 26, month: 8, history: [] } }),
-    t({ title: "Куда поехать летом", type: "idea",
-        spheres: ["Отдых"], person: "Я",
-        options: [{ text: "к морю" }, { text: "в горы" }] }),
+    t({ title: tr("Куда поехать летом"), type: "idea",
+        spheres: [tr("Отдых")], person: tr("Я"),
+        options: [{ text: tr("к морю") }, { text: tr("в горы") }] }),
   ];
 }
 
 function seed() {
-  const S = SPHERES0.slice();
-  const P = PLACES0.slice();
-  const H = PEOPLE0.slice();
+  const S = SPHERES0.map(tr);
+  const P = PLACES0.map(tr);
+  const H = PEOPLE0.map(tr);
   return {
     spheres: S, places: P, people: H,
     types: JSON.parse(JSON.stringify(DEFAULT_TYPES)),
@@ -1162,7 +1280,20 @@ function seed() {
 }
 
 let S;
-try { S = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch (e) { S = seed(); }
+/* Язык у первого запуска берётся у браузера — иначе человек, которому
+   дали ссылку, упирается в незнакомый алфавит и до настроек не дойдёт.
+   Дальше язык только из настроек: у заведённого приложения состояние
+   уже сохранено, и трогать его смена браузера не должна.             */
+const stored = (() => {
+  try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; }
+})();
+if (stored) S = stored;
+else {
+  const nav = (typeof navigator !== "undefined" && navigator.language) || "ru";
+  CURLANG = /^ru/i.test(nav) ? "ru" : "en";
+  S = seed();
+  S.cfg = { lang: CURLANG };
+}
 delete S.branch;   // состояние ветки убрано: пауза не значила «неважно»
 /* Числа, которые раньше были зашиты в код. Теперь их видно и можно менять. */
 const DEFAULT_CFG = {
@@ -1170,10 +1301,13 @@ const DEFAULT_CFG = {
   urgentDays: 3,          // за сколько дней до дедлайна дело считается срочным
   weekStart: 1,           // 1 — понедельник, 0 — воскресенье
   theme: "light",         // light | dark — по выбору, система не вмешивается
+  lang: "ru",             // ru | en — язык интерфейса, не данных
 };
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 
 S.cfg = Object.assign({}, DEFAULT_CFG, S.cfg || {});
+if (S.cfg.lang !== "en") S.cfg.lang = "ru";
+setLang();
 /* Настройка «какие вкладки показывать» убрана: спрятанная карта уносила
    с собой фокус и паузу веток — единственное место, где они
    переключаются. Все виды всегда на месте.                          */
@@ -1500,8 +1634,8 @@ function linkify(text) {
   while ((m = URLRE.exec(s))) {
     let url = m[0], tail = "";
     /* Точка или скобка в конце — знак препинания, а не часть адреса. */
-    const tr = /[.,;:!?)\]»}]+$/.exec(url);
-    if (tr) { tail = tr[0]; url = url.slice(0, -tail.length); }
+    const punct = /[.,;:!?)\]»}]+$/.exec(url);
+    if (punct) { tail = punct[0]; url = url.slice(0, -tail.length); }
     if (!url.replace(/^https?:\/\/|^www\./i, "")) continue;   // остался один протокол
     const href = /^www\./i.test(url) ? "https://" + url : url;
     out += esc(s.slice(last, m.index))
@@ -3082,7 +3216,7 @@ function dirRowsHTML() {
   return Object.keys(DIRS).map(k => {
     const d = DIRS[k];
     return `<button class="dirrow" data-act="diropen" data-p="${k}">
-      <span class="nm">${d.title}</span>
+      <span class="nm">${tr(d.title)}</span>
       <span class="qs">${d.list().length}</span>${CHEV}</button>`;
   }).join("");
 }
@@ -3100,7 +3234,7 @@ function dirPageHTML() {
            <button class="btn primary" data-act="${d.act}ren" data-v="${esc(v)}">Готово</button>
            <button class="btn link" data-act="dircancel">Отмена</button>
            <div class="spacer"></div>
-           <button class="btn link danger" data-act="${d.act}del" data-v="${esc(v)}">убрать ${d.one}</button>
+           <button class="btn link danger" data-act="${d.act}del" data-v="${esc(v)}">${tr("убрать")} ${tr(d.one)}</button>
          </div>
        </div>`
     : `<div class="dirrow">
@@ -3114,10 +3248,10 @@ function dirPageHTML() {
        </div>`).join("")}
     <div class="diraddrow">
       <input type="text" id="dirNew" autocomplete="off"
-        placeholder="Добавить ${d.one} и нажать Enter">
+        placeholder="${tr("Добавить")} ${tr(d.one)} ${tr("и нажать Enter")}">
     </div>
   </div>
-  <p class="qs" style="margin:14px 4px 0">${d.note}</p>
+  <p class="qs" style="margin:14px 4px 0">${tr(d.note)}</p>
   <div class="row modalfoot">
     <span class="qs" style="margin:0">${dirSaved && !dirDirty() ? "Изменения сохранены" : ""}</span>
     <div class="spacer"></div>
@@ -3451,7 +3585,7 @@ function cfgSeg(key, opts, label, hint) {
 
 function applyCfg() {
   if (cfgDraft) S.cfg = JSON.parse(JSON.stringify(cfgDraft));
-  cfgDraft = null; save(); applyTheme(); closeModal(); render();
+  cfgDraft = null; save(); applyTheme(); setLang(); closeModal(); render();
 }
 function cancelCfg() { cfgDraft = null; closeModal(); render(); }
 
@@ -3501,50 +3635,53 @@ function openSettings() {
   if (DIRPAGE) {
     const d = DIRS[DIRPAGE];
     if (!dirBackup) dirBackup = dirSnapshot();
-    openModal(`<h3 class="dirhead"><button class="btn link" data-act="dirback">‹ Настройки</button>
-        <b>${d.title}</b></h3>
+    openModal(`<h3 class="dirhead"><button class="btn link" data-act="dirback">${tr("‹ Настройки")}</button>
+        <b>${tr(d.title)}</b></h3>
       ${dirPageHTML()}`, "settings:" + DIRPAGE,
-      { act: "dirclose", title: "Закрыть без сохранения" });
+      { act: "dirclose", title: tr("Закрыть без сохранения") });
     wireDirectories();
     return;
   }
-  openModal(`<h3>Настройки</h3>
+  openModal(`<h3>${tr("Настройки")}</h3>
 
     <div class="cfggrid">
-      ${cfgSeg("todayCap", [[3,"3"],[5,"5"],[7,"7"]], "Дел в день",
-        "Больше семи в день не помещается ни у кого — экран короткий намеренно.")}
-      ${cfgSeg("urgentDays", [[1,"1 день"],[3,"3 дня"],[7,"неделя"]],
-        "Горит за",
-        "Сколько дней до дедлайна дело считается срочным. Пересчитывается каждый день.")}
+      ${cfgSeg("todayCap", [[3,"3"],[5,"5"],[7,"7"]], tr("Дел в день"),
+        tr("Больше семи в день не помещается ни у кого — экран короткий намеренно."))}
+      ${cfgSeg("urgentDays", [[1,tr("1 день")],[3,tr("3 дня")],[7,tr("неделя")]],
+        tr("Горит за"),
+        tr("Сколько дней до дедлайна дело считается срочным. Пересчитывается каждый день."))}
     </div>
 
     <div class="cfggrid">
-      ${cfgSeg("theme", [["light","светлая"],["dark","тёмная"]], "Тема")}
-      ${cfgSeg("weekStart", [[1,"пн"],[0,"вс"]], "Начало недели")}
+      ${cfgSeg("theme", [["light",tr("светлая")],["dark",tr("тёмная")]], tr("Тема"))}
+      ${cfgSeg("weekStart", [[1,tr("пн")],[0,tr("вс")]], tr("Начало недели"))}
+    </div>
+
+    <div class="cfggrid">
+      ${cfgSeg("lang", [["ru","Русский"],["en","English"]], tr("Язык"))}
     </div>
 
     <div class="setdiv"></div>
     ${dirRowsHTML()}
 
     <div class="setdiv"></div>
-    <p class="lbl">Данные</p>
+    <p class="lbl">${tr("Данные")}</p>
     <div class="row" style="margin:0;justify-content:flex-start">
-      <button class="btn ghost outline" data-act="exportdata">Сохранить в файл</button>
-      <button class="btn ghost outline" data-act="importdata">Загрузить из файла</button>
+      <button class="btn ghost outline" data-act="exportdata">${tr("Сохранить в файл")}</button>
+      <button class="btn ghost outline" data-act="importdata">${tr("Загрузить из файла")}</button>
     </div>
-    <p class="qs" style="margin-top:10px">Всё хранится в этом браузере. Файл-копия —
-      способ перенести данные или подстраховаться.</p>
+    <p class="qs" style="margin-top:10px">${tr("Всё хранится в этом браузере. Файл-копия — способ перенести данные или подстраховаться.")}</p>
     <input type="file" id="importFile" accept=".json,application/json" hidden>
 
     <div class="row modalfoot">
       <span class="qs" style="margin:0">${cfgDirty()
-        ? `<b style="color:var(--warm)">Есть неприменённые изменения</b>`
-        : "Всё применено"}</span>
+        ? `<b style="color:var(--warm)">${tr("Есть неприменённые изменения")}</b>`
+        : tr("Всё применено")}</span>
       <div class="spacer"></div>
       <button class="btn ${cfgDirty() ? "primary" : "ghost"}" data-act="cfgapply"
-        ${cfgDirty() ? "" : "disabled"}>Применить изменения</button>
+        ${cfgDirty() ? "" : "disabled"}>${tr("Применить изменения")}</button>
     </div>`, "settings",
-    { act: "cfgcancel", title: "Закрыть, не применяя изменения" });
+    { act: "cfgcancel", title: tr("Закрыть, не применяя изменения") });
   wireDirectories();
   const fi = document.getElementById("importFile");
   if (fi && fi.addEventListener) fi.addEventListener("change", () => {

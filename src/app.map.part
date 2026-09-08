@@ -469,7 +469,7 @@ function dirRowsHTML() {
   return Object.keys(DIRS).map(k => {
     const d = DIRS[k];
     return `<button class="dirrow" data-act="diropen" data-p="${k}">
-      <span class="nm">${d.title}</span>
+      <span class="nm">${tr(d.title)}</span>
       <span class="qs">${d.list().length}</span>${CHEV}</button>`;
   }).join("");
 }
@@ -487,7 +487,7 @@ function dirPageHTML() {
            <button class="btn primary" data-act="${d.act}ren" data-v="${esc(v)}">Готово</button>
            <button class="btn link" data-act="dircancel">Отмена</button>
            <div class="spacer"></div>
-           <button class="btn link danger" data-act="${d.act}del" data-v="${esc(v)}">убрать ${d.one}</button>
+           <button class="btn link danger" data-act="${d.act}del" data-v="${esc(v)}">${tr("убрать")} ${tr(d.one)}</button>
          </div>
        </div>`
     : `<div class="dirrow">
@@ -501,10 +501,10 @@ function dirPageHTML() {
        </div>`).join("")}
     <div class="diraddrow">
       <input type="text" id="dirNew" autocomplete="off"
-        placeholder="Добавить ${d.one} и нажать Enter">
+        placeholder="${tr("Добавить")} ${tr(d.one)} ${tr("и нажать Enter")}">
     </div>
   </div>
-  <p class="qs" style="margin:14px 4px 0">${d.note}</p>
+  <p class="qs" style="margin:14px 4px 0">${tr(d.note)}</p>
   <div class="row modalfoot">
     <span class="qs" style="margin:0">${dirSaved && !dirDirty() ? "Изменения сохранены" : ""}</span>
     <div class="spacer"></div>

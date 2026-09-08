@@ -307,7 +307,7 @@ function cfgSeg(key, opts, label, hint) {
 
 function applyCfg() {
   if (cfgDraft) S.cfg = JSON.parse(JSON.stringify(cfgDraft));
-  cfgDraft = null; save(); applyTheme(); closeModal(); render();
+  cfgDraft = null; save(); applyTheme(); setLang(); closeModal(); render();
 }
 function cancelCfg() { cfgDraft = null; closeModal(); render(); }
 
@@ -357,50 +357,53 @@ function openSettings() {
   if (DIRPAGE) {
     const d = DIRS[DIRPAGE];
     if (!dirBackup) dirBackup = dirSnapshot();
-    openModal(`<h3 class="dirhead"><button class="btn link" data-act="dirback">‹ Настройки</button>
-        <b>${d.title}</b></h3>
+    openModal(`<h3 class="dirhead"><button class="btn link" data-act="dirback">${tr("‹ Настройки")}</button>
+        <b>${tr(d.title)}</b></h3>
       ${dirPageHTML()}`, "settings:" + DIRPAGE,
-      { act: "dirclose", title: "Закрыть без сохранения" });
+      { act: "dirclose", title: tr("Закрыть без сохранения") });
     wireDirectories();
     return;
   }
-  openModal(`<h3>Настройки</h3>
+  openModal(`<h3>${tr("Настройки")}</h3>
 
     <div class="cfggrid">
-      ${cfgSeg("todayCap", [[3,"3"],[5,"5"],[7,"7"]], "Дел в день",
-        "Больше семи в день не помещается ни у кого — экран короткий намеренно.")}
-      ${cfgSeg("urgentDays", [[1,"1 день"],[3,"3 дня"],[7,"неделя"]],
-        "Горит за",
-        "Сколько дней до дедлайна дело считается срочным. Пересчитывается каждый день.")}
+      ${cfgSeg("todayCap", [[3,"3"],[5,"5"],[7,"7"]], tr("Дел в день"),
+        tr("Больше семи в день не помещается ни у кого — экран короткий намеренно."))}
+      ${cfgSeg("urgentDays", [[1,tr("1 день")],[3,tr("3 дня")],[7,tr("неделя")]],
+        tr("Горит за"),
+        tr("Сколько дней до дедлайна дело считается срочным. Пересчитывается каждый день."))}
     </div>
 
     <div class="cfggrid">
-      ${cfgSeg("theme", [["light","светлая"],["dark","тёмная"]], "Тема")}
-      ${cfgSeg("weekStart", [[1,"пн"],[0,"вс"]], "Начало недели")}
+      ${cfgSeg("theme", [["light",tr("светлая")],["dark",tr("тёмная")]], tr("Тема"))}
+      ${cfgSeg("weekStart", [[1,tr("пн")],[0,tr("вс")]], tr("Начало недели"))}
+    </div>
+
+    <div class="cfggrid">
+      ${cfgSeg("lang", [["ru","Русский"],["en","English"]], tr("Язык"))}
     </div>
 
     <div class="setdiv"></div>
     ${dirRowsHTML()}
 
     <div class="setdiv"></div>
-    <p class="lbl">Данные</p>
+    <p class="lbl">${tr("Данные")}</p>
     <div class="row" style="margin:0;justify-content:flex-start">
-      <button class="btn ghost outline" data-act="exportdata">Сохранить в файл</button>
-      <button class="btn ghost outline" data-act="importdata">Загрузить из файла</button>
+      <button class="btn ghost outline" data-act="exportdata">${tr("Сохранить в файл")}</button>
+      <button class="btn ghost outline" data-act="importdata">${tr("Загрузить из файла")}</button>
     </div>
-    <p class="qs" style="margin-top:10px">Всё хранится в этом браузере. Файл-копия —
-      способ перенести данные или подстраховаться.</p>
+    <p class="qs" style="margin-top:10px">${tr("Всё хранится в этом браузере. Файл-копия — способ перенести данные или подстраховаться.")}</p>
     <input type="file" id="importFile" accept=".json,application/json" hidden>
 
     <div class="row modalfoot">
       <span class="qs" style="margin:0">${cfgDirty()
-        ? `<b style="color:var(--warm)">Есть неприменённые изменения</b>`
-        : "Всё применено"}</span>
+        ? `<b style="color:var(--warm)">${tr("Есть неприменённые изменения")}</b>`
+        : tr("Всё применено")}</span>
       <div class="spacer"></div>
       <button class="btn ${cfgDirty() ? "primary" : "ghost"}" data-act="cfgapply"
-        ${cfgDirty() ? "" : "disabled"}>Применить изменения</button>
+        ${cfgDirty() ? "" : "disabled"}>${tr("Применить изменения")}</button>
     </div>`, "settings",
-    { act: "cfgcancel", title: "Закрыть, не применяя изменения" });
+    { act: "cfgcancel", title: tr("Закрыть, не применяя изменения") });
   wireDirectories();
   const fi = document.getElementById("importFile");
   if (fi && fi.addEventListener) fi.addEventListener("change", () => {

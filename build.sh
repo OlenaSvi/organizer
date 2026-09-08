@@ -6,7 +6,7 @@ set -e
 cd "$(dirname "$0")"
 
 OUT="Организатор.html"
-PARTS="src/app.head.part src/app.body.part src/app.views.part \
+PARTS="src/app.head.part src/app.lang.part src/app.body.part src/app.views.part \
        src/app.map.part src/app.modal.part src/app.events.part"
 
 cat $PARTS > "$OUT"
