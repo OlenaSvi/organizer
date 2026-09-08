@@ -154,6 +154,9 @@ T.head("ПЛИТКИ ДНЕЙ ВЕЗДЕ ОДИНАКОВЫЕ");
 T.reset();
 S.cfg.weekStart = 1;
 var rr = live().filter(isRoutine)[0];
+/* Три любых дня — важен порядок плиток, а не сами дни. Восстановим
+   расписание в конце секции: дальше рутина должна попадать в панель
+   любого дня недели, иначе проверки начнут зависеть от календаря. */
 rr.routine.days = [1, 3, 5];
 rr.routine.history = [today()];
 
@@ -198,6 +201,7 @@ clickOn({ act: "opendone", id: rr.id, when: today() });
 T.ok("в архиве тоже", firstDay(host.innerHTML) === "вс");
 closeModal();
 S.cfg.weekStart = 1;
+live().filter(isRoutine).forEach(function (x) { x.routine.days = [0, 1, 2, 3, 4, 5, 6]; });
 T.reset();
 
 T.head("СТВОРКИ РУТИНЫ ПО ЧАСТЯМ ДНЯ");

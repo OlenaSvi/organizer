@@ -70,10 +70,12 @@ var why = function () {
   return s2 ? s2.why : null;
 };
 T.ok("нетронутое возвращается с «не успели»", /не успели/.test(why() || ""), String(why()));
+/* Дело в работе в предложения не возвращается вовсе — оно и так стоит
+   в дне, каждый день, пока не закрыто или не отложено. */
 w.working = true;
 render();
-T.ok("дело в работе возвращается молча", why() === "", String(why()));
-T.ok("но возвращается", todayItems().proposals.some(function (x) { return x.it === w; }));
+T.ok("дело в работе не предлагается — оно уже в дне", why() === null);
+T.ok("а стоит в дне", todayItems().mine.indexOf(w) >= 0);
 
 T.head("«В РАБОТЕ» — НЕ «СДЕЛАНО»");
 T.reset();
@@ -241,6 +243,36 @@ ts[2].working = false; ts[3].working = false;
 render();
 T.ok("створок не показываем", view.innerHTML.indexOf('data-act="todayview"') < 0);
 S.cfg.todayCap = 5;
+T.reset();
+
+T.head("ДЕЛО В РАБОТЕ ПЕРЕЖИВАЕТ СМЕНУ СУТОК");
+/* Взялись вчера — сегодня оно по-прежнему в работе. Раньше признак
+   держался, а видимость в дне — нет: дело попадало в день только через
+   «взято сегодня», и в полночь створка пустела. */
+T.reset();
+var y = T.tasks()[0];
+y.due = null; y.working = true;
+y.today = addDays(today(), -1);          // взялись вчера
+render();
+T.ok("дело в дне", todayItems().mine.indexOf(y) >= 0);
+TAB = "today"; TODAYVIEW = "work"; render();
+T.ok("и видно в створке «в работе»", T.card(y.id).length > 0);
+T.ok("в предложениях не задваивается",
+  !todayItems().proposals.some(function (x) { return x.it === y; }));
+T.ok("в лимит по-прежнему не идёт", todayItems().chosenCount === 0,
+  String(todayItems().chosenCount));
+TODAYVIEW = "all";
+
+T.head("ОТЛОЖЕННОЕ ВЧЕРА СЕГОДНЯ ВОЗВРАЩАЕТСЯ");
+/* «Отложить» прячет дело на сегодня, а не навсегда. */
+T.reset();
+var z = T.tasks()[0];
+z.due = null; z.forceImp = true;
+z.working = false; z.today = null; z.notToday = addDays(today(), -1);
+render();
+T.ok("вчерашний отказ сегодня не действует", !skippedToday(z));
+T.ok("и дело снова предлагается",
+  todayItems().proposals.some(function (x) { return x.it === z; }));
 T.reset();
 
 T.done();
