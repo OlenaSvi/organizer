@@ -523,9 +523,9 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
   border:0;font-size:17px;line-height:1;color:var(--dim);
   display:flex;align-items:center;justify-content:center;transition:.15s}
 .modalx:hover{background:var(--warm-soft);color:var(--warm)}
-.modal input[type=text],.modal textarea,.modal select{width:100%;padding:12px 14px;
+.modal input[type=text],.modal input[type=email],.modal input[type=password],.modal textarea,.modal select{width:100%;padding:12px 14px;
   border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-bottom:12px}
-.modal input[type=text]:focus,.modal textarea:focus{outline:1.5px solid var(--accent);
+.modal input[type=text]:focus,.modal input[type=email]:focus,.modal input[type=password]:focus,.modal textarea:focus{outline:1.5px solid var(--accent);
   outline-offset:-1px;border-color:transparent}
 /* Пояснение, а не ошибка: нейтральный фон и обычный текст. Тёплый цвет
    в приложении значит «обрати внимание» («Разобрать», переполнение
@@ -726,6 +726,9 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .readstep.done .stepnum{color:var(--accent)}
 .readstep .tx{flex:1;min-width:0}
 .readstep.done span.tx{text-decoration:line-through;color:var(--faint)}
+.accrow{display:flex;gap:8px;flex-wrap:wrap}
+.accrow input{flex:1;min-width:160px}
+.accstat{margin:10px 0 0}
 .notebox{width:100%;min-height:66px;padding:11px 13px;border:1px solid var(--line);
   border-radius:10px;background:var(--panel);margin-bottom:12px;resize:vertical;
   font-family:inherit;font-size:14.5px;line-height:1.45;color:var(--ink)}

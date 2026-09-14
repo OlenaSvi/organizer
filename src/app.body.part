@@ -166,12 +166,14 @@ const isSelf = p => p === "Я" || p === "Me";
    что-то отвечает — шаги, варианты, время рутины, повтор, — чтобы
    возможности было видно сразу, без объяснений.                    */
 function templateItems() {
-  const t = (o) => Object.assign({
+  /* tmpl помнит название примера: пока оно не тронуто, устройство
+     считается чистым, и облако при входе берётся без вопросов.    */
+  const t = (o) => { const it = Object.assign({
     id: uid(), title: "", type: "task", multi: false, spheres: [], place: null, person: null,
     due: null, time: null, steps: [], options: [], routine: null,
     done: false, created: today(), notes: "", forceImp: null,
     today: null, notToday: null,
-  }, o);
+  }, o); it.tmpl = it.title; return it; };
   return [
     t({ title: tr("Оплатить счета"), spheres: [tr("Финансы")],
         person: tr("Я"), due: addDays(today(), 3) }),
@@ -233,7 +235,6 @@ else {
   S = seed();
   S.cfg = { lang: CURLANG };
 }
-delete S.branch;   // состояние ветки убрано: пауза не значила «неважно»
 /* Числа, которые раньше были зашиты в код. Теперь их видно и можно менять. */
 const DEFAULT_CFG = {
   todayCap: 5,            // сколько дел помещается в «Сегодня»
@@ -242,33 +243,40 @@ const DEFAULT_CFG = {
   theme: "light",         // light | dark — по выбору, система не вмешивается
   lang: "ru",             // ru | en — язык интерфейса, не данных
 };
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+const save = () => {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+  cloudTouch();   // в облако — если вошли; иначе это ничего не делает
+};
 
-S.cfg = Object.assign({}, DEFAULT_CFG, S.cfg || {});
-if (S.cfg.lang !== "en") S.cfg.lang = "ru";
-setLang();
-/* Настройка «какие вкладки показывать» убрана: спрятанная карта уносила
-   с собой фокус и паузу веток — единственное место, где они
-   переключаются. Все виды всегда на месте.                          */
-delete S.cfg.tabs;
-/* Три настройки ушли вместе со своими механизмами: скрытый дедлайн у
-   «выбрать/купить», выключатель гаранта «важного, но не горит» и рутина
-   в календаре. Поведение стало одинаковым у всех — настраивать нечего. */
-delete S.cfg.decideDays; delete S.cfg.heroGuarantee; delete S.cfg.routinesInCalendar;
-
-/* Тема: только ручной выбор. Вариант «как в системе» убран по просьбе
-   прежних версий — старое значение тихо становится светлой.                  */
-if (S.cfg.theme !== "dark" && S.cfg.theme !== "light") S.cfg.theme = "light";
+/* Починка состояния на уровне настроек и справочников. Зовётся при
+   запуске и когда данные приходят из облака — они могли быть записаны
+   старой версией приложения. Починка дел — в normalizeItems().      */
 function applyTheme() {
   const root = typeof document !== "undefined" && document.documentElement;
   if (root && root.setAttribute)
     root.setAttribute("data-theme", S.cfg.theme === "dark" ? "dark" : "light");
 }
-applyTheme();
-
-
-if (!Array.isArray(S.types) || !S.types.length)
-  S.types = JSON.parse(JSON.stringify(DEFAULT_TYPES));
+function repairState() {
+  delete S.branch;   // состояние ветки убрано: пауза не значила «неважно»
+  S.cfg = Object.assign({}, DEFAULT_CFG, S.cfg || {});
+  if (S.cfg.lang !== "en") S.cfg.lang = "ru";
+  setLang();
+  /* Настройка «какие вкладки показывать» убрана: спрятанная карта уносила
+     с собой фокус и паузу веток — единственное место, где они
+     переключаются. Все виды всегда на месте.                        */
+  delete S.cfg.tabs;
+  /* Три настройки ушли вместе со своими механизмами: скрытый дедлайн у
+     «выбрать/купить», выключатель гаранта «важного, но не горит» и рутина
+     в календаре. Поведение стало одинаковым у всех — настраивать нечего. */
+  delete S.cfg.decideDays; delete S.cfg.heroGuarantee; delete S.cfg.routinesInCalendar;
+  /* Тема: только ручной выбор. Вариант «как в системе» убран по просьбе
+     прежних версий — старое значение тихо становится светлой.       */
+  if (S.cfg.theme !== "dark" && S.cfg.theme !== "light") S.cfg.theme = "light";
+  applyTheme();
+  if (!Array.isArray(S.types) || !S.types.length)
+    S.types = JSON.parse(JSON.stringify(DEFAULT_TYPES));
+}
+repairState();
 /* Вид «Сделать» — общее дело. Добавляем один раз: если его потом убрать
    в настройках, он больше не вернётся.                               */
 

@@ -261,6 +261,14 @@ document.addEventListener("click", e => {
     case "rday":    if (it && schedDays(it)) { const d = schedDays(it), i = d.indexOf(+el.dataset.i);
                       if (i >= 0) d.splice(i, 1); else d.push(+el.dataset.i);
                       save(); refreshEdit(id); } break;
+    case "cloudin":    cloudSignIn(); break;
+    case "cloudup":    cloudSignUp(); break;
+    case "cloudout":   cloudSignOut(); break;
+    case "cloudrecover": cloudRecover(); break;
+    case "cloudkeep":  cloudKeep(v); break;
+    case "cloudlater": closeModal(); openSettings(); break;
+    case "cloudask":   if (CF.pending) cloudAsk(CF.pending); break;
+    case "cloudnow":   cloudSync("manual"); break;
     case "placeadd": addPlace(el); break;
     case "placedel": removePlace(v); break;
     case "placeren": renamePlace(v); break;
@@ -540,6 +548,14 @@ document.getElementById("capBtn").dataset.act = "cap";
 document.getElementById("gearBtn").dataset.act = "settings";
 document.getElementById("inboxBtn").dataset.act = "inbox";
 render();
+BOOTED = true;
+
+/* Облако: подтянуть при запуске, при возвращении к окну и раз в пять
+   минут. Без входа всё это молча ничего не делает.                 */
+cloudSync("start");
+window.addEventListener("focus", () => cloudSync("focus"));
+document.addEventListener("visibilitychange", () => { if (!document.hidden) cloudSync("focus"); });
+setInterval(() => cloudSync("focus"), 5 * 60000);
 
 /* Приложение часто остаётся открытым сутками. Раз в минуту проверяем,
    не наступил ли новый день: иначе «сегодня», рутины и дата в шапке

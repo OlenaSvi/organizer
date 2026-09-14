@@ -347,6 +347,41 @@ const EN = {
   "Убрать из сегодня": "Take out of today", "Сделать сегодня": "Do it today",
   "Удалить": "Delete", "Отменить правки и закрыть": "Discard changes and close",
 
+  /* ── аккаунт и облако ──────────────────────────────────────── */
+  "Аккаунт": "Account", "Почта": "Email", "Пароль": "Password",
+  "Войти": "Sign in", "Зарегистрироваться": "Create account",
+  "Забыли пароль?": "Forgot password?", "Выйти": "Sign out",
+  "Обновить сейчас": "Sync now", "Решить, что оставить": "Decide what to keep",
+  "Аккаунт нужен, чтобы видеть свои дела с любого устройства. Без него всё работает как есть — в этом браузере.":
+    "An account lets you see your tasks from any device. Without one everything works as it does now — in this browser.",
+  "Вы вошли как": "Signed in as",
+  "Дела одинаковые на всех устройствах, где вы вошли.": "Your tasks are the same on every device where you've signed in.",
+  "Синхронизирую…": "Syncing…", "Синхронизировано": "Synced",
+  "Нужно решить, что оставить.": "You need to decide what to keep.",
+  "Есть несохранённое — отправлю через секунду.": "Unsent changes — sending in a second.",
+  "только что": "just now", "мин назад": "min ago", "время|в": "at",
+  "Нужны и почта, и пароль.": "Both email and password are needed.",
+  "Впишите почту — туда придёт письмо.": "Type your email — the message goes there.",
+  "Проверьте почту: там письмо со ссылкой для подтверждения. После него войдите здесь.":
+    "Check your email: there's a confirmation link. After that, sign in here.",
+  "Письмо для смены пароля отправлено — проверьте почту.": "A password-reset email has been sent — check your inbox.",
+  "Нет связи — сохраняю здесь, отправлю, когда появится.": "No connection — saving here, will send when it's back.",
+  "Сессия закончилась — войдите снова.": "Your session has ended — please sign in again.",
+  "Слишком много попыток — подождите минуту.": "Too many attempts — wait a minute.",
+  "Почта или пароль не подошли.": "That email or password didn't match.",
+  "Такой аккаунт уже есть — войдите.": "That account already exists — sign in instead.",
+  "Пароль слишком короткий: нужно не меньше шести знаков.": "The password is too short: at least six characters.",
+  "Похоже, в адресе почты опечатка.": "That email address doesn't look right.",
+  "Не получилось:": "It didn't work:",
+  "Что оставить?": "What should we keep?",
+  "В облаке уже есть ваши записи": "The cloud already has your records",
+  "и на этом устройстве тоже свои. Вторая копия не пропадёт — она останется здесь как запасная.":
+    "and this device has its own too. The other copy isn't lost — it stays here as a backup.",
+  "Взять из облака": "Take the cloud's", "Оставить это устройство": "Keep this device's",
+  "Решить позже": "Decide later",
+  "В облаке была версия новее — взята она. Ваша правка сохранена здесь как копия.":
+    "The cloud had a newer version — it was taken. Your edit is kept here as a backup copy.",
+
   /* ── справочники ───────────────────────────────────────────── */
   "Сферы": "Areas", "Места": "Places", "Люди": "People",
   "сферу": "an area", "место": "a place", "человека": "a person",

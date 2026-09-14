@@ -6,7 +6,7 @@ set -e
 cd "$(dirname "$0")"
 
 OUT="Организатор.html"
-PARTS="src/app.head.part src/app.lang.part src/app.body.part src/app.views.part \
+PARTS="src/app.head.part src/app.lang.part src/app.cloud.part src/app.body.part src/app.views.part \
        src/app.map.part src/app.modal.part src/app.events.part"
 
 cat $PARTS > "$OUT"
@@ -24,5 +24,9 @@ if [ "$RES" != "ok" ]; then
   echo "❌ $RES"
   exit 1
 fi
+
+# Копия для публикации по адресу: GitHub Pages отдаёт папку docs/,
+# а главную страницу ищет под именем index.html.
+mkdir -p docs && cp "$OUT" docs/index.html
 
 echo "✅ собрано: $OUT ($(wc -c < "$OUT" | tr -d ' ') байт), синтаксис чист"

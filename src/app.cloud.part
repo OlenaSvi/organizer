@@ -1,0 +1,322 @@
+/* ══════════════════════════════════════════════════════════════════
+   ОБЛАКО — аккаунт и одни и те же данные на всех устройствах
+   ══════════════════════════════════════════════════════════════════
+
+   Сервер — Supabase: вход по почте и паролю и одна таблица `states`,
+   где у каждого человека ровно одна строка с его данными целиком.
+   Правило на уровне базы (row level security) не даёт прочитать чужую
+   строку, что бы ни делал код.
+
+   Приложение говорит с сервером обычным fetch, без библиотек: нужных
+   адресов пять, а в проверках сеть подменяется целиком.
+
+   Без ключей проекта (CLOUD.url пустой) раздела «Аккаунт» нет и ничего
+   не меняется. Без входа — тоже: данные живут в браузере, как раньше.
+   Облако включается только входом, и данные с устройства никогда не
+   затираются молча: перед заменой копия ложится в organizer.v1.backup,
+   а если своё есть и здесь, и там — приложение спрашивает.
+
+   Ревизии. У строки в облаке есть номер rev; на устройстве в
+   organizer.sync лежит, до какой ревизии оно дошло. Отправка условная:
+   «обнови, если в облаке всё ещё моя ревизия». Не обновилось — другое
+   устройство успело раньше: берём облако, свою правку кладём в копию и
+   говорим об этом словами. Для одного человека на двух устройствах
+   такое редкость, а данные при этом не теряются.                   */
+const CLOUD = { url: "", key: "" };   // адрес проекта и публичный ключ
+let CLOUDFETCH = null;                 // подмена сети в проверках
+let BOOTED = false;                    // до конца запуска save() в облако не смотрит
+const SESSKEY = "organizer.session", SYNCKEY = "organizer.sync",
+      BACKUPKEY = "organizer.v1.backup";
+/* Состояние синхронизации. Это не данные — в облако не уходит. */
+const CF = { dirty: false, timer: null, busy: false, note: "", at: null,
+             pending: null, quiet: false, lastSync: 0, email: "", extra: "" };
+
+const cloudOn = () => !!(CLOUD.url && CLOUD.key);
+const readJSON = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
+const cloudSession = () => cloudOn() ? readJSON(SESSKEY) : null;
+const cloudMark = () => readJSON(SYNCKEY);
+const cloudDirty = () => CF.dirty;
+const cloudNote = () => CF.note ? tr(CF.note) + (CF.extra ? " " + CF.extra : "") : "";
+const cloudPending = () => !!CF.pending;
+const setSession = s => localStorage.setItem(SESSKEY, JSON.stringify(s));
+const setMark = (uid, rev) => localStorage.setItem(SYNCKEY, JSON.stringify({ uid, rev }));
+function cloudForget() {
+  localStorage.removeItem(SESSKEY); localStorage.removeItem(SYNCKEY);
+  CF.dirty = false; CF.note = ""; CF.extra = ""; CF.at = null; CF.pending = null;
+}
+/* Чистое устройство — нетронутые примеры первого запуска: их не жалко
+   заменить облаком, не спрашивая. Тронутый пример — уже своё.       */
+const cloudFresh = () => S.items.every(i => i.draft || (i.tmpl && i.tmpl === i.title
+  && !i.done && !i.working && !i.today
+  && !(i.routine && i.routine.history && i.routine.history.length)));
+
+/* ── сеть ────────────────────────────────────────────────────────── */
+async function cloudReq(path, opt, auth) {
+  const f = CLOUDFETCH || (typeof fetch === "function" ? ((u, o) => fetch(u, o)) : null);
+  if (!f) throw { code: "offline" };
+  const headers = Object.assign({ apikey: CLOUD.key, "Content-Type": "application/json" },
+                                opt.headers || {});
+  if (auth) {
+    const ses = cloudSession();
+    if (!ses) throw { code: "noauth" };
+    headers.Authorization = "Bearer " + ses.access_token;
+  }
+  let r;
+  try {
+    r = await f(CLOUD.url + path, { method: opt.method || "GET", headers,
+      body: opt.body === undefined ? undefined : JSON.stringify(opt.body) });
+  } catch (e) { throw { code: "offline" }; }
+  /* Токен живёт час. Протух — обновляем и повторяем один раз. */
+  if (r.status === 401 && auth && !opt.retried) {
+    await cloudRefresh();
+    return cloudReq(path, Object.assign({}, opt, { retried: true }), auth);
+  }
+  let body = null;
+  try { body = await r.json(); } catch (e) {}
+  if (!r.ok) throw { code: "http", status: r.status, body };
+  return body;
+}
+
+/* Ошибки — словами и без вины: человек ничего не сломал. Возвращается
+   русская фраза-ключ; переводится при показе, иначе смена языка
+   оставляла бы старую подсказку на прежнем языке. Непереводимый хвост
+   (текст сервера) идёт отдельно, в CF.extra.                        */
+function cloudWords(e) {
+  CF.extra = "";
+  if (!e) return "";
+  if (e.code === "offline") return "Нет связи — сохраняю здесь, отправлю, когда появится.";
+  if (e.code === "noauth" || e.code === "expired") return "Сессия закончилась — войдите снова.";
+  const b = e.body || {};
+  const msg = String(b.msg || b.message || b.error_description || b.error || "");
+  if (e.status === 429 || /rate limit/i.test(msg)) return "Слишком много попыток — подождите минуту.";
+  if (/invalid login|invalid_grant|invalid credentials/i.test(msg)) return "Почта или пароль не подошли.";
+  if (b.code === "user_already_exists" || /already/i.test(msg)) return "Такой аккаунт уже есть — войдите.";
+  if (/password/i.test(msg) && /short|least|characters/i.test(msg))
+    return "Пароль слишком короткий: нужно не меньше шести знаков.";
+  if (/email|address/i.test(msg) && /valid/i.test(msg)) return "Похоже, в адресе почты опечатка.";
+  CF.extra = msg || e.code || "?";
+  return "Не получилось:";
+}
+
+/* ── вход и выход ────────────────────────────────────────────────── */
+function accFields() {
+  const e = document.getElementById("accEmail"), p = document.getElementById("accPass");
+  return { email: String(e && e.value || "").trim().toLowerCase(),
+           password: String(p && p.value || "") };
+}
+/* Одна обёртка на все действия: занято → сделали → показали итог. */
+async function cloudBusy(fn) {
+  CF.busy = true; CF.note = ""; CF.extra = ""; cloudDraw();
+  try { await fn(); } catch (e) { CF.note = cloudWords(e); }
+  CF.busy = false; cloudDraw();
+}
+async function cloudSignUp() {
+  const { email, password } = accFields();
+  CF.email = email;
+  if (!email || !password) { CF.note = "Нужны и почта, и пароль."; return cloudDraw(); }
+  await cloudBusy(async () => {
+    const b = await cloudReq("/auth/v1/signup", { method: "POST", body: { email, password } });
+    if (b && b.access_token) { setSession(b); await cloudLink(); }
+    else CF.note = "Проверьте почту: там письмо со ссылкой для подтверждения. После него войдите здесь.";
+  });
+}
+async function cloudSignIn() {
+  const { email, password } = accFields();
+  CF.email = email;
+  if (!email || !password) { CF.note = "Нужны и почта, и пароль."; return cloudDraw(); }
+  await cloudBusy(async () => {
+    const b = await cloudReq("/auth/v1/token?grant_type=password",
+                             { method: "POST", body: { email, password } });
+    setSession(b); await cloudLink();
+  });
+}
+async function cloudRecover() {
+  const { email } = accFields();
+  CF.email = email;
+  if (!email) { CF.note = "Впишите почту — туда придёт письмо."; return cloudDraw(); }
+  await cloudBusy(async () => {
+    await cloudReq("/auth/v1/recover", { method: "POST", body: { email } });
+    CF.note = "Письмо для смены пароля отправлено — проверьте почту.";
+  });
+}
+/* Выход не трогает данные на устройстве: они ваши и остаются здесь. */
+async function cloudSignOut() {
+  try { await cloudReq("/auth/v1/logout", { method: "POST" }, true); } catch (e) {}
+  cloudForget(); cloudDraw();
+}
+async function cloudRefresh() {
+  const ses = cloudSession();
+  if (!ses || !ses.refresh_token) { cloudForget(); throw { code: "expired" }; }
+  try {
+    const b = await cloudReq("/auth/v1/token?grant_type=refresh_token",
+                             { method: "POST", body: { refresh_token: ses.refresh_token } });
+    setSession(b);
+  } catch (e) {
+    if (e.code === "offline") throw e;
+    cloudForget(); throw { code: "expired" };
+  }
+}
+
+/* ── данные ──────────────────────────────────────────────────────── */
+async function cloudRow() {
+  const uid = cloudSession().user.id;
+  const rows = await cloudReq("/rest/v1/states?select=user_id,data,rev,updated_at,device&user_id=eq."
+    + encodeURIComponent(uid), {}, true);
+  return Array.isArray(rows) && rows[0] ? rows[0] : null;
+}
+function cloudPayload(rev) {
+  return { user_id: cloudSession().user.id, data: S, rev,
+           updated_at: new Date().toISOString(),
+           device: (typeof navigator !== "undefined" && navigator.platform) || "" };
+}
+/* Записать своё в облако. upsert — когда строки ещё нет или мы
+   сознательно её переписываем; иначе — условно, по своей ревизии.
+   false — облако ушло вперёд, наша запись не прошла.                */
+async function cloudWrite(baseRev, upsert) {
+  const next = baseRev + 1, uid = cloudSession().user.id;
+  const rows = upsert
+    ? await cloudReq("/rest/v1/states", { method: "POST",
+        headers: { Prefer: "resolution=merge-duplicates,return=representation" },
+        body: cloudPayload(next) }, true)
+    : await cloudReq("/rest/v1/states?user_id=eq." + encodeURIComponent(uid) + "&rev=eq." + baseRev,
+        { method: "PATCH", headers: { Prefer: "return=representation" },
+          body: cloudPayload(next) }, true);
+  if (!Array.isArray(rows) || !rows.length) return false;
+  setMark(uid, next); CF.dirty = false; CF.at = Date.now();
+  return true;
+}
+/* Взять облако себе. Прежнее состояние устройства — в копию. */
+function cloudAdopt(row) {
+  try { localStorage.setItem(BACKUPKEY, JSON.stringify(S)); } catch (e) {}
+  S = JSON.parse(JSON.stringify(row.data));
+  repairState(); normalizeItems();
+  CF.quiet = true; save(); CF.quiet = false;
+  setMark(cloudSession().user.id, row.rev);
+  CF.dirty = false; CF.at = Date.now(); CF.pending = null;
+  render(); cloudDraw();
+}
+/* Сразу после входа: с чем мы пришли и что лежит в облаке. */
+async function cloudLink() {
+  const uid = cloudSession().user.id, mark = cloudMark();
+  const row = await cloudRow();
+  if (!row) { await cloudWrite(0, true); return; }             // облако пустое — отдаём своё
+  if (mark && mark.uid === uid) { await cloudSyncNow(); return; } // устройство уже связано
+  if (cloudFresh()) { cloudAdopt(row); return; }               // чистое — берём облако молча
+  cloudAsk(row);                                               // и здесь своё, и там своё
+}
+function cloudAsk(row) {
+  CF.pending = row; CF.busy = false;
+  openModal(`<h3>${tr("Что оставить?")}</h3>
+    <p class="qs" style="margin:-10px 0 16px">${tr("В облаке уже есть ваши записи")}${
+      row.updated_at ? " (" + cloudWhen(row.updated_at) + ")" : ""}, ${
+      tr("и на этом устройстве тоже свои. Вторая копия не пропадёт — она останется здесь как запасная.")}</p>
+    <div class="row" style="margin:0;gap:10px;flex-wrap:wrap">
+      <button class="btn primary" data-act="cloudkeep" data-v="cloud">${tr("Взять из облака")}</button>
+      <button class="btn ghost outline" data-act="cloudkeep" data-v="device">${tr("Оставить это устройство")}</button>
+    </div>`, "cloudlink", { act: "cloudlater", title: tr("Решить позже") });
+}
+async function cloudKeep(which) {
+  const row = CF.pending; if (!row) return;
+  if (which === "cloud") { cloudAdopt(row); openSettings(); return; }
+  CF.busy = true; CF.pending = null; cloudDraw();
+  try { await cloudWrite(row.rev, true); CF.note = ""; }
+  catch (e) { CF.pending = row; CF.note = cloudWords(e); }
+  CF.busy = false; openSettings();
+}
+
+/* save() зовёт это после каждой записи; отправка — через полторы
+   секунды тишины, чтобы не слать каждую букву.                     */
+function cloudTouch() {
+  if (!BOOTED || CF.quiet || !cloudOn() || !cloudSession()) return;
+  CF.dirty = true;
+  if (CF.timer) clearTimeout(CF.timer);
+  CF.timer = setTimeout(() => { CF.timer = null; cloudPush(); }, 1500);
+}
+async function cloudPush() {
+  if (!cloudOn() || !cloudSession() || CF.pending || CF.busy || !CF.dirty) return;
+  CF.busy = true;
+  try {
+    const uid = cloudSession().user.id, mark = cloudMark();
+    if (!mark || mark.uid !== uid) { CF.busy = false; await cloudLink(); return; }
+    if (await cloudWrite(mark.rev, false)) CF.note = "";
+    else {
+      /* Облако ушло вперёд. Берём его, свою правку — в копию. */
+      const row = await cloudRow();
+      if (row) { cloudAdopt(row); CF.note = "В облаке была версия новее — взята она. Ваша правка сохранена здесь как копия."; }
+      else await cloudWrite(0, true);
+    }
+  } catch (e) { CF.note = cloudWords(e); }
+  CF.busy = false; cloudDraw();
+}
+/* Подтянуть облако: при запуске, при возврате к окну, раз в пять минут. */
+async function cloudSync(reason) {
+  if (!cloudOn() || !cloudSession() || CF.pending || CF.busy) return;
+  if (reason === "focus" && Date.now() - CF.lastSync < 30000) return;
+  CF.lastSync = Date.now();
+  await cloudSyncNow();
+}
+async function cloudSyncNow() {
+  CF.busy = true;
+  try {
+    const uid = cloudSession().user.id, mark = cloudMark();
+    if (!mark || mark.uid !== uid) { CF.busy = false; await cloudLink(); return; }
+    const row = await cloudRow();
+    if (!row) await cloudWrite(0, true);
+    else if (row.rev > mark.rev) {
+      if (CF.dirty) CF.note = "В облаке была версия новее — взята она. Ваша правка сохранена здесь как копия.";
+      else CF.note = "";
+      cloudAdopt(row);
+    } else if (CF.dirty) { CF.busy = false; await cloudPush(); return; }
+    else { CF.at = CF.at || Date.now(); CF.note = ""; }
+  } catch (e) { CF.note = cloudWords(e); }
+  CF.busy = false; cloudDraw();
+}
+
+/* ── как это выглядит ────────────────────────────────────────────── */
+const cloudAgo = ts => {
+  const m = Math.round((Date.now() - ts) / 60000);
+  if (m < 1) return tr("только что");
+  if (m < 60) return m + " " + tr("мин назад");
+  const d = new Date(ts);
+  return tr("в", "время") + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+};
+const cloudWhen = iso => {
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  return formatDay(isoDay(d)) + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+};
+/* Раздел в настройках. Перерисовывается, только если настройки открыты. */
+function cloudDraw() {
+  if (typeof lastModalKey !== "undefined" && lastModalKey === "settings") openSettings();
+}
+function accountHTML() {
+  if (!cloudOn()) return "";
+  const ses = cloudSession();
+  const status = CF.busy ? tr("Синхронизирую…") : CF.note ? cloudNote()
+    : CF.pending ? tr("Нужно решить, что оставить.")
+    : CF.dirty ? tr("Есть несохранённое — отправлю через секунду.")
+    : CF.at ? tr("Синхронизировано") + " · " + cloudAgo(CF.at) : "";
+  const inner = ses ? `
+      <p class="qs" style="margin:0 0 10px">${tr("Вы вошли как")} <b>${esc(ses.user && ses.user.email || "")}</b>. ${
+        tr("Дела одинаковые на всех устройствах, где вы вошли.")}</p>
+      <div class="row" style="margin:0;gap:10px;flex-wrap:wrap">
+        ${CF.pending ? `<button class="btn primary" data-act="cloudask">${tr("Решить, что оставить")}</button>` : ""}
+        <button class="btn ghost outline" data-act="cloudnow">${tr("Обновить сейчас")}</button>
+        <button class="btn ghost outline" data-act="cloudout">${tr("Выйти")}</button>
+      </div>`
+    : `
+      <p class="qs" style="margin:0 0 10px">${tr("Аккаунт нужен, чтобы видеть свои дела с любого устройства. Без него всё работает как есть — в этом браузере.")}</p>
+      <div class="accrow">
+        <input type="email" id="accEmail" placeholder="${tr("Почта")}" autocomplete="email"
+          value="${esc(CF.email || "")}">
+        <input type="password" id="accPass" placeholder="${tr("Пароль")}" autocomplete="current-password">
+      </div>
+      <div class="row" style="margin:0;gap:10px;flex-wrap:wrap">
+        <button class="btn primary" data-act="cloudin">${tr("Войти")}</button>
+        <button class="btn ghost outline" data-act="cloudup">${tr("Зарегистрироваться")}</button>
+        <button class="btn link" data-act="cloudrecover">${tr("Забыли пароль?")}</button>
+      </div>`;
+  return `<div class="setdiv"></div>
+    <p class="lbl">${tr("Аккаунт")}</p>${inner}
+    ${status ? `<p class="qs accstat">${esc(status)}</p>` : ""}`;
+}

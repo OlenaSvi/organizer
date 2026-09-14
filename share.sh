@@ -31,6 +31,10 @@ sed -n "$((BODY_BEG + 1)),$((BODY_END - 1))p" "$SRC" >> "$OUT"
 sed -i "" 's/const KEY = "organizer\.v1"/const KEY = "organizer.demo"/' "$OUT"
 sed -i "" 's/const VIEWKEY = "organizer\.view"/const VIEWKEY = "organizer.demo.view"/' "$OUT"
 
+# У страницы по ссылке нет доступа к сети — раздел «Аккаунт» там пустой.
+sed -i "" 's/^const CLOUD = { url: "[^"]*", key: "[^"]*" };/const CLOUD = { url: "", key: "" };/' "$OUT"
+grep -q '^const CLOUD = { url: "", key: "" };' "$OUT" || { echo "❌ ключи облака не вычищены"; exit 1; }
+
 for k in '"organizer.demo"' '"organizer.demo.view"'; do
   grep -q "$k" "$OUT" || { echo "❌ ключ $k не подставился"; exit 1; }
 done
