@@ -73,6 +73,7 @@ document.addEventListener("keydown", e => {
     ddAddCommit(e.target.dataset.f, e.target.dataset.id);
 });
 
+const GATEACTS = new Set(["cloudin", "cloudup", "cloudrecover", "lang"]);
 document.addEventListener("click", e => {
   /* Открытая выпадашка закрывается кликом мимо неё. Если клик попал в
      другое действие — состояние просто сбрасываем, перерисует само.  */
@@ -86,6 +87,8 @@ document.addEventListener("click", e => {
   if (!el) return;
   const a = el.dataset.act, id = el.dataset.id, v = el.dataset.v;
   const it = id ? S.items.find(x => x.id === id) : null;
+  /* Без входа работает только экран входа: остальные действия молчат. */
+  if (gateOn() && !GATEACTS.has(a)) return;
 
   switch (a) {
     case "tab":     TAB = el.dataset.t;
@@ -464,7 +467,7 @@ document.addEventListener("drop", e => {
 document.addEventListener("keydown", e => {
   /* Escape тоже ничего не делает — по той же причине. */
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
-  if (typing || host.innerHTML) return;
+  if (typing || host.innerHTML || gateOn()) return;
   if (e.key === "n" || e.key === "т" || ((e.metaKey || e.ctrlKey) && e.key === "k")) {
     e.preventDefault(); openCapture();
   }

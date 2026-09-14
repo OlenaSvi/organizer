@@ -115,6 +115,8 @@ function titles() { return S.items.map(function (i) { return i.title; }).sort().
   cloudTouch(); await cloudPush();
   T.ok("без сессии ничего не уходит", srv.log.length === 0);
   T.ok("и данные на устройстве не тронуты", titles() === before);
+  clickOn({ act: "settings" }); clickOn({ act: "cap" }); clickOn({ act: "inbox" });
+  T.ok("без входа ни настройки, ни новое дело не открываются", host.innerHTML === "");
   T.ok("язык можно сменить прямо на экране входа", (function () {
     clickOn({ act: "lang", v: "en" }); var en = view.innerHTML.indexOf("Sign in") >= 0;
     clickOn({ act: "lang", v: "ru" }); return en && view.innerHTML.indexOf("Войти") >= 0; })());

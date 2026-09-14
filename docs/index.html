@@ -94,7 +94,11 @@ header{position:sticky;top:0;z-index:30;background:var(--bg);
   color:var(--ink);font-weight:600;font-size:13.5px;box-shadow:var(--shadow);
   max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .acct:hover{color:var(--accent)}
-body.gated header{justify-content:center}
+/* На экране входа шапка пустая: атрибут hidden слабее своих display,
+   поэтому прячем классом.                                           */
+body.gated .tabs,body.gated .here,body.gated .headdate,body.gated .gear,
+body.gated .capture-btn,body.gated .inbox-pill,body.gated .acct{display:none}
+body.gated header{justify-content:center;min-height:52px}
 .gate{min-height:calc(100vh - 120px);display:flex;align-items:center;justify-content:center;padding:24px 16px}
 .gatecard{width:100%;max-width:440px;background:var(--panel);border-radius:18px;
   padding:30px 28px 24px;box-shadow:var(--shadow)}
@@ -5005,6 +5009,7 @@ document.addEventListener("keydown", e => {
     ddAddCommit(e.target.dataset.f, e.target.dataset.id);
 });
 
+const GATEACTS = new Set(["cloudin", "cloudup", "cloudrecover", "lang"]);
 document.addEventListener("click", e => {
   /* Открытая выпадашка закрывается кликом мимо неё. Если клик попал в
      другое действие — состояние просто сбрасываем, перерисует само.  */
@@ -5018,6 +5023,8 @@ document.addEventListener("click", e => {
   if (!el) return;
   const a = el.dataset.act, id = el.dataset.id, v = el.dataset.v;
   const it = id ? S.items.find(x => x.id === id) : null;
+  /* Без входа работает только экран входа: остальные действия молчат. */
+  if (gateOn() && !GATEACTS.has(a)) return;
 
   switch (a) {
     case "tab":     TAB = el.dataset.t;
@@ -5396,7 +5403,7 @@ document.addEventListener("drop", e => {
 document.addEventListener("keydown", e => {
   /* Escape тоже ничего не делает — по той же причине. */
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
-  if (typing || host.innerHTML) return;
+  if (typing || host.innerHTML || gateOn()) return;
   if (e.key === "n" || e.key === "т" || ((e.metaKey || e.ctrlKey) && e.key === "k")) {
     e.preventDefault(); openCapture();
   }
