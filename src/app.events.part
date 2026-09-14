@@ -73,7 +73,7 @@ document.addEventListener("keydown", e => {
     ddAddCommit(e.target.dataset.f, e.target.dataset.id);
 });
 
-const GATEACTS = new Set(["cloudin", "cloudup", "cloudrecover", "lang"]);
+const GATEACTS = new Set(["cloudin", "cloudup", "cloudrecover", "lang", "gatemode", "showpass"]);
 document.addEventListener("click", e => {
   /* Открытая выпадашка закрывается кликом мимо неё. Если клик попал в
      другое действие — состояние просто сбрасываем, перерисует само.  */
@@ -265,11 +265,13 @@ document.addEventListener("click", e => {
                       if (i >= 0) d.splice(i, 1); else d.push(+el.dataset.i);
                       save(); refreshEdit(id); } break;
     case "account":    openAccount(); break;
+    case "gatemode":   CF.mode = v === "up" ? "up" : "in"; CF.note = ""; e.preventDefault(); render(); break;
+    case "showpass":   togglePass(); break;
     case "lang":       S.cfg.lang = v === "en" ? "en" : "ru"; setLang(); save(); render(); break;
     case "cloudin":    cloudSignIn(); break;
     case "cloudup":    cloudSignUp(); break;
     case "cloudout":   cloudSignOut(); break;
-    case "cloudrecover": cloudRecover(); break;
+    case "cloudrecover": e.preventDefault(); cloudRecover(); break;
     case "cloudkeep":  cloudKeep(v); break;
     case "cloudlater": closeModal(); openSettings(); break;
     case "cloudask":   if (CF.pending) cloudAsk(CF.pending); break;

@@ -100,9 +100,25 @@ function titles() { return S.items.map(function (i) { return i.title; }).sort().
   TAB = "today"; render();
   T.ok("вместо дел — экран входа", view.innerHTML.indexOf('id="gate"') >= 0
     && view.innerHTML.indexOf("todayhead") < 0);
-  T.ok("на нём почта, пароль, «Войти» и «Зарегистрироваться»",
-    view.innerHTML.indexOf("accEmail") >= 0 && view.innerHTML.indexOf('data-act="cloudin"') >= 0
-    && view.innerHTML.indexOf('data-act="cloudup"') >= 0);
+  T.ok("на нём почта, пароль и кнопка «Войти»",
+    view.innerHTML.indexOf("accEmail") >= 0 && view.innerHTML.indexOf('data-act="cloudin"') >= 0);
+  T.ok("подписи над полями и «показать пароль»", view.innerHTML.indexOf("Почта:") >= 0
+    && view.innerHTML.indexOf("Пароль:") >= 0 && view.innerHTML.indexOf('data-act="showpass"') >= 0);
+  T.ok("ссылки «Забыли пароль?» и «Нет аккаунта? Зарегистрироваться»",
+    view.innerHTML.indexOf('data-act="cloudrecover"') >= 0
+    && view.innerHTML.indexOf('data-act="gatemode" data-v="up"') >= 0
+    && view.innerHTML.indexOf('data-act="cloudup"') < 0);
+  clickOn({ act: "gatemode", v: "up" });
+  T.ok("по ссылке открывается регистрация: заголовок, кнопка и путь назад",
+    view.innerHTML.indexOf("Регистрация") >= 0 && view.innerHTML.indexOf('data-act="cloudup"') >= 0
+    && view.innerHTML.indexOf('data-act="gatemode" data-v="in"') >= 0
+    && view.innerHTML.indexOf('data-act="cloudin"') < 0);
+  clickOn({ act: "gatemode", v: "in" });
+  T.ok("и обратно ко входу", view.innerHTML.indexOf('data-act="cloudin"') >= 0);
+  T.ok("«показать пароль» меняет поле, не перерисовывая экран", (function () {
+    var p = document.getElementById("accPass"); p.type = "password"; p.value = "тайна";
+    clickOn({ act: "showpass" }); var shown = p.type === "text" && p.value === "тайна";
+    clickOn({ act: "showpass" }); return shown && p.type === "password"; })());
   T.ok("вкладок нет", document.getElementById("tabs").innerHTML === "");
   T.ok("кнопки аккаунта в шапке нет — входить негде, кроме экрана",
     document.getElementById("acctBtn").hidden === true);

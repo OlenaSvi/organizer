@@ -35,7 +35,8 @@ const SESSKEY = "organizer.session", SYNCKEY = "organizer.sync",
       BACKUPKEY = "organizer.v1.backup";
 /* Состояние синхронизации. Это не данные — в облако не уходит. */
 const CF = { dirty: false, timer: null, busy: false, note: "", at: null,
-             pending: null, quiet: false, lastSync: 0, email: "", extra: "" };
+             pending: null, quiet: false, lastSync: 0, email: "", extra: "",
+             mode: "in" };   // экран входа: "in" — вход, "up" — регистрация
 
 const cloudOn = () => !!(CLOUD.url && CLOUD.key);
 const readJSON = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
@@ -323,22 +324,40 @@ function accountFormHTML() {
       <button class="btn link" data-act="cloudrecover">${tr("Забыли пароль?")}</button>
     </div>`;
 }
-/* Экран входа — всё приложение, пока не вошли. Язык переключается
-   прямо здесь: до настроек без входа не добраться.                */
+/* Экран входа — всё приложение, пока не вошли. Карточка на цветном
+   фоне, два режима: вход и регистрация. Язык переключается прямо
+   здесь: до настроек без входа не добраться.                      */
 function gateHTML() {
-  const status = cloudStatus();
+  const up = CF.mode === "up", status = cloudStatus();
   return `<div id="gate" class="gate"><div class="gatecard">
-    <h1>${tr("Организатор")}</h1>
-    <p class="qs" style="margin:0 0 16px">${tr("Войдите — и ваши дела будут одинаковыми на всех устройствах. Нет аккаунта — зарегистрируйтесь, это одна кнопка.")}</p>
-    ${accountFormHTML()}
-    ${status ? `<p class="qs accstat">${esc(status)}</p>` : ""}
+    <h1>${up ? tr("Регистрация") : tr("Вход")}</h1>
+    <label class="gatelbl" for="accEmail">${tr("Почта:")}</label>
+    <input type="email" id="accEmail" placeholder="${tr("Введите почту")}" autocomplete="email"
+      value="${esc(CF.email || "")}">
+    <label class="gatelbl" for="accPass">${tr("Пароль:")}</label>
+    <input type="password" id="accPass" placeholder="${tr("Введите пароль")}"
+      autocomplete="${up ? "new-password" : "current-password"}">
+    <label class="gateshow"><input type="checkbox" data-act="showpass"> ${tr("Показать пароль")}</label>
+    <button class="btn primary gatego" data-act="${up ? "cloudup" : "cloudin"}">${
+      up ? tr("Зарегистрироваться") : tr("Войти")}</button>
+    ${status ? `<p class="qs accstat gatestat">${esc(status)}</p>` : ""}
+    <p class="gatelinks">${up
+      ? `${tr("Уже есть аккаунт?")} <a href="#" data-act="gatemode" data-v="in">${tr("Войти")}</a>`
+      : `<a href="#" data-act="cloudrecover">${tr("Забыли пароль?")}</a><br>
+         ${tr("Нет аккаунта?")} <a href="#" data-act="gatemode" data-v="up">${tr("Зарегистрироваться")}</a>`}</p>
     <div class="seg gatelang">${[["ru", "Русский"], ["en", "English"]].map(([k, L]) =>
       `<button data-act="lang" data-v="${k}" class="${S.cfg.lang === k ? "on" : ""}">${L}</button>`).join("")}</div>
   </div></div>`;
 }
 function wireAccount() {
   const ap = document.getElementById("accPass");
-  if (ap && ap.addEventListener) ap.addEventListener("keydown", e => { if (e.key === "Enter") cloudSignIn(); });
+  if (ap && ap.addEventListener) ap.addEventListener("keydown", e => {
+    if (e.key === "Enter") (CF.mode === "up" ? cloudSignUp : cloudSignIn)(); });
+}
+/* «Показать пароль» — на месте, без перерисовки: иначе поле бы очистилось. */
+function togglePass() {
+  const p = document.getElementById("accPass");
+  if (p) p.type = p.type === "password" ? "text" : "password";
 }
 /* Окно аккаунта — по кнопке в шапке. Открывается только когда вошли. */
 function openAccount() {

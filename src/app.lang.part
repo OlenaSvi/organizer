@@ -348,7 +348,11 @@ const EN = {
   "Удалить": "Delete", "Отменить правки и закрыть": "Discard changes and close",
 
   /* ── аккаунт и облако ──────────────────────────────────────── */
-  "Организатор": "Organizer",
+  "Организатор": "Organizer", "Вход": "Login", "Регистрация": "Sign up",
+  "Почта:": "Email:", "Пароль:": "Password:",
+  "Введите почту": "Enter email", "Введите пароль": "Enter password",
+  "Показать пароль": "Show password", "Уже есть аккаунт?": "Already have an account?",
+  "Нет аккаунта?": "Don't have an account?",
   "Войдите — и ваши дела будут одинаковыми на всех устройствах. Нет аккаунта — зарегистрируйтесь, это одна кнопка.":
     "Sign in, and your tasks will be the same on every device. No account yet? Create one — it's a single button.",
   "Выход не трогает дела на этом устройстве: они останутся здесь и дождутся следующего входа.":

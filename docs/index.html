@@ -98,16 +98,28 @@ header{position:sticky;top:0;z-index:30;background:var(--bg);
    поэтому прячем классом.                                           */
 body.gated .tabs,body.gated .here,body.gated .headdate,body.gated .gear,
 body.gated .capture-btn,body.gated .inbox-pill,body.gated .acct{display:none}
-body.gated header{justify-content:center;min-height:52px}
-.gate{min-height:calc(100vh - 120px);display:flex;align-items:center;justify-content:center;padding:24px 16px}
-.gatecard{width:100%;max-width:440px;background:var(--panel);border-radius:18px;
-  padding:30px 28px 24px;box-shadow:var(--shadow)}
-.gatecard h1{margin:0 0 8px;font-size:28px;letter-spacing:-.01em}
-.gatecard .accrow input{width:100%;padding:12px 14px;border:1px solid var(--line);
-  border-radius:10px;background:var(--bg);margin-bottom:12px;font:inherit;color:inherit}
-.gatecard .accrow input:focus{outline:1.5px solid var(--accent);outline-offset:-1px;border-color:transparent}
-.gatecard .accrow{display:block}
-.gatelang{margin-top:22px;justify-content:center}
+body.gated header{display:none}
+/* Экран входа: карточка на цветном фоне, как у классических форм входа. */
+body.gated{background:var(--accent)}
+.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px;background:var(--accent)}
+.gatecard{width:100%;max-width:460px;background:#fff;color:#10214a;border-radius:16px;
+  padding:40px 44px 30px;box-shadow:0 20px 50px rgba(0,0,0,.18)}
+.gatecard h1{margin:0 0 26px;text-align:center;font-size:32px;font-weight:400;letter-spacing:0}
+.gatelbl{display:block;font-size:15px;margin:0 0 6px;color:#10214a}
+.gatecard input[type=email],.gatecard input[type=password],.gatecard input[type=text]{
+  width:100%;height:52px;padding:0 16px;border:1px solid #dfe3ea;border-radius:6px;
+  background:#fff;color:#10214a;font:inherit;font-size:16px;margin:0 0 18px}
+.gatecard input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.gateshow{display:flex;align-items:center;gap:8px;font-size:15px;margin:-8px 0 20px;cursor:pointer;color:#10214a}
+.gateshow input{width:16px;height:16px;margin:0}
+.gatego{width:100%;height:56px;border-radius:6px;font-size:15px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase}
+.gatestat{margin:14px 0 0;text-align:center;color:#5b6577}
+.gatelinks{margin:22px 0 0;text-align:center;font-size:15px;line-height:1.7;color:#10214a}
+.gatelinks a{color:var(--accent);text-decoration:none}
+.gatelinks a:hover{text-decoration:underline}
+.gatelang{margin:22px auto 0;justify-content:center;width:max-content}
+:root[data-theme="dark"] .gatecard{background:#fff}
 .gear:hover{color:var(--accent)}
 .here{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--dim)}
 .here select{background:var(--soft);border:0;border-radius:999px;height:38px;
@@ -1324,7 +1336,11 @@ const EN = {
   "Удалить": "Delete", "Отменить правки и закрыть": "Discard changes and close",
 
   /* ── аккаунт и облако ──────────────────────────────────────── */
-  "Организатор": "Organizer",
+  "Организатор": "Organizer", "Вход": "Login", "Регистрация": "Sign up",
+  "Почта:": "Email:", "Пароль:": "Password:",
+  "Введите почту": "Enter email", "Введите пароль": "Enter password",
+  "Показать пароль": "Show password", "Уже есть аккаунт?": "Already have an account?",
+  "Нет аккаунта?": "Don't have an account?",
   "Войдите — и ваши дела будут одинаковыми на всех устройствах. Нет аккаунта — зарегистрируйтесь, это одна кнопка.":
     "Sign in, and your tasks will be the same on every device. No account yet? Create one — it's a single button.",
   "Выход не трогает дела на этом устройстве: они останутся здесь и дождутся следующего входа.":
@@ -1453,7 +1469,8 @@ const SESSKEY = "organizer.session", SYNCKEY = "organizer.sync",
       BACKUPKEY = "organizer.v1.backup";
 /* Состояние синхронизации. Это не данные — в облако не уходит. */
 const CF = { dirty: false, timer: null, busy: false, note: "", at: null,
-             pending: null, quiet: false, lastSync: 0, email: "", extra: "" };
+             pending: null, quiet: false, lastSync: 0, email: "", extra: "",
+             mode: "in" };   // экран входа: "in" — вход, "up" — регистрация
 
 const cloudOn = () => !!(CLOUD.url && CLOUD.key);
 const readJSON = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
@@ -1741,22 +1758,40 @@ function accountFormHTML() {
       <button class="btn link" data-act="cloudrecover">${tr("Забыли пароль?")}</button>
     </div>`;
 }
-/* Экран входа — всё приложение, пока не вошли. Язык переключается
-   прямо здесь: до настроек без входа не добраться.                */
+/* Экран входа — всё приложение, пока не вошли. Карточка на цветном
+   фоне, два режима: вход и регистрация. Язык переключается прямо
+   здесь: до настроек без входа не добраться.                      */
 function gateHTML() {
-  const status = cloudStatus();
+  const up = CF.mode === "up", status = cloudStatus();
   return `<div id="gate" class="gate"><div class="gatecard">
-    <h1>${tr("Организатор")}</h1>
-    <p class="qs" style="margin:0 0 16px">${tr("Войдите — и ваши дела будут одинаковыми на всех устройствах. Нет аккаунта — зарегистрируйтесь, это одна кнопка.")}</p>
-    ${accountFormHTML()}
-    ${status ? `<p class="qs accstat">${esc(status)}</p>` : ""}
+    <h1>${up ? tr("Регистрация") : tr("Вход")}</h1>
+    <label class="gatelbl" for="accEmail">${tr("Почта:")}</label>
+    <input type="email" id="accEmail" placeholder="${tr("Введите почту")}" autocomplete="email"
+      value="${esc(CF.email || "")}">
+    <label class="gatelbl" for="accPass">${tr("Пароль:")}</label>
+    <input type="password" id="accPass" placeholder="${tr("Введите пароль")}"
+      autocomplete="${up ? "new-password" : "current-password"}">
+    <label class="gateshow"><input type="checkbox" data-act="showpass"> ${tr("Показать пароль")}</label>
+    <button class="btn primary gatego" data-act="${up ? "cloudup" : "cloudin"}">${
+      up ? tr("Зарегистрироваться") : tr("Войти")}</button>
+    ${status ? `<p class="qs accstat gatestat">${esc(status)}</p>` : ""}
+    <p class="gatelinks">${up
+      ? `${tr("Уже есть аккаунт?")} <a href="#" data-act="gatemode" data-v="in">${tr("Войти")}</a>`
+      : `<a href="#" data-act="cloudrecover">${tr("Забыли пароль?")}</a><br>
+         ${tr("Нет аккаунта?")} <a href="#" data-act="gatemode" data-v="up">${tr("Зарегистрироваться")}</a>`}</p>
     <div class="seg gatelang">${[["ru", "Русский"], ["en", "English"]].map(([k, L]) =>
       `<button data-act="lang" data-v="${k}" class="${S.cfg.lang === k ? "on" : ""}">${L}</button>`).join("")}</div>
   </div></div>`;
 }
 function wireAccount() {
   const ap = document.getElementById("accPass");
-  if (ap && ap.addEventListener) ap.addEventListener("keydown", e => { if (e.key === "Enter") cloudSignIn(); });
+  if (ap && ap.addEventListener) ap.addEventListener("keydown", e => {
+    if (e.key === "Enter") (CF.mode === "up" ? cloudSignUp : cloudSignIn)(); });
+}
+/* «Показать пароль» — на месте, без перерисовки: иначе поле бы очистилось. */
+function togglePass() {
+  const p = document.getElementById("accPass");
+  if (p) p.type = p.type === "password" ? "text" : "password";
 }
 /* Окно аккаунта — по кнопке в шапке. Открывается только когда вошли. */
 function openAccount() {
@@ -5009,7 +5044,7 @@ document.addEventListener("keydown", e => {
     ddAddCommit(e.target.dataset.f, e.target.dataset.id);
 });
 
-const GATEACTS = new Set(["cloudin", "cloudup", "cloudrecover", "lang"]);
+const GATEACTS = new Set(["cloudin", "cloudup", "cloudrecover", "lang", "gatemode", "showpass"]);
 document.addEventListener("click", e => {
   /* Открытая выпадашка закрывается кликом мимо неё. Если клик попал в
      другое действие — состояние просто сбрасываем, перерисует само.  */
@@ -5201,11 +5236,13 @@ document.addEventListener("click", e => {
                       if (i >= 0) d.splice(i, 1); else d.push(+el.dataset.i);
                       save(); refreshEdit(id); } break;
     case "account":    openAccount(); break;
+    case "gatemode":   CF.mode = v === "up" ? "up" : "in"; CF.note = ""; e.preventDefault(); render(); break;
+    case "showpass":   togglePass(); break;
     case "lang":       S.cfg.lang = v === "en" ? "en" : "ru"; setLang(); save(); render(); break;
     case "cloudin":    cloudSignIn(); break;
     case "cloudup":    cloudSignUp(); break;
     case "cloudout":   cloudSignOut(); break;
-    case "cloudrecover": cloudRecover(); break;
+    case "cloudrecover": e.preventDefault(); cloudRecover(); break;
     case "cloudkeep":  cloudKeep(v); break;
     case "cloudlater": closeModal(); openSettings(); break;
     case "cloudask":   if (CF.pending) cloudAsk(CF.pending); break;

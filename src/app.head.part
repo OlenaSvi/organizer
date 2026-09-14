@@ -98,16 +98,28 @@ header{position:sticky;top:0;z-index:30;background:var(--bg);
    поэтому прячем классом.                                           */
 body.gated .tabs,body.gated .here,body.gated .headdate,body.gated .gear,
 body.gated .capture-btn,body.gated .inbox-pill,body.gated .acct{display:none}
-body.gated header{justify-content:center;min-height:52px}
-.gate{min-height:calc(100vh - 120px);display:flex;align-items:center;justify-content:center;padding:24px 16px}
-.gatecard{width:100%;max-width:440px;background:var(--panel);border-radius:18px;
-  padding:30px 28px 24px;box-shadow:var(--shadow)}
-.gatecard h1{margin:0 0 8px;font-size:28px;letter-spacing:-.01em}
-.gatecard .accrow input{width:100%;padding:12px 14px;border:1px solid var(--line);
-  border-radius:10px;background:var(--bg);margin-bottom:12px;font:inherit;color:inherit}
-.gatecard .accrow input:focus{outline:1.5px solid var(--accent);outline-offset:-1px;border-color:transparent}
-.gatecard .accrow{display:block}
-.gatelang{margin-top:22px;justify-content:center}
+body.gated header{display:none}
+/* Экран входа: карточка на цветном фоне, как у классических форм входа. */
+body.gated{background:var(--accent)}
+.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px;background:var(--accent)}
+.gatecard{width:100%;max-width:460px;background:#fff;color:#10214a;border-radius:16px;
+  padding:40px 44px 30px;box-shadow:0 20px 50px rgba(0,0,0,.18)}
+.gatecard h1{margin:0 0 26px;text-align:center;font-size:32px;font-weight:400;letter-spacing:0}
+.gatelbl{display:block;font-size:15px;margin:0 0 6px;color:#10214a}
+.gatecard input[type=email],.gatecard input[type=password],.gatecard input[type=text]{
+  width:100%;height:52px;padding:0 16px;border:1px solid #dfe3ea;border-radius:6px;
+  background:#fff;color:#10214a;font:inherit;font-size:16px;margin:0 0 18px}
+.gatecard input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.gateshow{display:flex;align-items:center;gap:8px;font-size:15px;margin:-8px 0 20px;cursor:pointer;color:#10214a}
+.gateshow input{width:16px;height:16px;margin:0}
+.gatego{width:100%;height:56px;border-radius:6px;font-size:15px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase}
+.gatestat{margin:14px 0 0;text-align:center;color:#5b6577}
+.gatelinks{margin:22px 0 0;text-align:center;font-size:15px;line-height:1.7;color:#10214a}
+.gatelinks a{color:var(--accent);text-decoration:none}
+.gatelinks a:hover{text-decoration:underline}
+.gatelang{margin:22px auto 0;justify-content:center;width:max-content}
+:root[data-theme="dark"] .gatecard{background:#fff}
 .gear:hover{color:var(--accent)}
 .here{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--dim)}
 .here select{background:var(--soft);border:0;border-radius:999px;height:38px;
