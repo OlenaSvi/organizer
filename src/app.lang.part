@@ -355,8 +355,10 @@ const EN = {
   "Нет аккаунта?": "Don't have an account?",
   "Войдите — и ваши дела будут одинаковыми на всех устройствах. Нет аккаунта — зарегистрируйтесь, это одна кнопка.":
     "Sign in, and your tasks will be the same on every device. No account yet? Create one — it's a single button.",
-  "Выход не трогает дела на этом устройстве: они останутся здесь и дождутся следующего входа.":
-    "Signing out leaves the tasks on this device alone: they stay here and wait for your next sign-in.",
+  "Дела привязаны к аккаунту: войдите на любом устройстве — и они там. Выход убирает их с этого устройства; в облаке они остаются.":
+    "Your tasks belong to your account: sign in on any device and they're there. Signing out removes them from this device; the cloud keeps them.",
+  "Есть неотправленные правки — они уедут, когда появится связь. Выйти можно будет после этого.":
+    "There are unsent changes — they'll go out when the connection is back. You can sign out after that.",
   "Аккаунт": "Account", "Почта": "Email", "Пароль": "Password",
   "Войти": "Sign in", "Зарегистрироваться": "Create account",
   "Забыли пароль?": "Forgot password?", "Выйти": "Sign out",

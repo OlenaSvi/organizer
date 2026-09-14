@@ -24,7 +24,7 @@ function fakeCloud() {
   }
   var api = { users: users, states: states, log: log, offline: false,
     expireAll: function () { tokens = {}; },
-    confirmFirst: false,
+    refreshBroken: false, confirmFirst: false,
     fetch: function (url, opt) {
       opt = opt || {};
       var m = opt.method || "GET", h = opt.headers || {};
@@ -47,7 +47,7 @@ function fakeCloud() {
         return resp(200, session(u2));
       }
       if (url.indexOf("grant_type=refresh_token") >= 0) {
-        var u3 = refresh[body.refresh_token];
+        var u3 = api.refreshBroken ? null : refresh[body.refresh_token];
         if (!u3) return resp(400, { error: "invalid_grant", error_description: "Refresh Token Not Found" });
         delete refresh[body.refresh_token];
         return resp(200, session(u3));
@@ -169,16 +169,20 @@ function titles() { return S.items.map(function (i) { return i.title; }).sort().
     srv.states["uid-e@test.ru"].data.items[0].title === "Переименовано на ноутбуке");
   T.ok("больше нечего отправлять", !cloudDirty());
 
-  T.head("ВЫХОД: ДАННЫЕ ОСТАЮТСЯ, ЭКРАН ВХОДА ВОЗВРАЩАЕТСЯ");
+  T.head("ВЫХОД: ДЕЛА ПРИВЯЗАНЫ К АККАУНТУ, С УСТРОЙСТВА КОПИЯ УХОДИТ");
   var mine = titles();
+  var keep = JSON.parse(JSON.stringify(S));
   await cloudSignOut();
   T.ok("сессии нет", !cloudSession());
-  T.ok("дела на устройстве целы", titles() === mine);
+  T.ok("на устройстве остались только примеры — дела ждут в облаке", cloudFresh() && titles() !== mine);
+  T.ok("прежнее состояние всё же лежит в копии", backup()
+    && backup().items.map(function (i) { return i.title; }).sort().join("|") === mine);
+  T.ok("метка синхронизации снята", !cloudMark());
   T.ok("снова экран входа", view.innerHTML.indexOf('id="gate"') >= 0);
+  T.ok("язык и тема не сброшены", S.cfg && S.cfg.lang === "ru");
 
   T.head("ВХОД НА ЧИСТОМ УСТРОЙСТВЕ: ОБЛАКО БЕРЁТСЯ МОЛЧА");
   /* Чистое устройство — только примеры первого запуска. */
-  var keep = JSON.parse(JSON.stringify(S));
   S.items = templateItems(); normalizeItems(); save();
   T.ok("устройство считается чистым", cloudFresh());
   render();
@@ -187,6 +191,8 @@ function titles() { return S.items.map(function (i) { return i.title; }).sort().
   T.ok("вопросов не задано", !cloudPending());
   T.ok("на устройстве теперь дела из облака",
     S.items.some(function (i) { return i.title === "Переименовано на ноутбуке"; }));
+  T.ok("а язык и тема остались устройства, а не приехали из облака",
+    S.cfg.lang === "ru" && (S.cfg.theme === "light" || S.cfg.theme === "dark"));
   closeModal();
 
   T.head("НЕВЕРНЫЙ ПАРОЛЬ — СЛОВАМИ, БЕЗ ПОЛОМКИ");
@@ -237,6 +243,8 @@ function titles() { return S.items.map(function (i) { return i.title; }).sort().
   /* Зарегистрировались на сайте, где были только примеры, а потом
      открыли свой файл с настоящими делами: примеры в облаке — ничьи. */
   await cloudSignOut();
+  S.items = keep.items.map(function (i) { return Object.assign({}, i, { title: i.title + " (айпад)" }); });
+  normalizeItems(); save();
   var real = JSON.parse(JSON.stringify(S));
   var tmplState = JSON.parse(JSON.stringify(S)); tmplState.items = templateItems();
   srv.states["uid-e@test.ru"] = { user_id: "uid-e@test.ru", data: tmplState, rev: 7,
@@ -294,8 +302,54 @@ function titles() { return S.items.map(function (i) { return i.title; }).sort().
   T.ok("связь вернулась — отправилось",
     srv.states["uid-e@test.ru"].data.items[0].title === "Правка без сети" && !cloudDirty());
 
-  T.head("РЕГИСТРАЦИЯ С ПОДТВЕРЖДЕНИЕМ ПО ПОЧТЕ");
+  T.head("ВЫЙТИ С НЕОТПРАВЛЕННЫМ НЕЛЬЗЯ, ПОКА НЕТ СВЯЗИ");
+  srv.offline = true;
+  S.items[0].title = "Не уехало"; save();
+  await cloudPush();
   await cloudSignOut();
+  T.ok("сессия на месте — выход не состоялся", !!cloudSession());
+  T.ok("дела на месте", S.items[0].title === "Не уехало");
+  T.ok("объяснено словами", /неотправленн/.test(cloudNote()), cloudNote());
+  srv.offline = false;
+  await cloudPush();
+  T.ok("связь вернулась — уехало", !cloudDirty()
+    && srv.states["uid-e@test.ru"].data.items[0].title === "Не уехало");
+
+  T.head("СЕССИЯ ИСТЕКЛА — ЭТО НЕ ВЫХОД: ДЕЛА И МЕТКА ОСТАЮТСЯ");
+  S.items[0].title = "Правка перед истечением"; save();
+  srv.expireAll(); srv.refreshBroken = true;
+  await cloudPush();
+  T.ok("сессии нет, показан экран входа", !cloudSession() && view.innerHTML.indexOf('id="gate"') >= 0);
+  T.ok("дела на устройстве целы", S.items[0].title === "Правка перед истечением");
+  T.ok("метка сохранена — устройство помнит, чьи это дела",
+    cloudMark() && cloudMark().uid === "uid-e@test.ru");
+  T.ok("сказано, что сессия закончилась", /[Сс]ессия/.test(cloudNote()), cloudNote());
+  srv.refreshBroken = false;
+  field("accEmail", "e@test.ru"); field("accPass", "secret-1");
+  await cloudSignIn();
+  T.ok("тот же человек вошёл снова — без вопросов", !!cloudSession() && !cloudPending());
+  await cloudPush();
+  T.ok("и правка уехала", srv.states["uid-e@test.ru"].data.items[0].title === "Правка перед истечением");
+
+  T.head("ОБЩИЙ КОМПЬЮТЕР: ЧУЖИЕ ДЕЛА НЕ ПОПАДАЮТ В МОЙ АККАУНТ");
+  /* Сессия первого истекла, дела остались на устройстве, и тут входит
+     другой человек: его облако не должно получить чужое. */
+  srv.expireAll(); srv.refreshBroken = true;
+  await cloudSync("manual");
+  T.ok("первый выброшен на экран входа, дела пока здесь", !cloudSession()
+    && S.items[0].title === "Правка перед истечением");
+  srv.refreshBroken = false;
+  field("accEmail", "b@test.ru"); field("accPass", "secret-b");
+  await cloudSignUp();
+  T.ok("второй вошёл без вопросов", !!cloudSession() && !cloudPending());
+  T.ok("в облаке второго нет дел первого", srv.states["uid-b@test.ru"]
+    && !srv.states["uid-b@test.ru"].data.items.some(function (i) { return /истечением|айпад/.test(i.title); }));
+  T.ok("на устройстве у второго — только примеры", cloudFresh());
+  T.ok("дела первого убраны в копию, а не потеряны",
+    backup() && backup().items.some(function (i) { return i.title === "Правка перед истечением"; }));
+  await cloudSignOut();
+
+  T.head("РЕГИСТРАЦИЯ С ПОДТВЕРЖДЕНИЕМ ПО ПОЧТЕ");
   srv.confirmFirst = true;
   field("accEmail", "new@test.ru"); field("accPass", "secret-2");
   await cloudSignUp();

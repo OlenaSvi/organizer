@@ -47,9 +47,24 @@ const cloudNote = () => CF.note ? tr(CF.note) + (CF.extra ? " " + CF.extra : "")
 const cloudPending = () => !!CF.pending;
 const setSession = s => localStorage.setItem(SESSKEY, JSON.stringify(s));
 const setMark = (uid, rev) => localStorage.setItem(SYNCKEY, JSON.stringify({ uid, rev }));
-function cloudForget() {
-  localStorage.removeItem(SESSKEY); localStorage.removeItem(SYNCKEY);
-  CF.dirty = false; CF.note = ""; CF.extra = ""; CF.at = null; CF.pending = null;
+/* Забыть сессию. keepMark — истечение сессии, а не выход: устройство
+   продолжает помнить, чьи на нём дела и что не отправлено, чтобы тот
+   же человек вошёл снова без вопросов и ничего не потерял.         */
+function cloudForget(keepMark) {
+  localStorage.removeItem(SESSKEY);
+  if (!keepMark) { localStorage.removeItem(SYNCKEY); CF.dirty = false; }
+  CF.note = ""; CF.extra = ""; CF.at = null; CF.pending = null;
+}
+/* Дела привязаны к аккаунту, а не к устройству: при выходе рабочая
+   копия уходит с устройства (она уже в облаке), остаются примеры
+   первого запуска. Прежнее состояние — в копию, на всякий случай.  */
+function cloudReset() {
+  try { localStorage.setItem(BACKUPKEY, JSON.stringify(S)); } catch (e) {}
+  const cfg = S.cfg;
+  S = seed(); S.cfg = cfg;          // язык и тема — настройки устройства
+  repairState(); normalizeItems();
+  CF.quiet = true; save(); CF.quiet = false;
+  localStorage.removeItem(SYNCKEY);
 }
 /* Чистое устройство — нетронутые примеры первого запуска: их не жалко
    заменить облаком, не спрашивая. Тронутый пример — уже своё.       */
@@ -149,21 +164,26 @@ async function cloudRecover() {
     CF.note = "Письмо для смены пароля отправлено — проверьте почту.";
   });
 }
-/* Выход не трогает данные на устройстве: они ваши и остаются здесь. */
+/* Выход. С неотправленным не выпускаем: иначе правка осталась бы на
+   устройстве, а человек ждал бы её в облаке.                       */
 async function cloudSignOut() {
+  if (CF.dirty) {
+    CF.note = "Есть неотправленные правки — они уедут, когда появится связь. Выйти можно будет после этого.";
+    cloudDraw(); return;
+  }
   try { await cloudReq("/auth/v1/logout", { method: "POST" }, true); } catch (e) {}
-  cloudForget(); cloudDraw();
+  cloudReset(); cloudForget(); cloudDraw();
 }
 async function cloudRefresh() {
   const ses = cloudSession();
-  if (!ses || !ses.refresh_token) { cloudForget(); throw { code: "expired" }; }
+  if (!ses || !ses.refresh_token) { cloudForget(true); throw { code: "expired" }; }
   try {
     const b = await cloudReq("/auth/v1/token?grant_type=refresh_token",
                              { method: "POST", body: { refresh_token: ses.refresh_token } });
     setSession(b);
   } catch (e) {
     if (e.code === "offline") throw e;
-    cloudForget(); throw { code: "expired" };
+    cloudForget(true); throw { code: "expired" };
   }
 }
 
@@ -198,7 +218,11 @@ async function cloudWrite(baseRev, upsert) {
 /* Взять облако себе. Прежнее состояние устройства — в копию. */
 function cloudAdopt(row) {
   try { localStorage.setItem(BACKUPKEY, JSON.stringify(S)); } catch (e) {}
+  /* Язык и тема — настройки устройства, а не аккаунта: человек только
+     что выбрал язык на экране входа, и облако не должно его перебить. */
+  const lang = S.cfg && S.cfg.lang, theme = S.cfg && S.cfg.theme;
   S = JSON.parse(JSON.stringify(row.data));
+  S.cfg = Object.assign({}, S.cfg || {}, { lang, theme });
   repairState(); normalizeItems();
   CF.quiet = true; save(); CF.quiet = false;
   setMark(cloudSession().user.id, row.rev);
@@ -207,7 +231,11 @@ function cloudAdopt(row) {
 }
 /* Сразу после входа: с чем мы пришли и что лежит в облаке. */
 async function cloudLink() {
-  const uid = cloudSession().user.id, mark = cloudMark();
+  const uid = cloudSession().user.id;
+  let mark = cloudMark();
+  /* На устройстве дела другого человека (общий компьютер, сессия
+     первого истекла): они уходят в копию, а вход начинается с чистого. */
+  if (mark && mark.uid !== uid) { cloudReset(); mark = null; }
   const row = await cloudRow();
   if (!row) { await cloudWrite(0, true); return; }             // облако пустое — отдаём своё
   if (mark && mark.uid === uid) { await cloudSyncNow(); return; } // устройство уже связано
@@ -372,6 +400,6 @@ function openAccount() {
       <button class="btn ghost outline" data-act="cloudnow">${tr("Обновить сейчас")}</button>
       <button class="btn ghost outline" data-act="cloudout">${tr("Выйти")}</button>
     </div>
-    <p class="qs" style="margin:14px 0 0">${tr("Выход не трогает дела на этом устройстве: они останутся здесь и дождутся следующего входа.")}</p>`,
+    <p class="qs" style="margin:14px 0 0">${tr("Дела привязаны к аккаунту: войдите на любом устройстве — и они там. Выход убирает их с этого устройства; в облаке они остаются.")}</p>`,
     "account", { act: "close", title: tr("Закрыть") });
 }
