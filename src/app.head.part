@@ -118,7 +118,8 @@ body.gated{background:var(--accent)}
 .gatelinks{margin:22px 0 0;text-align:center;font-size:15px;line-height:1.7;color:#10214a}
 .gatelinks a{color:var(--accent);text-decoration:none}
 .gatelinks a:hover{text-decoration:underline}
-.gatelang{margin:22px auto 0;justify-content:center;width:max-content}
+/* .seg — inline-flex, auto-поля его не центрируют; делаем блочным. */
+.gatelang{display:flex;width:max-content;margin:22px auto 0}
 :root[data-theme="dark"] .gatecard{background:#fff}
 .gear:hover{color:var(--accent)}
 .here{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--dim)}
