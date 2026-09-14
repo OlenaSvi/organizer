@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Organizer — Getting started</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap">
+<style>
+/* Same visual language as the app: calm blue, soft cards, nothing red.
+   A short page — people read it once. */
+:root{
+  --paper:#f5f7fb; --surface:#ffffff; --ink:#10214a; --dim:#6b778c;
+  --line:#e6eaf2; --accent:#1f5cff; --accent-soft:#e8efff; --work:#8a6fd0;
+  --shadow:0 1px 2px rgba(16,33,74,.05), 0 10px 26px rgba(16,33,74,.06);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font:400 17px/1.6 Manrope,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased}
+.page{max-width:720px;margin:0 auto;padding:48px 24px 72px}
+.lang{font-size:14px;color:var(--dim);margin:0 0 18px}
+.lang a{color:var(--accent);text-decoration:none}
+h1{font-size:34px;line-height:1.15;margin:0 0 10px;letter-spacing:-.015em;text-wrap:balance}
+.lede{font-size:18px;color:var(--dim);margin:0 0 34px;max-width:56ch}
+.lede a{color:var(--accent);text-decoration:none;font-weight:700;border-bottom:1.5px solid var(--accent-soft)}
+ol.steps{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+.step{display:grid;grid-template-columns:44px minmax(0,1fr);gap:16px;align-items:start;
+  background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow)}
+.num{width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px}
+.step h2{font-size:18px;margin:6px 0 6px;line-height:1.3}
+.step p{margin:0;color:var(--dim);font-size:16px}
+.step p+p{margin-top:8px}
+b{color:var(--ink);font-weight:700}
+.kbd{display:inline-block;padding:1px 8px;border-radius:8px;background:var(--accent-soft);color:var(--ink);font-weight:700;font-size:15px;white-space:nowrap}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--work);vertical-align:middle;margin:0 2px 2px}
+.calm{margin:34px 0 0;padding:20px 22px;border-radius:16px;background:var(--accent-soft);color:var(--ink);font-size:16px}
+.calm b{display:block;font-size:17px;margin-bottom:4px}
+.foot{margin-top:28px;color:var(--dim);font-size:14px}
+.foot a{color:var(--accent);text-decoration:none}
+@media (max-width:520px){.step{grid-template-columns:36px 1fr;gap:12px;padding:16px}.num{width:36px;height:36px;font-size:16px}}
+@media print{body{background:#fff}.page{padding:24px}.step{box-shadow:none;break-inside:avoid}.lang{display:none}}
+</style>
+</head>
+<body>
+<div class="page">
+  <p class="lang"><a href="../">По-русски</a></p>
+  <h1>Organizer: getting started</h1>
+  <p class="lede">A personal organizer without guilt. There is no word “overdue” here and no red as a reproach. The app lives at <a href="https://olenasvi.github.io/organizer/">olenasvi.github.io/organizer</a> — on any device with an internet connection. Seven steps, and from there it explains itself.</p>
+
+  <ol class="steps">
+    <li class="step"><span class="num">1</span><div>
+      <h2>Create an account</h2>
+      <p>Open the address, press <span class="kbd">Create account</span>, type your email and choose a password. No confirmation email to wait for — you are in right away. Sign in with the same email and password on your laptop, iPad or any computer: your tasks are the same everywhere.</p>
+    </div></li>
+
+    <li class="step"><span class="num">2</span><div>
+      <h2>Look around the “Today” screen</h2>
+      <p>On the left — today's tasks; on the right — routines and the day's events. At the bottom of the task column is <b>“Suggested”</b>: the app proposes what to take on and explains, in words, why that one.</p>
+      <p>A day holds five tasks, not forty. That's not a limit, it's honesty: that's how much actually gets done.</p>
+    </div></li>
+
+    <li class="step"><span class="num">3</span><div>
+      <h2>Delete the examples and add your own</h2>
+      <p>The first ten tasks are examples, there to show what the app can do. Feel free to delete them. Your own go in through <span class="kbd">＋ Add</span> at the top right: name, kind, area, deadline. A name and <span class="kbd">Enter</span> is enough — the rest can be filled in later.</p>
+      <p>Five kinds: <b>task</b>, <b>routine</b> (repeats on chosen days), <b>appointment</b> (date and time), <b>idea</b> (no deadline, asks nothing of you) and <b>reminder</b> (nothing to do — just remember: a birthday, a passport expiry).</p>
+    </div></li>
+
+    <li class="step"><span class="num">4</span><div>
+      <h2>Take a task into the day — and tick it off</h2>
+      <p>In “Suggested”, press <span class="kbd">take it</span>. Done it — the tick to the left of the task. Didn't get to it — nothing happens: tomorrow it's back in the suggestions, no reproach.</p>
+      <p>A long task you'll be working on for weeks can be <span class="kbd">Take it on</span>: it gets a purple dot <span class="dot"></span> and stops dropping out of the day.</p>
+    </div></li>
+
+    <li class="step"><span class="num">5</span><div>
+      <h2>See the same tasks from other angles</h2>
+      <p>The tabs at the top: <b>Today</b> — what I'm doing; <b>Calendar</b> — appointments and deadlines by day; <b>Map</b> — your whole life as branches by area; <b>Matrix</b> — important and urgent; <b>List</b> — everything, with search. Same tasks, different angles — pick the one that helps right now.</p>
+    </div></li>
+
+    <li class="step"><span class="num">6</span><div>
+      <h2>Make it yours</h2>
+      <p>The gear at the top right. That's where <b>areas, places and people</b> live — rename “Country 1” to your country, add your people. Also the day's limit (3, 5 or 7 tasks), the theme and the language (English or Russian).</p>
+    </div></li>
+
+    <li class="step"><span class="num">7</span><div>
+      <h2>Something's off — say so</h2>
+      <p>At the bottom of Settings there's a <span class="kbd">Report a problem</span> button. It opens a ready-made email: the version and the screen are already filled in, just add a few words about what happened. The same link sits on the sign-in screen, in case signing in is the problem.</p>
+    </div></li>
+  </ol>
+
+  <div class="calm">
+    <b>The one rule</b>
+    The app never scolds. A skipped routine is simply not ticked. A past deadline looks as calm as a future one. Your tasks are seen by you alone.
+  </div>
+
+  <p class="foot">Organizer · <a href="https://olenasvi.github.io/organizer/">olenasvi.github.io/organizer</a></p>
+</div>
+</body>
+</html>
