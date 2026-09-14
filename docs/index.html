@@ -118,6 +118,8 @@ body.gated{background:var(--accent)}
    оно перебивает display, а строчный блок авто-поля не центрируют. */
 .gatecard .gatelang{display:flex;width:max-content;margin:22px auto 0}
 .gatever{margin:16px 0 0;text-align:center;font-size:12px;color:#8b95ab}
+.gatever a{color:#8b95ab;text-decoration:underline}
+.modal a.btn{text-decoration:none;display:inline-flex;align-items:center}
 :root[data-theme="dark"] .gatecard{background:#fff}
 .gear:hover{color:var(--accent)}
 .here{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--dim)}
@@ -1004,7 +1006,22 @@ button.ddday:hover{background:var(--bg)}
    они создаются приложением, поэтому создаются сразу на том языке, на
    котором приложение открыли впервые.                               */
 /* Версия — дата и время сборки; build.sh подставляет её вместо заглушки. */
-const VERSION = "2026-09-14 23:42";
+const VERSION = "2026-09-14 23:48";
+/* Куда уходят сообщения о проблемах. Письмо собирается готовым: адрес,
+   версия, экран и язык уже на месте, человеку остаётся дописать, что
+   случилось. Адрес — Елены, по её просьбе.                          */
+const FEEDBACK_TO = "elena.svidler@gmail.com";
+function reportLink() {
+  const screen = (typeof TAB !== "undefined" && typeof TABS !== "undefined" && TABS[TAB])
+    ? tr(TABS[TAB]) : tr("Вход");
+  const subject = tr("Организатор") + " · " + tr("проблема") + " · " + VERSION;
+  const body = [tr("Версия") + ": " + VERSION, tr("Экран") + ": " + screen,
+    tr("Язык") + ": " + CURLANG,
+    tr("Устройство") + ": " + ((typeof navigator !== "undefined" && navigator.platform) || "?"),
+    "", tr("Что случилось") + ":", "", tr("Что ожидалось") + ":", ""].join("\n");
+  return "mailto:" + FEEDBACK_TO + "?subject=" + encodeURIComponent(subject)
+    + "&body=" + encodeURIComponent(body);
+}
 let CURLANG = "ru";
 const setLang = () => { CURLANG = (S && S.cfg && S.cfg.lang === "en") ? "en" : "ru"; };
 /* Второй довод — уточнение: одно и то же русское слово в разных местах
@@ -1350,7 +1367,9 @@ const EN = {
     "Your tasks belong to your account: sign in on any device and they're there. Signing out removes them from this device; the cloud keeps them.",
   "Есть неотправленные правки — они уедут, когда появится связь. Выйти можно будет после этого.":
     "There are unsent changes — they'll go out when the connection is back. You can sign out after that.",
-  "Версия": "Version",
+  "Версия": "Version", "проблема": "problem", "Экран": "Screen",
+  "Устройство": "Device", "Что случилось": "What happened",
+  "Что ожидалось": "What I expected", "Сообщить о проблеме": "Report a problem",
   "Аккаунт": "Account", "Почта": "Email", "Пароль": "Password",
   "Войти": "Sign in", "Зарегистрироваться": "Create account",
   "Забыли пароль?": "Forgot password?", "Выйти": "Sign out",
@@ -1815,7 +1834,7 @@ function gateHTML() {
          ${tr("Нет аккаунта?")} <a href="#" data-act="gatemode" data-v="up">${tr("Зарегистрироваться")}</a>`}</p>
     <div class="seg gatelang">${[["ru", "Русский"], ["en", "English"]].map(([k, L]) =>
       `<button data-act="lang" data-v="${k}" class="${S.cfg.lang === k ? "on" : ""}">${L}</button>`).join("")}</div>
-    <p class="qs gatever">${tr("Версия")} ${VERSION}</p>
+    <p class="qs gatever">${tr("Версия")} ${VERSION} · <a href="${reportLink()}">${tr("Сообщить о проблеме")}</a></p>
   </div></div>`;
 }
 function wireAccount() {
@@ -4475,7 +4494,10 @@ function openSettings() {
     </div>
     <p class="qs" style="margin-top:10px">${tr("Всё хранится в этом браузере. Файл-копия — способ перенести данные или подстраховаться.")}</p>
     <input type="file" id="importFile" accept=".json,application/json" hidden>
-    <p class="qs" style="margin-top:14px">${tr("Версия")} ${VERSION}</p>
+    <div class="row" style="margin:14px 0 0;gap:12px;align-items:center;flex-wrap:wrap">
+      <a class="btn ghost outline" href="${reportLink()}">${tr("Сообщить о проблеме")}</a>
+      <span class="qs" style="margin:0">${tr("Версия")} ${VERSION}</span>
+    </div>
 
     <div class="row modalfoot">
       <span class="qs" style="margin:0">${cfgDirty()

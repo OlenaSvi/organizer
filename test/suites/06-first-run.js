@@ -38,10 +38,17 @@ T.ok("версия — дата и время сборки, а не заглуш
   /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(VERSION), VERSION);
 openSettings();
 T.ok("версия видна в настройках", host.innerHTML.indexOf(VERSION) >= 0);
+/* «Сообщить о проблеме» — готовое письмо: адрес, версия и экран уже
+   подставлены, подруге остаётся дописать, что случилось. */
+T.ok("кнопка «Сообщить о проблеме» ведёт на письмо с версией и экраном", (function () {
+  var m = /href="(mailto:[^"]+)"/.exec(host.innerHTML); if (!m) return false;
+  var u = decodeURIComponent(m[1].replace(/&amp;/g, "&"));
+  return u.indexOf("elena.svidler@gmail.com") === 7 && u.indexOf(VERSION) >= 0
+    && u.indexOf("Сегодня") >= 0 && u.indexOf("Что случилось") >= 0; })());
 closeModal();
 CLOUD.url = "https://gate.test"; CLOUD.key = "k"; render();
 T.ok("и на экране входа — чтобы сообщить о проблеме можно было и без входа",
-  view.innerHTML.indexOf(VERSION) >= 0);
+  view.innerHTML.indexOf(VERSION) >= 0 && view.innerHTML.indexOf("mailto:") >= 0);
 CLOUD.url = ""; CLOUD.key = ""; render();
 
 T.head("СТАРТОВЫЙ НАБОР ВИДОВ");
