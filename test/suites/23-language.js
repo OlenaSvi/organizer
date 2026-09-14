@@ -6,7 +6,7 @@
 
    Экраны перечислены в DONE. Перевод идёт частями: сделанное сюда
    вписывается и назад уже не отваливается.                          */
-var DONE = ["settings", "today", "calendar", "map", "matrix", "all", "item", "capture"];
+var DONE = ["settings", "today", "calendar", "map", "matrix", "all", "item", "capture", "gate"];
 
 T.head("СЛОВАРЬ ЦЕЛ");
 T.ok("английский словарь не пуст", Object.keys(EN).length > 50,
@@ -104,6 +104,10 @@ closeModal();
 screenClean("capture", function () { clickOn({ act: "cap" }); },
   function () { return host.innerHTML; });
 clickOn({ act: "capcancel" });
+/* Экран входа: включаем затвор ключами-заглушками, без сети. */
+CLOUD.url = "https://gate.test"; CLOUD.key = "k";
+screenClean("gate", function () { render(); }, function () { return view.innerHTML; });
+CLOUD.url = ""; CLOUD.key = ""; render();
 
 /* Половина текста живёт в состояниях, а не на первом экране: пустые
    списки, открытые списки выбора, окна правки, карточка рутины. */

@@ -90,6 +90,20 @@ header{position:sticky;top:0;z-index:30;background:var(--bg);
   background:var(--panel);color:var(--dim);display:flex;
   align-items:center;justify-content:center;box-shadow:var(--shadow)}
 .gear svg{width:20px;height:20px}
+.acct{height:44px;padding:0 16px;border-radius:12px;border:0;background:var(--panel);
+  color:var(--ink);font-weight:600;font-size:13.5px;box-shadow:var(--shadow);
+  max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct:hover{color:var(--accent)}
+body.gated header{justify-content:center}
+.gate{min-height:calc(100vh - 120px);display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.gatecard{width:100%;max-width:440px;background:var(--panel);border-radius:18px;
+  padding:30px 28px 24px;box-shadow:var(--shadow)}
+.gatecard h1{margin:0 0 8px;font-size:28px;letter-spacing:-.01em}
+.gatecard .accrow input{width:100%;padding:12px 14px;border:1px solid var(--line);
+  border-radius:10px;background:var(--bg);margin-bottom:12px;font:inherit;color:inherit}
+.gatecard .accrow input:focus{outline:1.5px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.gatecard .accrow{display:block}
+.gatelang{margin-top:22px;justify-content:center}
 .gear:hover{color:var(--accent)}
 .here{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--dim)}
 .here select{background:var(--soft);border:0;border-radius:999px;height:38px;
@@ -948,6 +962,7 @@ button.ddday:hover{background:var(--bg)}
     <span id="hereBox"></span>
   </div>
   <button class="inbox-pill" id="inboxBtn" hidden></button>
+  <button class="acct" id="acctBtn" hidden></button>
   <button class="gear" id="gearBtn" title="Настройки"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="4.6"></circle><circle cx="8" cy="8" r="1.6"></circle><path d="M8 3.4V1.6M8 12.6v1.8M3.4 8H1.6M12.6 8h1.8M4.75 4.75 3.47 3.47M11.25 11.25l1.28 1.28M11.25 4.75l1.28-1.28M4.75 11.25l-1.28 1.28"></path></svg></button>
   <button class="capture-btn" id="capBtn">＋ Добавить</button>
 </header>

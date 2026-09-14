@@ -386,8 +386,6 @@ function openSettings() {
     <div class="setdiv"></div>
     ${dirRowsHTML()}
 
-    ${accountHTML()}
-
     <div class="setdiv"></div>
     <p class="lbl">${tr("Данные")}</p>
     <div class="row" style="margin:0;justify-content:flex-start">
@@ -407,8 +405,6 @@ function openSettings() {
     </div>`, "settings",
     { act: "cfgcancel", title: tr("Закрыть, не применяя изменения") });
   wireDirectories();
-  const ap = document.getElementById("accPass");
-  if (ap && ap.addEventListener) ap.addEventListener("keydown", e => { if (e.key === "Enter") cloudSignIn(); });
   const fi = document.getElementById("importFile");
   if (fi && fi.addEventListener) fi.addEventListener("change", () => {
     const f = fi.files && fi.files[0];

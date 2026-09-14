@@ -261,6 +261,8 @@ document.addEventListener("click", e => {
     case "rday":    if (it && schedDays(it)) { const d = schedDays(it), i = d.indexOf(+el.dataset.i);
                       if (i >= 0) d.splice(i, 1); else d.push(+el.dataset.i);
                       save(); refreshEdit(id); } break;
+    case "account":    openAccount(); break;
+    case "lang":       S.cfg.lang = v === "en" ? "en" : "ru"; setLang(); save(); render(); break;
     case "cloudin":    cloudSignIn(); break;
     case "cloudup":    cloudSignUp(); break;
     case "cloudout":   cloudSignOut(); break;
@@ -475,6 +477,16 @@ const TABS = { today: "Сегодня", calendar: "Календарь", map: "К
                matrix: "Матрица", all: "Список" };
 
 function renderChrome() {
+  /* Кнопка аккаунта — отдельная, на виду: с почтой, когда вошли.
+     Пока не вошли, шапка пустая: входить негде, кроме экрана входа. */
+  const gated = gateOn(), ses = cloudSession();
+  const acct = document.getElementById("acctBtn");
+  if (acct) { acct.hidden = !ses; acct.textContent = ses ? (ses.user && ses.user.email || "") : "";
+              acct.title = tr("Аккаунт"); }
+  ["tabs", "hereBox", "headDate", "capBtn", "gearBtn", "inboxBtn", "hereLabel"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.hidden = gated; });
+  if (document.body && document.body.classList) document.body.classList[gated ? "add" : "remove"]("gated");
+  if (gated) { document.getElementById("tabs").innerHTML = ""; return; }
   document.getElementById("tabs").innerHTML = Object.keys(TABS).map(k =>
     `<button data-act="tab" data-t="${k}" class="${TAB === k ? "on" : ""}">${tr(TABS[k])}</button>`).join("");
   const hb = document.getElementById("hereBox");
@@ -537,6 +549,9 @@ function render() {
     ? Array.from(view.querySelectorAll(".tcol")).map(c => c.scrollTop || 0) : [];
   if (view) view.className = TAB === "today" ? "fit" : "";
   renderChrome();
+  /* Вход обязателен: без сессии — только экран входа. Данные на
+     устройстве при этом целы, они дождутся входа.                   */
+  if (gateOn()) { view.className = "gated"; view.innerHTML = gateHTML(); wireAccount(); return; }
   ({ today: renderToday, calendar: renderCalendar, map: renderMap,
      matrix: renderMatrix, all: renderAll }[TAB])();
   if (!wantFocus && y && typeof window !== "undefined" && window.scrollTo) window.scrollTo(0, y);
@@ -547,6 +562,7 @@ function render() {
 document.getElementById("capBtn").dataset.act = "cap";
 document.getElementById("gearBtn").dataset.act = "settings";
 document.getElementById("inboxBtn").dataset.act = "inbox";
+document.getElementById("acctBtn").dataset.act = "account";
 render();
 BOOTED = true;
 

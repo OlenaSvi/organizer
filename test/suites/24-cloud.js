@@ -95,19 +95,31 @@ function titles() { return S.items.map(function (i) { return i.title; }).sort().
   cloudTouch(); await cloudPush();
   T.ok("save() ничего не шлёт", srv.log.length === 0);
 
-  T.head("БЕЗ ВХОДА — КАК РАНЬШЕ");
+  T.head("БЕЗ ВХОДА ПРИЛОЖЕНИЯ НЕТ — ТОЛЬКО ЭКРАН ВХОДА");
   onCloud();
-  openSettings();
-  T.ok("раздел появился, предлагает войти или зарегистрироваться",
-    host.innerHTML.indexOf("accEmail") >= 0 && host.innerHTML.indexOf('data-act="cloudup"') >= 0);
-  closeModal();
+  TAB = "today"; render();
+  T.ok("вместо дел — экран входа", view.innerHTML.indexOf('id="gate"') >= 0
+    && view.innerHTML.indexOf("todayhead") < 0);
+  T.ok("на нём почта, пароль, «Войти» и «Зарегистрироваться»",
+    view.innerHTML.indexOf("accEmail") >= 0 && view.innerHTML.indexOf('data-act="cloudin"') >= 0
+    && view.innerHTML.indexOf('data-act="cloudup"') >= 0);
+  T.ok("вкладок нет", document.getElementById("tabs").innerHTML === "");
+  T.ok("кнопки аккаунта в шапке нет — входить негде, кроме экрана",
+    document.getElementById("acctBtn").hidden === true);
+  ["calendar", "map", "matrix", "all"].forEach(function (tab) {
+    TAB = tab; render();
+    T.ok("экран «" + TABS[tab] + "» без входа тоже закрыт", view.innerHTML.indexOf('id="gate"') >= 0);
+  });
+  TAB = "today";
   var before = titles();
   cloudTouch(); await cloudPush();
   T.ok("без сессии ничего не уходит", srv.log.length === 0);
-  T.ok("и ничего не меняется", titles() === before);
+  T.ok("и данные на устройстве не тронуты", titles() === before);
+  T.ok("язык можно сменить прямо на экране входа", (function () {
+    clickOn({ act: "lang", v: "en" }); var en = view.innerHTML.indexOf("Sign in") >= 0;
+    clickOn({ act: "lang", v: "ru" }); return en && view.innerHTML.indexOf("Войти") >= 0; })());
 
   T.head("РЕГИСТРАЦИЯ: СВОИ ДЕЛА УЕЗЖАЮТ В ПУСТОЕ ОБЛАКО");
-  openSettings();
   field("accEmail", "e@test.ru"); field("accPass", "secret-1");
   await cloudSignUp();
   T.ok("сессия сохранена", !!cloudSession() && cloudSession().user.email === "e@test.ru");
@@ -115,7 +127,18 @@ function titles() { return S.items.map(function (i) { return i.title; }).sort().
   T.ok("и в ней ровно мои дела",
     srv.states["uid-e@test.ru"].data.items.length === S.items.length);
   T.ok("ревизия 1", srv.states["uid-e@test.ru"].rev === 1);
-  T.ok("в настройках видно, кто вошёл", host.innerHTML.indexOf("e@test.ru") >= 0);
+  T.ok("экран входа ушёл, дела на месте", view.innerHTML.indexOf('id="gate"') < 0
+    && view.innerHTML.indexOf("todayhead") >= 0);
+  T.ok("в шапке появилась кнопка аккаунта с почтой",
+    document.getElementById("acctBtn").hidden === false
+    && document.getElementById("acctBtn").textContent.indexOf("e@test.ru") >= 0);
+  clickOn({ act: "account" });
+  T.ok("кнопка открывает своё окно: кто вошёл и «Выйти»",
+    host.innerHTML.indexOf("e@test.ru") >= 0 && host.innerHTML.indexOf('data-act="cloudout"') >= 0);
+  closeModal();
+  openSettings();
+  T.ok("в настройках аккаунта больше нет — он живёт отдельно", host.innerHTML.indexOf("accEmail") < 0
+    && host.innerHTML.indexOf('data-act="cloudout"') < 0);
   closeModal();
 
   T.head("ПРАВКА → ОТПРАВКА");
@@ -127,21 +150,19 @@ function titles() { return S.items.map(function (i) { return i.title; }).sort().
     srv.states["uid-e@test.ru"].data.items[0].title === "Переименовано на ноутбуке");
   T.ok("больше нечего отправлять", !cloudDirty());
 
-  T.head("ВЫХОД: ДАННЫЕ ОСТАЮТСЯ");
+  T.head("ВЫХОД: ДАННЫЕ ОСТАЮТСЯ, ЭКРАН ВХОДА ВОЗВРАЩАЕТСЯ");
   var mine = titles();
   await cloudSignOut();
   T.ok("сессии нет", !cloudSession());
   T.ok("дела на устройстве целы", titles() === mine);
-  openSettings();
-  T.ok("настройки снова предлагают войти", host.innerHTML.indexOf("accEmail") >= 0);
-  closeModal();
+  T.ok("снова экран входа", view.innerHTML.indexOf('id="gate"') >= 0);
 
   T.head("ВХОД НА ЧИСТОМ УСТРОЙСТВЕ: ОБЛАКО БЕРЁТСЯ МОЛЧА");
   /* Чистое устройство — только примеры первого запуска. */
   var keep = JSON.parse(JSON.stringify(S));
   S.items = templateItems(); normalizeItems(); save();
   T.ok("устройство считается чистым", cloudFresh());
-  openSettings();
+  render();
   field("accEmail", "e@test.ru"); field("accPass", "secret-1");
   await cloudSignIn();
   T.ok("вопросов не задано", !cloudPending());
@@ -151,19 +172,17 @@ function titles() { return S.items.map(function (i) { return i.title; }).sort().
 
   T.head("НЕВЕРНЫЙ ПАРОЛЬ — СЛОВАМИ, БЕЗ ПОЛОМКИ");
   await cloudSignOut();
-  openSettings();
   field("accEmail", "e@test.ru"); field("accPass", "wrong");
   await cloudSignIn();
   T.ok("сессии нет", !cloudSession());
-  T.ok("причина названа по-человечески",
-    host.innerHTML.indexOf("Почта или пароль не подошли") >= 0, cloudNote());
-  closeModal();
+  T.ok("причина названа по-человечески на экране входа",
+    view.innerHTML.indexOf("Почта или пароль не подошли") >= 0, cloudNote());
 
   T.head("ВХОД, КОГДА И ЗДЕСЬ СВОЁ, И В ОБЛАКЕ СВОЁ: СПРАШИВАЕМ");
   S.items = keep.items.map(function (i) { return Object.assign({}, i, { title: i.title + " (айпад)" }); });
   normalizeItems(); save();
   T.ok("устройство не чистое", !cloudFresh());
-  openSettings();
+  render();
   field("accEmail", "e@test.ru"); field("accPass", "secret-1");
   await cloudSignIn();
   T.ok("вошли", !!cloudSession());
@@ -185,7 +204,7 @@ function titles() { return S.items.map(function (i) { return i.title; }).sort().
   await cloudSignOut();
   S.items = keep.items.map(function (i) { return Object.assign({}, i, { title: i.title + " (айпад)" }); });
   normalizeItems(); save();
-  openSettings();
+  render();
   field("accEmail", "e@test.ru"); field("accPass", "secret-1");
   await cloudSignIn();
   T.ok("снова спрашивает", cloudPending());
@@ -195,20 +214,37 @@ function titles() { return S.items.map(function (i) { return i.title; }).sort().
   T.ok("ревизия выросла", srv.states["uid-e@test.ru"].rev === 3);
   closeModal();
 
+  T.head("В ОБЛАКЕ ЛИШЬ НЕТРОНУТЫЕ ПРИМЕРЫ — СВОЁ ВАЖНЕЕ, НЕ СПРАШИВАЕМ");
+  /* Зарегистрировались на сайте, где были только примеры, а потом
+     открыли свой файл с настоящими делами: примеры в облаке — ничьи. */
+  await cloudSignOut();
+  var real = JSON.parse(JSON.stringify(S));
+  var tmplState = JSON.parse(JSON.stringify(S)); tmplState.items = templateItems();
+  srv.states["uid-e@test.ru"] = { user_id: "uid-e@test.ru", data: tmplState, rev: 7,
+    updated_at: new Date().toISOString(), device: "" };
+  render();
+  field("accEmail", "e@test.ru"); field("accPass", "secret-1");
+  await cloudSignIn();
+  T.ok("вопроса нет", !cloudPending());
+  T.ok("на устройстве остались настоящие дела", titles() === real.items.map(function (i) { return i.title; }).sort().join("|"));
+  T.ok("а в облако уехали они же, поверх примеров",
+    srv.states["uid-e@test.ru"].rev === 8
+    && srv.states["uid-e@test.ru"].data.items.every(function (i) { return /айпад/.test(i.title); }));
+
   T.head("В ОБЛАКЕ ПОЯВИЛОСЬ НОВЕЕ: ПОДТЯГИВАЕМ");
   /* Другое устройство записало ревизию 4. */
   var other = JSON.parse(JSON.stringify(srv.states["uid-e@test.ru"]));
-  other.rev = 4; other.data.items[0].title = "С другого устройства";
+  other.rev = other.rev + 1; other.data.items[0].title = "С другого устройства";
   srv.states["uid-e@test.ru"] = other;
   await cloudSync("focus");
   T.ok("подтянули", S.items[0].title === "С другого устройства");
   T.ok("копия прежнего состояния сохранена", !!backup());
-  T.ok("наша метка ревизии обновилась", cloudMark().rev === 4);
+  T.ok("наша метка ревизии обновилась", cloudMark().rev === other.rev);
 
   T.head("КОНФЛИКТ: ПРАВИЛИ ЗДЕСЬ, А ОБЛАКО УШЛО ВПЕРЁД");
   S.items[1].title = "Правка на этом устройстве"; save();
   var other2 = JSON.parse(JSON.stringify(srv.states["uid-e@test.ru"]));
-  other2.rev = 5; other2.data.items[2].title = "Правка на другом устройстве";
+  other2.rev = other2.rev + 1; other2.data.items[2].title = "Правка на другом устройстве";
   srv.states["uid-e@test.ru"] = other2;
   await cloudPush();
   T.ok("облако победило", S.items[2].title === "Правка на другом устройстве"
@@ -242,28 +278,28 @@ function titles() { return S.items.map(function (i) { return i.title; }).sort().
   T.head("РЕГИСТРАЦИЯ С ПОДТВЕРЖДЕНИЕМ ПО ПОЧТЕ");
   await cloudSignOut();
   srv.confirmFirst = true;
-  openSettings();
   field("accEmail", "new@test.ru"); field("accPass", "secret-2");
   await cloudSignUp();
   T.ok("сессии пока нет", !cloudSession());
   T.ok("сказано проверить почту", /почт/.test(cloudNote()), cloudNote());
   srv.confirmFirst = false;
-  closeModal();
 
   T.head("ПОВТОРНАЯ РЕГИСТРАЦИЯ ТОЙ ЖЕ ПОЧТЫ");
-  openSettings();
   field("accEmail", "e@test.ru"); field("accPass", "secret-1");
   await cloudSignUp();
   T.ok("объяснено, что аккаунт уже есть", /уже есть/.test(cloudNote()), cloudNote());
-  closeModal();
 
-  T.head("ПО-АНГЛИЙСКИ РАЗДЕЛ ТОЖЕ ПЕРЕВЕДЁН");
-  S.cfg.lang = "en"; setLang();
-  openSettings();
+  T.head("ПО-АНГЛИЙСКИ ЭКРАН ВХОДА И ОКНО АККАУНТА ПЕРЕВЕДЕНЫ");
+  S.cfg.lang = "en"; setLang(); render();
   var ru = /[А-Яа-яЁё][А-Яа-яЁё «».,:;!?()-]*/g, m, left = [];
-  var html = host.innerHTML.slice(host.innerHTML.indexOf("accEmail") - 400);
-  while ((m = ru.exec(html))) if (m[0].trim().length > 1 && m[0].trim() !== "Русский") left.push(m[0].trim());
-  T.ok("кириллицы в разделе нет", left.length === 0, left.join(" | "));
+  while ((m = ru.exec(view.innerHTML))) if (m[0].trim().length > 1 && m[0].trim() !== "Русский") left.push(m[0].trim());
+  T.ok("кириллицы на экране входа нет", left.length === 0, left.join(" | "));
+  field("accEmail", "e@test.ru"); field("accPass", "secret-1");
+  await cloudSignIn();
+  clickOn({ act: "account" });
+  left = [];
+  while ((m = ru.exec(host.innerHTML))) if (m[0].trim().length > 1) left.push(m[0].trim());
+  T.ok("кириллицы в окне аккаунта нет", left.length === 0, left.join(" | "));
   closeModal();
   S.cfg.lang = "ru"; setLang();
 

@@ -90,6 +90,20 @@ header{position:sticky;top:0;z-index:30;background:var(--bg);
   background:var(--panel);color:var(--dim);display:flex;
   align-items:center;justify-content:center;box-shadow:var(--shadow)}
 .gear svg{width:20px;height:20px}
+.acct{height:44px;padding:0 16px;border-radius:12px;border:0;background:var(--panel);
+  color:var(--ink);font-weight:600;font-size:13.5px;box-shadow:var(--shadow);
+  max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct:hover{color:var(--accent)}
+body.gated header{justify-content:center}
+.gate{min-height:calc(100vh - 120px);display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.gatecard{width:100%;max-width:440px;background:var(--panel);border-radius:18px;
+  padding:30px 28px 24px;box-shadow:var(--shadow)}
+.gatecard h1{margin:0 0 8px;font-size:28px;letter-spacing:-.01em}
+.gatecard .accrow input{width:100%;padding:12px 14px;border:1px solid var(--line);
+  border-radius:10px;background:var(--bg);margin-bottom:12px;font:inherit;color:inherit}
+.gatecard .accrow input:focus{outline:1.5px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.gatecard .accrow{display:block}
+.gatelang{margin-top:22px;justify-content:center}
 .gear:hover{color:var(--accent)}
 .here{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--dim)}
 .here select{background:var(--soft);border:0;border-radius:999px;height:38px;
@@ -948,6 +962,7 @@ button.ddday:hover{background:var(--bg)}
     <span id="hereBox"></span>
   </div>
   <button class="inbox-pill" id="inboxBtn" hidden></button>
+  <button class="acct" id="acctBtn" hidden></button>
   <button class="gear" id="gearBtn" title="Настройки"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="4.6"></circle><circle cx="8" cy="8" r="1.6"></circle><path d="M8 3.4V1.6M8 12.6v1.8M3.4 8H1.6M12.6 8h1.8M4.75 4.75 3.47 3.47M11.25 11.25l1.28 1.28M11.25 4.75l1.28-1.28M4.75 11.25l-1.28 1.28"></path></svg></button>
   <button class="capture-btn" id="capBtn">＋ Добавить</button>
 </header>
@@ -1305,6 +1320,11 @@ const EN = {
   "Удалить": "Delete", "Отменить правки и закрыть": "Discard changes and close",
 
   /* ── аккаунт и облако ──────────────────────────────────────── */
+  "Организатор": "Organizer",
+  "Войдите — и ваши дела будут одинаковыми на всех устройствах. Нет аккаунта — зарегистрируйтесь, это одна кнопка.":
+    "Sign in, and your tasks will be the same on every device. No account yet? Create one — it's a single button.",
+  "Выход не трогает дела на этом устройстве: они останутся здесь и дождутся следующего входа.":
+    "Signing out leaves the tasks on this device alone: they stay here and wait for your next sign-in.",
   "Аккаунт": "Account", "Почта": "Email", "Пароль": "Password",
   "Войти": "Sign in", "Зарегистрироваться": "Create account",
   "Забыли пароль?": "Forgot password?", "Выйти": "Sign out",
@@ -1404,11 +1424,14 @@ const EN = {
    Приложение говорит с сервером обычным fetch, без библиотек: нужных
    адресов пять, а в проверках сеть подменяется целиком.
 
-   Без ключей проекта (CLOUD.url пустой) раздела «Аккаунт» нет и ничего
-   не меняется. Без входа — тоже: данные живут в браузере, как раньше.
-   Облако включается только входом, и данные с устройства никогда не
-   затираются молча: перед заменой копия ложится в organizer.v1.backup,
-   а если своё есть и здесь, и там — приложение спрашивает.
+   Вход обязателен: без сессии приложение показывает только экран
+   входа (затвор, gateOn), данные на устройстве при этом целы и ждут.
+   Без ключей проекта (CLOUD.url пустой) затвора нет — так собирается
+   версия без сети и так прогоняются старые проверки.
+   Данные с устройства никогда не затираются молча: перед заменой копия
+   ложится в organizer.v1.backup, а если своё есть и здесь, и там —
+   приложение спрашивает. Нетронутые примеры в облаке — ничьи: их
+   переписываем своим без вопросов.
 
    Ревизии. У строки в облаке есть номер rev; на устройстве в
    organizer.sync лежит, до какой ревизии оно дошло. Отправка условная:
@@ -1443,9 +1466,12 @@ function cloudForget() {
 }
 /* Чистое устройство — нетронутые примеры первого запуска: их не жалко
    заменить облаком, не спрашивая. Тронутый пример — уже своё.       */
-const cloudFresh = () => S.items.every(i => i.draft || (i.tmpl && i.tmpl === i.title
+const freshItems = items => (items || []).every(i => i.draft || (i.tmpl && i.tmpl === i.title
   && !i.done && !i.working && !i.today
   && !(i.routine && i.routine.history && i.routine.history.length)));
+const cloudFresh = () => freshItems(S.items);
+/* Затвор: вход обязателен. Пока сессии нет, рисуется только экран входа. */
+const gateOn = () => cloudOn() && !cloudSession();
 
 /* ── сеть ────────────────────────────────────────────────────────── */
 async function cloudReq(path, opt, auth) {
@@ -1599,6 +1625,9 @@ async function cloudLink() {
   if (!row) { await cloudWrite(0, true); return; }             // облако пустое — отдаём своё
   if (mark && mark.uid === uid) { await cloudSyncNow(); return; } // устройство уже связано
   if (cloudFresh()) { cloudAdopt(row); return; }               // чистое — берём облако молча
+  /* Зарегистрировались на сайте, где были одни примеры, а потом открыли
+     свой файл с настоящими делами: примеры в облаке — ничьи.       */
+  if (row.data && freshItems(row.data.items)) { await cloudWrite(row.rev, true); return; }
   cloudAsk(row);                                               // и здесь своё, и там своё
 }
 function cloudAsk(row) {
@@ -1614,11 +1643,11 @@ function cloudAsk(row) {
 }
 async function cloudKeep(which) {
   const row = CF.pending; if (!row) return;
-  if (which === "cloud") { cloudAdopt(row); openSettings(); return; }
+  if (which === "cloud") { cloudAdopt(row); closeModal(); render(); return; }
   CF.busy = true; CF.pending = null; cloudDraw();
   try { await cloudWrite(row.rev, true); CF.note = ""; }
   catch (e) { CF.pending = row; CF.note = cloudWords(e); }
-  CF.busy = false; openSettings();
+  CF.busy = false; closeModal(); render();
 }
 
 /* save() зовёт это после каждой записи; отправка — через полторы
@@ -1682,40 +1711,64 @@ const cloudWhen = iso => {
   if (isNaN(d)) return "";
   return formatDay(isoDay(d)) + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
 };
-/* Раздел в настройках. Перерисовывается, только если настройки открыты. */
+/* Что показать после действия: экран входа, если сессии нет; окно
+   аккаунта, если оно открыто; иначе ничего — статус живёт в них.  */
 function cloudDraw() {
-  if (typeof lastModalKey !== "undefined" && lastModalKey === "settings") openSettings();
+  /* Затвор надо перерисовать и когда он нужен, и когда он только что
+     был на экране, а сессия появилась — иначе после входа так и
+     остался бы экран входа.                                        */
+  if (gateOn() || (view && view.innerHTML.indexOf('id="gate"') >= 0)) { render(); return; }
+  if (typeof lastModalKey !== "undefined" && lastModalKey === "account") openAccount();
 }
-function accountHTML() {
-  if (!cloudOn()) return "";
-  const ses = cloudSession();
-  const status = CF.busy ? tr("Синхронизирую…") : CF.note ? cloudNote()
-    : CF.pending ? tr("Нужно решить, что оставить.")
-    : CF.dirty ? tr("Есть несохранённое — отправлю через секунду.")
-    : CF.at ? tr("Синхронизировано") + " · " + cloudAgo(CF.at) : "";
-  const inner = ses ? `
-      <p class="qs" style="margin:0 0 10px">${tr("Вы вошли как")} <b>${esc(ses.user && ses.user.email || "")}</b>. ${
-        tr("Дела одинаковые на всех устройствах, где вы вошли.")}</p>
-      <div class="row" style="margin:0;gap:10px;flex-wrap:wrap">
-        ${CF.pending ? `<button class="btn primary" data-act="cloudask">${tr("Решить, что оставить")}</button>` : ""}
-        <button class="btn ghost outline" data-act="cloudnow">${tr("Обновить сейчас")}</button>
-        <button class="btn ghost outline" data-act="cloudout">${tr("Выйти")}</button>
-      </div>`
-    : `
-      <p class="qs" style="margin:0 0 10px">${tr("Аккаунт нужен, чтобы видеть свои дела с любого устройства. Без него всё работает как есть — в этом браузере.")}</p>
-      <div class="accrow">
-        <input type="email" id="accEmail" placeholder="${tr("Почта")}" autocomplete="email"
-          value="${esc(CF.email || "")}">
-        <input type="password" id="accPass" placeholder="${tr("Пароль")}" autocomplete="current-password">
-      </div>
-      <div class="row" style="margin:0;gap:10px;flex-wrap:wrap">
-        <button class="btn primary" data-act="cloudin">${tr("Войти")}</button>
-        <button class="btn ghost outline" data-act="cloudup">${tr("Зарегистрироваться")}</button>
-        <button class="btn link" data-act="cloudrecover">${tr("Забыли пароль?")}</button>
-      </div>`;
-  return `<div class="setdiv"></div>
-    <p class="lbl">${tr("Аккаунт")}</p>${inner}
-    ${status ? `<p class="qs accstat">${esc(status)}</p>` : ""}`;
+const cloudStatus = () => CF.busy ? tr("Синхронизирую…") : CF.note ? cloudNote()
+  : CF.pending ? tr("Нужно решить, что оставить.")
+  : CF.dirty ? tr("Есть несохранённое — отправлю через секунду.")
+  : CF.at ? tr("Синхронизировано") + " · " + cloudAgo(CF.at) : "";
+/* Поля входа — одни и те же на экране входа и в окне. */
+function accountFormHTML() {
+  return `<div class="accrow">
+      <input type="email" id="accEmail" placeholder="${tr("Почта")}" autocomplete="email"
+        value="${esc(CF.email || "")}">
+      <input type="password" id="accPass" placeholder="${tr("Пароль")}" autocomplete="current-password">
+    </div>
+    <div class="row" style="margin:0;gap:10px;flex-wrap:wrap">
+      <button class="btn primary" data-act="cloudin">${tr("Войти")}</button>
+      <button class="btn ghost outline" data-act="cloudup">${tr("Зарегистрироваться")}</button>
+      <button class="btn link" data-act="cloudrecover">${tr("Забыли пароль?")}</button>
+    </div>`;
+}
+/* Экран входа — всё приложение, пока не вошли. Язык переключается
+   прямо здесь: до настроек без входа не добраться.                */
+function gateHTML() {
+  const status = cloudStatus();
+  return `<div id="gate" class="gate"><div class="gatecard">
+    <h1>${tr("Организатор")}</h1>
+    <p class="qs" style="margin:0 0 16px">${tr("Войдите — и ваши дела будут одинаковыми на всех устройствах. Нет аккаунта — зарегистрируйтесь, это одна кнопка.")}</p>
+    ${accountFormHTML()}
+    ${status ? `<p class="qs accstat">${esc(status)}</p>` : ""}
+    <div class="seg gatelang">${[["ru", "Русский"], ["en", "English"]].map(([k, L]) =>
+      `<button data-act="lang" data-v="${k}" class="${S.cfg.lang === k ? "on" : ""}">${L}</button>`).join("")}</div>
+  </div></div>`;
+}
+function wireAccount() {
+  const ap = document.getElementById("accPass");
+  if (ap && ap.addEventListener) ap.addEventListener("keydown", e => { if (e.key === "Enter") cloudSignIn(); });
+}
+/* Окно аккаунта — по кнопке в шапке. Открывается только когда вошли. */
+function openAccount() {
+  const ses = cloudSession(); if (!ses) return;
+  const status = cloudStatus();
+  openModal(`<h3>${tr("Аккаунт")}</h3>
+    <p class="qs" style="margin:-10px 0 14px">${tr("Вы вошли как")} <b>${esc(ses.user && ses.user.email || "")}</b>. ${
+      tr("Дела одинаковые на всех устройствах, где вы вошли.")}</p>
+    ${status ? `<p class="qs accstat" style="margin:0 0 14px">${esc(status)}</p>` : ""}
+    <div class="row" style="margin:0;gap:10px;flex-wrap:wrap">
+      ${CF.pending ? `<button class="btn primary" data-act="cloudask">${tr("Решить, что оставить")}</button>` : ""}
+      <button class="btn ghost outline" data-act="cloudnow">${tr("Обновить сейчас")}</button>
+      <button class="btn ghost outline" data-act="cloudout">${tr("Выйти")}</button>
+    </div>
+    <p class="qs" style="margin:14px 0 0">${tr("Выход не трогает дела на этом устройстве: они останутся здесь и дождутся следующего входа.")}</p>`,
+    "account", { act: "close", title: tr("Закрыть") });
 }
 /* ══════════════════════════════════════════════════════════════════
    ХРАНЕНИЕ — всё лежит в браузере на этом компьютере, никуда не уходит
@@ -4340,8 +4393,6 @@ function openSettings() {
     <div class="setdiv"></div>
     ${dirRowsHTML()}
 
-    ${accountHTML()}
-
     <div class="setdiv"></div>
     <p class="lbl">${tr("Данные")}</p>
     <div class="row" style="margin:0;justify-content:flex-start">
@@ -4361,8 +4412,6 @@ function openSettings() {
     </div>`, "settings",
     { act: "cfgcancel", title: tr("Закрыть, не применяя изменения") });
   wireDirectories();
-  const ap = document.getElementById("accPass");
-  if (ap && ap.addEventListener) ap.addEventListener("keydown", e => { if (e.key === "Enter") cloudSignIn(); });
   const fi = document.getElementById("importFile");
   if (fi && fi.addEventListener) fi.addEventListener("change", () => {
     const f = fi.files && fi.files[0];
@@ -5144,6 +5193,8 @@ document.addEventListener("click", e => {
     case "rday":    if (it && schedDays(it)) { const d = schedDays(it), i = d.indexOf(+el.dataset.i);
                       if (i >= 0) d.splice(i, 1); else d.push(+el.dataset.i);
                       save(); refreshEdit(id); } break;
+    case "account":    openAccount(); break;
+    case "lang":       S.cfg.lang = v === "en" ? "en" : "ru"; setLang(); save(); render(); break;
     case "cloudin":    cloudSignIn(); break;
     case "cloudup":    cloudSignUp(); break;
     case "cloudout":   cloudSignOut(); break;
@@ -5358,6 +5409,16 @@ const TABS = { today: "Сегодня", calendar: "Календарь", map: "К
                matrix: "Матрица", all: "Список" };
 
 function renderChrome() {
+  /* Кнопка аккаунта — отдельная, на виду: с почтой, когда вошли.
+     Пока не вошли, шапка пустая: входить негде, кроме экрана входа. */
+  const gated = gateOn(), ses = cloudSession();
+  const acct = document.getElementById("acctBtn");
+  if (acct) { acct.hidden = !ses; acct.textContent = ses ? (ses.user && ses.user.email || "") : "";
+              acct.title = tr("Аккаунт"); }
+  ["tabs", "hereBox", "headDate", "capBtn", "gearBtn", "inboxBtn", "hereLabel"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.hidden = gated; });
+  if (document.body && document.body.classList) document.body.classList[gated ? "add" : "remove"]("gated");
+  if (gated) { document.getElementById("tabs").innerHTML = ""; return; }
   document.getElementById("tabs").innerHTML = Object.keys(TABS).map(k =>
     `<button data-act="tab" data-t="${k}" class="${TAB === k ? "on" : ""}">${tr(TABS[k])}</button>`).join("");
   const hb = document.getElementById("hereBox");
@@ -5420,6 +5481,9 @@ function render() {
     ? Array.from(view.querySelectorAll(".tcol")).map(c => c.scrollTop || 0) : [];
   if (view) view.className = TAB === "today" ? "fit" : "";
   renderChrome();
+  /* Вход обязателен: без сессии — только экран входа. Данные на
+     устройстве при этом целы, они дождутся входа.                   */
+  if (gateOn()) { view.className = "gated"; view.innerHTML = gateHTML(); wireAccount(); return; }
   ({ today: renderToday, calendar: renderCalendar, map: renderMap,
      matrix: renderMatrix, all: renderAll }[TAB])();
   if (!wantFocus && y && typeof window !== "undefined" && window.scrollTo) window.scrollTo(0, y);
@@ -5430,6 +5494,7 @@ function render() {
 document.getElementById("capBtn").dataset.act = "cap";
 document.getElementById("gearBtn").dataset.act = "settings";
 document.getElementById("inboxBtn").dataset.act = "inbox";
+document.getElementById("acctBtn").dataset.act = "account";
 render();
 BOOTED = true;
 
