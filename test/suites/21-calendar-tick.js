@@ -55,8 +55,10 @@ T.head("ГАЛОЧКА СИДИТ В СВОЁМ КРУЖКЕ");
 T.ok("у кружка календаря есть position:relative", (function () {
   try { ObjC.import("Foundation");
     var css = $.NSString.stringWithContentsOfFileEncodingError("Организатор.html", 4, null).js;
-    var m = /\.caltick\{[^}]*\}/.exec(css.replace(/\s+/g, ""));
-    return !!m && m[0].indexOf("position:relative") >= 0;
+    /* Правил с .caltick несколько (первое — общий cursor:pointer);
+       нужное — любое, где есть position:relative. */
+    var rules = css.replace(/\s+/g, "").match(/[^{}]*\.caltick\{[^}]*\}/g) || [];
+    return rules.some(function (r) { return r.indexOf("position:relative") >= 0; });
   } catch (e) { return false; }
 })());
 
