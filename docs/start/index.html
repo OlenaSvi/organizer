@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Организатор — с чего начать</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap">
+<style>
+/* Тот же язык, что у приложения: спокойный синий, мягкие карточки,
+   ничего красного. Страница короткая — её читают один раз. */
+:root{
+  --paper:#f5f7fb; --surface:#ffffff; --ink:#10214a; --dim:#6b778c;
+  --line:#e6eaf2; --accent:#1f5cff; --accent-soft:#e8efff; --work:#8a6fd0;
+  --shadow:0 1px 2px rgba(16,33,74,.05), 0 10px 26px rgba(16,33,74,.06);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font:400 17px/1.6 Manrope,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased}
+.page{max-width:720px;margin:0 auto;padding:48px 24px 72px}
+h1{font-size:34px;line-height:1.15;margin:0 0 10px;letter-spacing:-.015em;text-wrap:balance}
+.lede{font-size:18px;color:var(--dim);margin:0 0 34px;max-width:56ch}
+.lede a{color:var(--accent);text-decoration:none;font-weight:700;border-bottom:1.5px solid var(--accent-soft)}
+ol.steps{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+.step{display:grid;grid-template-columns:44px minmax(0,1fr);gap:16px;align-items:start;
+  background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow)}
+.num{width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px}
+.step h2{font-size:18px;margin:6px 0 6px;line-height:1.3}
+.step p{margin:0;color:var(--dim);font-size:16px}
+.step p+p{margin-top:8px}
+b{color:var(--ink);font-weight:700}
+.kbd{display:inline-block;padding:1px 8px;border-radius:8px;background:var(--accent-soft);color:var(--ink);font-weight:700;font-size:15px;white-space:nowrap}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--work);vertical-align:middle;margin:0 2px 2px}
+.calm{margin:34px 0 0;padding:20px 22px;border-radius:16px;background:var(--accent-soft);color:var(--ink);font-size:16px}
+.calm b{display:block;font-size:17px;margin-bottom:4px}
+.foot{margin-top:28px;color:var(--dim);font-size:14px}
+.foot a{color:var(--accent);text-decoration:none}
+@media (max-width:520px){.step{grid-template-columns:36px 1fr;gap:12px;padding:16px}.num{width:36px;height:36px;font-size:16px}}
+@media print{body{background:#fff}.page{padding:24px}.step{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Организатор: с чего начать</h1>
+  <p class="lede">Это личный органайзер без чувства вины. Здесь нет слова «просрочено» и нет красного цвета как упрёка. Приложение живёт по адресу <a href="https://olenasvi.github.io/organizer/">olenasvi.github.io/organizer</a> — на любом устройстве, где есть интернет. Семь шагов, и дальше оно объяснит себя само.</p>
+
+  <ol class="steps">
+    <li class="step"><span class="num">1</span><div>
+      <h2>Заведите аккаунт</h2>
+      <p>Откройте адрес, нажмите <span class="kbd">Зарегистрироваться</span>, впишите почту и придумайте пароль. Письма ждать не нужно — вы сразу внутри. С этими же почтой и паролем входите с ноутбука, айпада, любого компьютера: дела везде одни и те же.</p>
+    </div></li>
+
+    <li class="step"><span class="num">2</span><div>
+      <h2>Осмотритесь на экране «Сегодня»</h2>
+      <p>Слева — дела на сегодня, справа — рутина и события дня. Внизу колонки дел — <b>«Предлагаю»</b>: приложение само предлагает, что взять, и объясняет словами, почему именно это.</p>
+      <p>В день помещается пять дел, не сорок. Это не ограничение, а честность: столько реально сделать.</p>
+    </div></li>
+
+    <li class="step"><span class="num">3</span><div>
+      <h2>Удалите примеры и добавьте своё</h2>
+      <p>Первые десять дел — примеры, чтобы было видно, что умеет приложение. Их можно смело удалять. Своё — кнопка <span class="kbd">＋ Добавить</span> справа вверху: название, вид, сфера, срок. Достаточно названия и <span class="kbd">Enter</span> — остальное можно дописать потом.</p>
+      <p>Пять видов: <b>дело</b>, <b>рутина</b> (повторяется по дням), <b>аппоинтмент</b> (дата и время), <b>идея</b> (без срока, ничего не требует) и <b>напоминание</b> (не делать — помнить: день рождения, срок паспорта).</p>
+    </div></li>
+
+    <li class="step"><span class="num">4</span><div>
+      <h2>Возьмите дело в день — и отметьте</h2>
+      <p>В «Предлагаю» нажмите <span class="kbd">взять</span>. Сделали — галочка слева от дела. Не успели — ничего страшного: завтра оно снова окажется в предложениях, без упрёков.</p>
+      <p>Долгое дело, которым занимаетесь неделями, можно <span class="kbd">Взяться</span>: оно получит фиолетовый кружок <span class="dot"></span> и не будет выпадать из дня.</p>
+    </div></li>
+
+    <li class="step"><span class="num">5</span><div>
+      <h2>Посмотрите на те же дела с других сторон</h2>
+      <p>Вкладки вверху: <b>Сегодня</b> — что делаю; <b>Календарь</b> — встречи и сроки по дням; <b>Карта</b> — вся жизнь ветками по сферам; <b>Матрица</b> — важное и срочное; <b>Список</b> — всё подряд, с поиском. Дела одни и те же, ракурсы разные — выбирайте тот, что помогает сейчас.</p>
+    </div></li>
+
+    <li class="step"><span class="num">6</span><div>
+      <h2>Настройте под себя</h2>
+      <p>Шестерёнка справа вверху. Там <b>сферы, места и люди</b> — переименуйте «Страна 1» в свою страну, добавьте своих людей. Там же потолок дня (3, 5 или 7 дел), тема и язык (русский или английский).</p>
+    </div></li>
+
+    <li class="step"><span class="num">7</span><div>
+      <h2>Что-то не так — напишите</h2>
+      <p>Внизу настроек есть кнопка <span class="kbd">Сообщить о проблеме</span>. Она открывает готовое письмо: версия и экран уже подставлены, допишите пару слов о том, что случилось. Такая же ссылка есть на экране входа — на случай, если войти не получается.</p>
+    </div></li>
+  </ol>
+
+  <div class="calm">
+    <b>Главное правило</b>
+    Приложение никогда не ругает. Пропущенная рутина — просто не отмечена. Прошедший срок выглядит так же спокойно, как будущий. Ваши дела видите только вы.
+  </div>
+
+  <p class="foot">Организатор · <a href="https://olenasvi.github.io/organizer/">olenasvi.github.io/organizer</a></p>
+</div>
+</body>
+</html>
