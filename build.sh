@@ -10,6 +10,8 @@ PARTS="src/app.head.part src/app.lang.part src/app.cloud.part src/app.body.part 
        src/app.map.part src/app.modal.part src/app.events.part"
 
 cat $PARTS > "$OUT"
+# Номер версии — момент сборки, по местному времени.
+sed -i "" "s/__VERSION__/$(date '+%Y-%m-%d %H:%M')/" "$OUT"
 
 # Логику вынимаем из <script>…</script> — её же используют тесты.
 awk '/^<script>$/{f=1;next} /^<\/script>$/{f=0} f' "$OUT" \

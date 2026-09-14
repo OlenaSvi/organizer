@@ -117,6 +117,7 @@ body.gated{background:var(--accent)}
 /* .seg — inline-flex, и его правило ниже по файлу: без двух классов
    оно перебивает display, а строчный блок авто-поля не центрируют. */
 .gatecard .gatelang{display:flex;width:max-content;margin:22px auto 0}
+.gatever{margin:16px 0 0;text-align:center;font-size:12px;color:#8b95ab}
 :root[data-theme="dark"] .gatecard{background:#fff}
 .gear:hover{color:var(--accent)}
 .here{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--dim)}

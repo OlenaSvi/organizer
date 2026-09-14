@@ -375,6 +375,7 @@ function gateHTML() {
          ${tr("Нет аккаунта?")} <a href="#" data-act="gatemode" data-v="up">${tr("Зарегистрироваться")}</a>`}</p>
     <div class="seg gatelang">${[["ru", "Русский"], ["en", "English"]].map(([k, L]) =>
       `<button data-act="lang" data-v="${k}" class="${S.cfg.lang === k ? "on" : ""}">${L}</button>`).join("")}</div>
+    <p class="qs gatever">${tr("Версия")} ${VERSION}</p>
   </div></div>`;
 }
 function wireAccount() {

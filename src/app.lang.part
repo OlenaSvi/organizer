@@ -14,6 +14,8 @@
    приложение не берётся. Примеры и стартовые справочники — исключение:
    они создаются приложением, поэтому создаются сразу на том языке, на
    котором приложение открыли впервые.                               */
+/* Версия — дата и время сборки; build.sh подставляет её вместо заглушки. */
+const VERSION = "__VERSION__";
 let CURLANG = "ru";
 const setLang = () => { CURLANG = (S && S.cfg && S.cfg.lang === "en") ? "en" : "ru"; };
 /* Второй довод — уточнение: одно и то же русское слово в разных местах
@@ -359,6 +361,7 @@ const EN = {
     "Your tasks belong to your account: sign in on any device and they're there. Signing out removes them from this device; the cloud keeps them.",
   "Есть неотправленные правки — они уедут, когда появится связь. Выйти можно будет после этого.":
     "There are unsent changes — they'll go out when the connection is back. You can sign out after that.",
+  "Версия": "Version",
   "Аккаунт": "Account", "Почта": "Email", "Пароль": "Password",
   "Войти": "Sign in", "Зарегистрироваться": "Create account",
   "Забыли пароль?": "Forgot password?", "Выйти": "Sign out",

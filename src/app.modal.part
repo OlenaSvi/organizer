@@ -394,6 +394,7 @@ function openSettings() {
     </div>
     <p class="qs" style="margin-top:10px">${tr("Всё хранится в этом браузере. Файл-копия — способ перенести данные или подстраховаться.")}</p>
     <input type="file" id="importFile" accept=".json,application/json" hidden>
+    <p class="qs" style="margin-top:14px">${tr("Версия")} ${VERSION}</p>
 
     <div class="row modalfoot">
       <span class="qs" style="margin:0">${cfgDirty()

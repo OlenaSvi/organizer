@@ -30,6 +30,20 @@ T.ok("примеры разложены по обеим странам", (functi
 })(), fresh.items.filter(function (i) { return i.place; })
   .map(function (i) { return i.title + " → " + i.place; }).join(", "));
 
+T.head("НОМЕР ВЕРСИИ");
+/* Сборка ставит дату и время: подруга скажет «у меня версия от 20-го»,
+   и станет ясно, видит ли она уже починку. Заглушка в готовом файле —
+   ошибка сборки. */
+T.ok("версия — дата и время сборки, а не заглушка",
+  /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(VERSION), VERSION);
+openSettings();
+T.ok("версия видна в настройках", host.innerHTML.indexOf(VERSION) >= 0);
+closeModal();
+CLOUD.url = "https://gate.test"; CLOUD.key = "k"; render();
+T.ok("и на экране входа — чтобы сообщить о проблеме можно было и без входа",
+  view.innerHTML.indexOf(VERSION) >= 0);
+CLOUD.url = ""; CLOUD.key = ""; render();
+
 T.head("СТАРТОВЫЙ НАБОР ВИДОВ");
 var names = fresh.types.map(function (t) { return t.name; });
 T.ok("«выбрать / купить» больше нет", names.indexOf("выбрать / купить") < 0,

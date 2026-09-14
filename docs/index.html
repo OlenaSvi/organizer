@@ -117,6 +117,7 @@ body.gated{background:var(--accent)}
 /* .seg — inline-flex, и его правило ниже по файлу: без двух классов
    оно перебивает display, а строчный блок авто-поля не центрируют. */
 .gatecard .gatelang{display:flex;width:max-content;margin:22px auto 0}
+.gatever{margin:16px 0 0;text-align:center;font-size:12px;color:#8b95ab}
 :root[data-theme="dark"] .gatecard{background:#fff}
 .gear:hover{color:var(--accent)}
 .here{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--dim)}
@@ -1002,6 +1003,8 @@ button.ddday:hover{background:var(--bg)}
    приложение не берётся. Примеры и стартовые справочники — исключение:
    они создаются приложением, поэтому создаются сразу на том языке, на
    котором приложение открыли впервые.                               */
+/* Версия — дата и время сборки; build.sh подставляет её вместо заглушки. */
+const VERSION = "2026-09-14 23:42";
 let CURLANG = "ru";
 const setLang = () => { CURLANG = (S && S.cfg && S.cfg.lang === "en") ? "en" : "ru"; };
 /* Второй довод — уточнение: одно и то же русское слово в разных местах
@@ -1347,6 +1350,7 @@ const EN = {
     "Your tasks belong to your account: sign in on any device and they're there. Signing out removes them from this device; the cloud keeps them.",
   "Есть неотправленные правки — они уедут, когда появится связь. Выйти можно будет после этого.":
     "There are unsent changes — they'll go out when the connection is back. You can sign out after that.",
+  "Версия": "Version",
   "Аккаунт": "Account", "Почта": "Email", "Пароль": "Password",
   "Войти": "Sign in", "Зарегистрироваться": "Create account",
   "Забыли пароль?": "Forgot password?", "Выйти": "Sign out",
@@ -1811,6 +1815,7 @@ function gateHTML() {
          ${tr("Нет аккаунта?")} <a href="#" data-act="gatemode" data-v="up">${tr("Зарегистрироваться")}</a>`}</p>
     <div class="seg gatelang">${[["ru", "Русский"], ["en", "English"]].map(([k, L]) =>
       `<button data-act="lang" data-v="${k}" class="${S.cfg.lang === k ? "on" : ""}">${L}</button>`).join("")}</div>
+    <p class="qs gatever">${tr("Версия")} ${VERSION}</p>
   </div></div>`;
 }
 function wireAccount() {
@@ -4470,6 +4475,7 @@ function openSettings() {
     </div>
     <p class="qs" style="margin-top:10px">${tr("Всё хранится в этом браузере. Файл-копия — способ перенести данные или подстраховаться.")}</p>
     <input type="file" id="importFile" accept=".json,application/json" hidden>
+    <p class="qs" style="margin-top:14px">${tr("Версия")} ${VERSION}</p>
 
     <div class="row modalfoot">
       <span class="qs" style="margin:0">${cfgDirty()
