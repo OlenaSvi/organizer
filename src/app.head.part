@@ -90,14 +90,10 @@ header{position:sticky;top:0;z-index:30;background:var(--bg);
   background:var(--panel);color:var(--dim);display:flex;
   align-items:center;justify-content:center;box-shadow:var(--shadow)}
 .gear svg{width:20px;height:20px}
-.acct{height:44px;padding:0 16px;border-radius:12px;border:0;background:var(--panel);
-  color:var(--ink);font-weight:600;font-size:13.5px;box-shadow:var(--shadow);
-  max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.acct:hover{color:var(--accent)}
 /* На экране входа шапка пустая: атрибут hidden слабее своих display,
    поэтому прячем классом.                                           */
 body.gated .tabs,body.gated .here,body.gated .headdate,body.gated .gear,
-body.gated .capture-btn,body.gated .inbox-pill,body.gated .acct{display:none}
+body.gated .capture-btn,body.gated .inbox-pill{display:none}
 body.gated header{display:none}
 /* Экран входа: карточка на цветном фоне, как у классических форм входа. */
 body.gated{background:var(--accent)}
@@ -980,7 +976,7 @@ button.ddday:hover{background:var(--bg)}
     <span id="hereBox"></span>
   </div>
   <button class="inbox-pill" id="inboxBtn" hidden></button>
-  <button class="acct" id="acctBtn" hidden></button>
+  <button class="gear" id="acctBtn" hidden></button>
   <button class="gear" id="gearBtn" title="Настройки"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="4.6"></circle><circle cx="8" cy="8" r="1.6"></circle><path d="M8 3.4V1.6M8 12.6v1.8M3.4 8H1.6M12.6 8h1.8M4.75 4.75 3.47 3.47M11.25 11.25l1.28 1.28M11.25 4.75l1.28-1.28M4.75 11.25l-1.28 1.28"></path></svg></button>
   <button class="capture-btn" id="capBtn">＋ Добавить</button>
 </header>

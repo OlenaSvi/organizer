@@ -147,9 +147,10 @@ function titles() { return S.items.map(function (i) { return i.title; }).sort().
   T.ok("ревизия 1", srv.states["uid-e@test.ru"].rev === 1);
   T.ok("экран входа ушёл, дела на месте", view.innerHTML.indexOf('id="gate"') < 0
     && view.innerHTML.indexOf("todayhead") >= 0);
-  T.ok("в шапке появилась кнопка аккаунта с почтой",
+  T.ok("в шапке появилась кнопка аккаунта — иконка человека, почта в подсказке",
     document.getElementById("acctBtn").hidden === false
-    && document.getElementById("acctBtn").textContent.indexOf("e@test.ru") >= 0);
+    && /<svg/.test(document.getElementById("acctBtn").innerHTML)
+    && document.getElementById("acctBtn").title.indexOf("e@test.ru") >= 0);
   clickOn({ act: "account" });
   T.ok("кнопка открывает своё окно: кто вошёл и «Выйти»",
     host.innerHTML.indexOf("e@test.ru") >= 0 && host.innerHTML.indexOf('data-act="cloudout"') >= 0);

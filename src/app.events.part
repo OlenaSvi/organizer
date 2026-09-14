@@ -486,8 +486,11 @@ function renderChrome() {
      Пока не вошли, шапка пустая: входить негде, кроме экрана входа. */
   const gated = gateOn(), ses = cloudSession();
   const acct = document.getElementById("acctBtn");
-  if (acct) { acct.hidden = !ses; acct.textContent = ses ? (ses.user && ses.user.email || "") : "";
-              acct.title = tr("Аккаунт"); }
+  if (acct) {
+    acct.hidden = !ses;
+    acct.innerHTML = ses ? iconSVG("person", "currentColor") : "";
+    acct.title = ses ? tr("Аккаунт") + " · " + (ses.user && ses.user.email || "") : "";
+  }
   ["tabs", "hereBox", "headDate", "capBtn", "gearBtn", "inboxBtn", "hereLabel"].forEach(id => {
     const el = document.getElementById(id); if (el) el.hidden = gated; });
   if (document.body && document.body.classList) document.body.classList[gated ? "add" : "remove"]("gated");
