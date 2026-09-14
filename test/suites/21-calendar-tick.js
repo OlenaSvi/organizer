@@ -47,4 +47,17 @@ clickOn({ act: "toggle", id: t0.id });
 CALANCHOR = null;
 T.reset();
 
+T.head("ГАЛОЧКА СИДИТ В СВОЁМ КРУЖКЕ");
+/* «Птичка» рисуется абсолютным псевдоэлементом — кружок обязан быть
+   position:relative, иначе она уезжает к ближайшему позиционированному
+   предку, то есть под всю строку календаря. Браузера в проверках нет,
+   поэтому смотрим прямо в CSS.                                      */
+T.ok("у кружка календаря есть position:relative", (function () {
+  try { ObjC.import("Foundation");
+    var css = $.NSString.stringWithContentsOfFileEncodingError("Организатор.html", 4, null).js;
+    var m = /\.caltick\{[^}]*\}/.exec(css.replace(/\s+/g, ""));
+    return !!m && m[0].indexOf("position:relative") >= 0;
+  } catch (e) { return false; }
+})());
+
 T.done();
