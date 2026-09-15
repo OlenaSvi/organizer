@@ -726,9 +726,12 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 .suggrow .pickmark{width:14px;color:var(--good)}
 .suggname{flex:1;min-width:0;text-align:left;font-size:15px;font-weight:500;padding:2px 0}
 .suggname:hover{color:var(--accent)}
-.btn.take{padding:0 15px;height:32px;font-size:12.5px;border:0;background:var(--accent-soft);
-  color:var(--accent);border-radius:10px;flex:0 0 auto;font-weight:700}
-.btn.take:hover{background:var(--accent);color:#fff}
+/* Кнопки и метки не должны выглядеть одинаково: метка — мягкая
+   «таблетка» без рамки, кнопка — прямоугольник со скруглением, залитый
+   (главное действие) или с чёткой рамкой (второстепенное).          */
+.btn.take{padding:0 16px;height:34px;font-size:13px;border:0;background:var(--accent);
+  color:#fff;border-radius:9px;flex:0 0 auto;font-weight:700;box-shadow:0 1px 2px rgba(31,92,255,.25)}
+.btn.take:hover{filter:brightness(1.08)}
 .suggwhy{font-size:12.5px;color:var(--good);font-weight:600;white-space:nowrap;
   margin-left:auto;padding-left:10px;flex:0 0 auto}
 .suggdate{font-size:12.5px;color:var(--dim);white-space:nowrap;padding-left:10px;
@@ -852,10 +855,11 @@ h2{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
 /* Правило голоса: всё нажимаемое имеет форму (пилюля, фон), а голый
    текст — всегда только информация. Тихая кнопка «не сегодня» и дата
    рядом больше не близнецы.                                         */
-.linkbtn{font-size:12.5px;color:var(--chip-ink);font-weight:600;padding:6px 11px;
-  border-radius:999px;background:var(--soft);white-space:nowrap;transition:.15s}
-.linkbtn:hover{background:var(--accent-soft);color:var(--accent)}
-.linkbtn.danger:hover{background:var(--warm-soft);color:var(--warm)}
+.linkbtn{font-size:13px;color:var(--ink);font-weight:600;padding:0 12px;height:34px;
+  display:inline-flex;align-items:center;border-radius:9px;background:var(--panel);
+  border:1.5px solid var(--check);white-space:nowrap;transition:.15s}
+.linkbtn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.linkbtn.danger:hover{border-color:var(--warm);background:var(--warm-soft);color:var(--warm)}
 .linkbtn.soft{color:var(--chip-ink)}
 .linkbtn.soft:hover{background:var(--accent-soft);color:var(--accent)}
 /* Подложка обнимает только кнопки, а не тянется на всю ширину окна. */
@@ -1087,7 +1091,7 @@ button.ddday:hover{background:var(--bg)}
    они создаются приложением, поэтому создаются сразу на том языке, на
    котором приложение открыли впервые.                               */
 /* Версия — дата и время сборки; build.sh подставляет её вместо заглушки. */
-const VERSION = "2026-09-15 11:04";
+const VERSION = "2026-09-15 11:34";
 /* Куда уходят сообщения о проблемах. Письмо собирается готовым: адрес,
    версия, экран и язык уже на месте, человеку остаётся дописать, что
    случилось. Адрес — Елены, по её просьбе.                          */
