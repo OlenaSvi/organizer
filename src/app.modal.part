@@ -210,6 +210,7 @@ function openModal(html, key, close) {
   const now = host.querySelector ? host.querySelector(".modal") : null;
   if (now) now.scrollTop = keep;
   lastModalKey = key || null;
+  clampDropdowns();
 }
 
 /* ── Просмотр сделанного ─────────────────────────────────────────────
@@ -691,7 +692,7 @@ function whenFieldsHTML(it, dateId, timeId) {
   if (isRemind(it)) return `<p class="lbl">${tr("Когда")}</p>${ddDueHTML(it)}
     <p class="qs" style="margin:8px 0 0">${tr("Напоминание ничего не требует: придёт в свой день и просто скажет.")}</p>`;
   if (isAppt(it)) return `<p class="lbl">${tr("Дата и время")}</p>
-    <div style="display:flex;gap:8px;align-items:center">
+    <div class="whenrow" style="display:flex;gap:8px;align-items:center">
       <div style="flex:1;min-width:0">${ddDueHTML(it)}</div>
       ${ddTimeHTML(it)}
     </div>

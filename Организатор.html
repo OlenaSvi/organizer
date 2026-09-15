@@ -181,54 +181,6 @@ main.fit .todayhead{flex:none}
    когда их становится много.                                        */
 .panelscroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;
   padding:12px 22px 18px}
-/* ── Телефон ─────────────────────────────────────────────────────
-   Не «ужатый ноутбук», а своя раскладка: вкладки в нижней панели,
-   как у телефонных приложений; шапка в одну строку; «Добавить» —
-   круглая кнопка над панелью; окна — во весь экран; поля не меньше
-   16px, иначе Safari сам приближает страницу при вводе.            */
-.tabbar{display:none}
-@media (max-width:640px){
-  header{padding:8px 12px calc(8px);gap:8px;flex-wrap:nowrap}
-  header .tabs,header .headdate,header .spacer{display:none}
-  header .here{flex:1;min-width:0;font-size:13px}
-  header .here .hereBtn{max-width:100%}
-  header .inbox-pill{height:38px;padding:0 12px;font-size:13px}
-  header .gear{width:40px;height:40px;border-radius:11px}
-  .capture-btn{position:fixed;right:16px;bottom:calc(66px + env(safe-area-inset-bottom));
-    z-index:40;width:56px;height:56px;padding:0;border-radius:50%;font-size:28px;
-    font-weight:500;line-height:1;box-shadow:0 8px 24px rgba(31,92,255,.35);
-    overflow:hidden;text-indent:-9999px}
-  .capture-btn::after{content:"＋";text-indent:0;position:absolute;inset:0;
-    display:flex;align-items:center;justify-content:center}
-  .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;
-    background:var(--bg);border-top:1px solid var(--line);
-    padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
-  .tabbar button{flex:1;height:44px;border-radius:10px;font-size:12px;font-weight:600;
-    color:var(--chip-ink);padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .tabbar button.on{background:var(--accent-soft);color:var(--accent)}
-  body.gated .tabbar{display:none}
-  main{padding:14px 12px calc(96px + env(safe-area-inset-bottom))}
-  .tcol > .todayhead{padding:14px 16px 8px}
-  .tscroll{padding:10px 16px 16px}
-  .card{padding:12px 14px}
-  .tick{width:26px;height:26px}
-  .linkbtn{min-height:36px;padding:6px 8px}
-  .draghint{display:none}
-  /* Строка предложения: на узком экране кнопки не сжимают название,
-     а встают под ним.                                                */
-  .suggrow{flex-wrap:wrap;gap:8px}
-  .suggrow .suggmain{flex:1 1 100%}
-  .suggrow .btn.take{margin-left:0}
-  /* Окна — во весь экран, кнопки внизу всегда видны. */
-  .veil{padding:0;align-items:stretch}
-  .modal{width:100%;max-width:none;max-height:none;height:100%;border-radius:0;
-    padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
-  .modal input[type=text],.modal input[type=email],.modal input[type=password],
-  .modal textarea,.modal select,.allsearch,.gatecard input{font-size:16px}
-  .cfggrid{grid-template-columns:1fr}
-  .gatecard{padding:32px 22px 24px;border-radius:14px}
-  .mapstage{height:60vh}
-}
 @media (max-width:940px){
   main.fit{height:auto;overflow:visible;display:block;padding-bottom:90px}
   .tgrid{display:block}
@@ -1023,6 +975,77 @@ button.ddday:hover{background:var(--bg)}
 .suggmeta .suggwhy,.suggmeta .suggdate{margin-left:0;padding-left:2px}
 .apptempty{text-align:center;color:var(--dim);font-size:13px;padding:16px 8px;line-height:1.6}
 .apptempty b{display:block;font-size:14px;font-weight:600;color:var(--ink)}
+
+/* Телефонный блок стоит последним нарочно: он спорит с основными
+   правилами (ширина окна, шторка, галочки), и побеждать должен он. */
+/* ── Телефон ─────────────────────────────────────────────────────
+   Не «ужатый ноутбук», а своя раскладка: вкладки в нижней панели,
+   как у телефонных приложений; шапка в одну строку; «Добавить» —
+   круглая кнопка над панелью; окна — во весь экран; поля не меньше
+   16px, иначе Safari сам приближает страницу при вводе.            */
+.tabbar{display:none}
+@media (max-width:640px){
+  header{padding:8px 12px calc(8px);gap:8px;flex-wrap:nowrap}
+  header .tabs,header .headdate,header .spacer{display:none}
+  header .here{flex:1;min-width:0;font-size:13px}
+  header .here .hereBtn{max-width:100%}
+  header .inbox-pill{height:38px;padding:0 12px;font-size:13px}
+  header .gear{width:40px;height:40px;border-radius:11px}
+  .capture-btn{position:fixed;right:16px;bottom:calc(66px + env(safe-area-inset-bottom));
+    z-index:40;width:56px;height:56px;padding:0;border-radius:50%;font-size:28px;
+    font-weight:500;line-height:1;box-shadow:0 8px 24px rgba(31,92,255,.35);
+    overflow:hidden;text-indent:-9999px}
+  .capture-btn::after{content:"＋";text-indent:0;position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center}
+  .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;
+    background:var(--bg);border-top:1px solid var(--line);
+    padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+  .tabbar button{flex:1;height:44px;border-radius:10px;font-size:12px;font-weight:600;
+    color:var(--chip-ink);padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tabbar button.on{background:var(--accent-soft);color:var(--accent)}
+  body.gated .tabbar{display:none}
+  main{padding:14px 12px calc(96px + env(safe-area-inset-bottom))}
+  .tcol > .todayhead{padding:14px 16px 8px}
+  .tscroll{padding:10px 16px 16px}
+  .card{padding:12px 14px}
+  .tick{width:26px;height:26px}
+  .linkbtn{min-height:36px;padding:6px 8px}
+  .draghint{display:none}
+  /* Строка предложения: на узком экране кнопки не сжимают название,
+     а встают под ним.                                                */
+  .suggrow{flex-wrap:wrap;gap:8px}
+  .suggrow .suggmain{flex:1 1 100%}
+  .suggrow .btn.take{margin-left:0}
+  /* В форме три списка выбора в ряд: без минимальных ширин они
+     помещаются, с ними — вылезали за окно и обрезали сферы ниже.   */
+  .modal .ddbtn,.modal .ddbtn.wide,.cfgitem .ddbtn{min-width:0}
+  .dd{min-width:0;max-width:calc(100vw - 16px)}
+  /* Окна — «шторкой» снизу, как в телефонных приложениях: высота по
+     содержимому, длинная форма листается внутри, кнопки внизу видны. */
+  .veil{padding:0;align-items:flex-end}
+  .modal{width:100%;max-width:none;height:auto;max-height:calc(100vh - 28px);
+    border-radius:18px 18px 0 0;padding:18px 16px calc(16px + env(safe-area-inset-bottom))}
+  .modalfoot{flex-wrap:wrap;gap:8px}
+  .modalfoot .spacer{display:none}
+  .modalfoot .btn{flex:1 1 auto;min-height:44px}
+  .modalfoot .btn.link{flex:0 0 100%;text-align:left;padding-left:0}
+  /* Ряд «дата · час : мин» — дата во всю ширину, время под ней. */
+  .whenrow{flex-wrap:wrap}
+  .whenrow > div:first-child{flex:1 1 100%}
+  /* Строки списков: название во всю ширину, метки и срок — под ним. */
+  .dayrow,.allrow{flex-wrap:wrap;row-gap:6px}
+  .dayrow .suggname,.allrow .suggname{flex:1 1 calc(100% - 70px)}
+  .dayrow .tag,.allrow .tag,.allrow .suggdate{margin-left:0}
+  .allrow .suggdate{min-width:0;text-align:left;flex:0 0 100%;padding-left:60px}
+  .quad li{flex-wrap:wrap}
+  .quad li .qname{flex:1 1 calc(100% - 40px)}
+  .quad li .qdue{flex:0 0 100%;padding-left:25px;white-space:normal}
+  .modal input[type=text],.modal input[type=email],.modal input[type=password],
+  .modal textarea,.modal select,.allsearch,.gatecard input{font-size:16px}
+  .cfggrid{grid-template-columns:1fr}
+  .gatecard{padding:32px 22px 24px;border-radius:14px}
+  .mapstage{height:60vh}
+}
 </style>
 </head>
 <body>
@@ -1061,7 +1084,7 @@ button.ddday:hover{background:var(--bg)}
    они создаются приложением, поэтому создаются сразу на том языке, на
    котором приложение открыли впервые.                               */
 /* Версия — дата и время сборки; build.sh подставляет её вместо заглушки. */
-const VERSION = "2026-09-15 09:38";
+const VERSION = "2026-09-15 10:44";
 /* Куда уходят сообщения о проблемах. Письмо собирается готовым: адрес,
    версия, экран и язык уже на месте, человеку остаётся дописать, что
    случилось. Адрес — Елены, по её просьбе.                          */
@@ -4365,6 +4388,7 @@ function openModal(html, key, close) {
   const now = host.querySelector ? host.querySelector(".modal") : null;
   if (now) now.scrollTop = keep;
   lastModalKey = key || null;
+  clampDropdowns();
 }
 
 /* ── Просмотр сделанного ─────────────────────────────────────────────
@@ -4846,7 +4870,7 @@ function whenFieldsHTML(it, dateId, timeId) {
   if (isRemind(it)) return `<p class="lbl">${tr("Когда")}</p>${ddDueHTML(it)}
     <p class="qs" style="margin:8px 0 0">${tr("Напоминание ничего не требует: придёт в свой день и просто скажет.")}</p>`;
   if (isAppt(it)) return `<p class="lbl">${tr("Дата и время")}</p>
-    <div style="display:flex;gap:8px;align-items:center">
+    <div class="whenrow" style="display:flex;gap:8px;align-items:center">
       <div style="flex:1;min-width:0">${ddDueHTML(it)}</div>
       ${ddTimeHTML(it)}
     </div>
@@ -5625,6 +5649,22 @@ function saveView() {
   } catch (e) {}
 }
 
+/* Выпадающий список, открывшийся у края экрана, сдвигается внутрь:
+   на телефоне «Я сейчас» уезжал за левый край, минуты — за правый. */
+function clampDropdowns() {
+  if (typeof document === "undefined" || !document.querySelectorAll || typeof window === "undefined"
+      || !window.innerWidth) return;
+  document.querySelectorAll(".dd").forEach(dd => {
+    dd.style.transform = "";
+    const r = dd.getBoundingClientRect && dd.getBoundingClientRect();
+    if (!r || !r.width) return;
+    const pad = 8, vw = window.innerWidth;
+    let dx = 0;
+    if (r.right > vw - pad) dx = vw - pad - r.right;
+    if (r.left + dx < pad) dx = pad - r.left;
+    if (dx) dd.style.transform = "translateX(" + Math.round(dx) + "px)";
+  });
+}
 function render() {
   normalizeItems();
   /* Разворот карты живёт только пока карта на экране. Снимаем его здесь,
@@ -5652,6 +5692,7 @@ function render() {
   if (!wantFocus && y && typeof window !== "undefined" && window.scrollTo) window.scrollTo(0, y);
   if (!wantFocus && colY.length && view.querySelectorAll)
     Array.from(view.querySelectorAll(".tcol")).forEach((c, k) => { if (colY[k]) c.scrollTop = colY[k]; });
+  clampDropdowns();
 }
 
 document.getElementById("capBtn").dataset.act = "cap";

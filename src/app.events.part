@@ -541,6 +541,22 @@ function saveView() {
   } catch (e) {}
 }
 
+/* Выпадающий список, открывшийся у края экрана, сдвигается внутрь:
+   на телефоне «Я сейчас» уезжал за левый край, минуты — за правый. */
+function clampDropdowns() {
+  if (typeof document === "undefined" || !document.querySelectorAll || typeof window === "undefined"
+      || !window.innerWidth) return;
+  document.querySelectorAll(".dd").forEach(dd => {
+    dd.style.transform = "";
+    const r = dd.getBoundingClientRect && dd.getBoundingClientRect();
+    if (!r || !r.width) return;
+    const pad = 8, vw = window.innerWidth;
+    let dx = 0;
+    if (r.right > vw - pad) dx = vw - pad - r.right;
+    if (r.left + dx < pad) dx = pad - r.left;
+    if (dx) dd.style.transform = "translateX(" + Math.round(dx) + "px)";
+  });
+}
 function render() {
   normalizeItems();
   /* Разворот карты живёт только пока карта на экране. Снимаем его здесь,
@@ -568,6 +584,7 @@ function render() {
   if (!wantFocus && y && typeof window !== "undefined" && window.scrollTo) window.scrollTo(0, y);
   if (!wantFocus && colY.length && view.querySelectorAll)
     Array.from(view.querySelectorAll(".tcol")).forEach((c, k) => { if (colY[k]) c.scrollTop = colY[k]; });
+  clampDropdowns();
 }
 
 document.getElementById("capBtn").dataset.act = "cap";
