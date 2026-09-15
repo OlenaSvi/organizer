@@ -103,7 +103,7 @@ body.gated .capture-btn,body.gated .inbox-pill{display:none}
 body.gated header{display:none}
 /* Экран входа: карточка на цветном фоне, как у классических форм входа. */
 body.gated{background:var(--accent)}
-.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px;background:var(--accent)}
+.gate{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:32px 16px;background:var(--accent)}
 .gatecard{width:100%;max-width:460px;background:#fff;color:#10214a;border-radius:16px;
   padding:40px 44px 30px;box-shadow:0 20px 50px rgba(0,0,0,.18)}
 .gatecard h1{margin:0 0 26px;text-align:center;font-size:32px;font-weight:400;letter-spacing:0}
@@ -1022,8 +1022,11 @@ button.ddday:hover{background:var(--bg)}
   .dd{min-width:0;max-width:calc(100vw - 16px)}
   /* Окна — «шторкой» снизу, как в телефонных приложениях: высота по
      содержимому, длинная форма листается внутри, кнопки внизу видны. */
-  .veil{padding:0;align-items:flex-end}
-  .modal{width:100%;max-width:none;height:auto;max-height:calc(100vh - 28px);
+  /* 100vh в Safari на iPhone — высота вместе с адресной строкой, и
+     шторка, прижатая к низу, уезжала верхом под неё. 100dvh — высота
+     того, что видно на самом деле; строка с vh остаётся запасной.    */
+  .veil{padding:0;align-items:flex-end;height:100vh;height:100dvh}
+  .modal{width:100%;max-width:none;height:auto;max-height:calc(100vh - 28px);max-height:calc(100dvh - 28px);
     border-radius:18px 18px 0 0;padding:18px 16px calc(16px + env(safe-area-inset-bottom))}
   .modalfoot{flex-wrap:wrap;gap:8px}
   .modalfoot .spacer{display:none}
@@ -1084,7 +1087,7 @@ button.ddday:hover{background:var(--bg)}
    они создаются приложением, поэтому создаются сразу на том языке, на
    котором приложение открыли впервые.                               */
 /* Версия — дата и время сборки; build.sh подставляет её вместо заглушки. */
-const VERSION = "2026-09-15 10:44";
+const VERSION = "2026-09-15 11:04";
 /* Куда уходят сообщения о проблемах. Письмо собирается готовым: адрес,
    версия, экран и язык уже на месте, человеку остаётся дописать, что
    случилось. Адрес — Елены, по её просьбе.                          */
