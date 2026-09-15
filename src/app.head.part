@@ -2,7 +2,13 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Организатор">
+<meta name="theme-color" content="#1f5cff">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
 <title>Организатор</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -175,6 +181,49 @@ main.fit .todayhead{flex:none}
    когда их становится много.                                        */
 .panelscroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;
   padding:12px 22px 18px}
+/* ── Телефон ─────────────────────────────────────────────────────
+   Не «ужатый ноутбук», а своя раскладка: вкладки в нижней панели,
+   как у телефонных приложений; шапка в одну строку; «Добавить» —
+   круглая кнопка над панелью; окна — во весь экран; поля не меньше
+   16px, иначе Safari сам приближает страницу при вводе.            */
+.tabbar{display:none}
+@media (max-width:640px){
+  header{padding:8px 12px calc(8px);gap:8px;flex-wrap:nowrap}
+  header .tabs,header .headdate,header .spacer{display:none}
+  header .here{flex:1;min-width:0;font-size:13px}
+  header .here .hereBtn{max-width:100%}
+  header .inbox-pill{height:38px;padding:0 12px;font-size:13px}
+  header .gear{width:40px;height:40px;border-radius:11px}
+  .capture-btn{position:fixed;right:16px;bottom:calc(66px + env(safe-area-inset-bottom));
+    z-index:40;width:56px;height:56px;padding:0;border-radius:50%;font-size:28px;
+    font-weight:500;line-height:1;box-shadow:0 8px 24px rgba(31,92,255,.35);
+    overflow:hidden;text-indent:-9999px}
+  .capture-btn::after{content:"＋";text-indent:0;position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center}
+  .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;
+    background:var(--bg);border-top:1px solid var(--line);
+    padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+  .tabbar button{flex:1;height:44px;border-radius:10px;font-size:12px;font-weight:600;
+    color:var(--chip-ink);padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tabbar button.on{background:var(--accent-soft);color:var(--accent)}
+  body.gated .tabbar{display:none}
+  main{padding:14px 12px calc(96px + env(safe-area-inset-bottom))}
+  .tcol > .todayhead{padding:14px 16px 8px}
+  .tscroll{padding:10px 16px 16px}
+  .card{padding:12px 14px}
+  .tick{width:26px;height:26px}
+  .linkbtn{min-height:36px;padding:6px 8px}
+  .draghint{display:none}
+  /* Окна — во весь экран, кнопки внизу всегда видны. */
+  .veil{padding:0;align-items:stretch}
+  .modal{width:100%;max-width:none;max-height:none;height:100%;border-radius:0;
+    padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+  .modal input[type=text],.modal input[type=email],.modal input[type=password],
+  .modal textarea,.modal select,.allsearch,.gatecard input{font-size:16px}
+  .cfggrid{grid-template-columns:1fr}
+  .gatecard{padding:32px 22px 24px;border-radius:14px}
+  .mapstage{height:60vh}
+}
 @media (max-width:940px){
   main.fit{height:auto;overflow:visible;display:block;padding-bottom:90px}
   .tgrid{display:block}
@@ -985,6 +1034,7 @@ button.ddday:hover{background:var(--bg)}
   <button class="gear" id="gearBtn" title="Настройки"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="4.6"></circle><circle cx="8" cy="8" r="1.6"></circle><path d="M8 3.4V1.6M8 12.6v1.8M3.4 8H1.6M12.6 8h1.8M4.75 4.75 3.47 3.47M11.25 11.25l1.28 1.28M11.25 4.75l1.28-1.28M4.75 11.25l-1.28 1.28"></path></svg></button>
   <button class="capture-btn" id="capBtn">＋ Добавить</button>
 </header>
+<nav class="tabbar" id="tabbar"></nav>
 <main id="view"></main>
 <div id="modalHost"></div>
 <div id="cheerHost"></div>

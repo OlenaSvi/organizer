@@ -494,9 +494,12 @@ function renderChrome() {
   ["tabs", "hereBox", "headDate", "capBtn", "gearBtn", "inboxBtn", "hereLabel"].forEach(id => {
     const el = document.getElementById(id); if (el) el.hidden = gated; });
   if (document.body && document.body.classList) document.body.classList[gated ? "add" : "remove"]("gated");
-  if (gated) { document.getElementById("tabs").innerHTML = ""; return; }
-  document.getElementById("tabs").innerHTML = Object.keys(TABS).map(k =>
+  const tabbar = document.getElementById("tabbar");
+  if (gated) { document.getElementById("tabs").innerHTML = ""; if (tabbar) tabbar.innerHTML = ""; return; }
+  const tabsHTML = Object.keys(TABS).map(k =>
     `<button data-act="tab" data-t="${k}" class="${TAB === k ? "on" : ""}">${tr(TABS[k])}</button>`).join("");
+  document.getElementById("tabs").innerHTML = tabsHTML;
+  if (tabbar) tabbar.innerHTML = tabsHTML;   // нижняя панель на телефоне
   const hb = document.getElementById("hereBox");
   const cnt = p => live().filter(i => i.place === p).length;
   hb.innerHTML = `<span class="ddwrap" data-ddwrap>

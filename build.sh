@@ -27,8 +27,4 @@ if [ "$RES" != "ok" ]; then
   exit 1
 fi
 
-# Копия для публикации по адресу: GitHub Pages отдаёт папку docs/,
-# а главную страницу ищет под именем index.html.
-mkdir -p docs && cp "$OUT" docs/index.html
-
 echo "✅ собрано: $OUT ($(wc -c < "$OUT" | tr -d ' ') байт), синтаксис чист"
