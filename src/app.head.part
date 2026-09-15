@@ -214,6 +214,11 @@ main.fit .todayhead{flex:none}
   .tick{width:26px;height:26px}
   .linkbtn{min-height:36px;padding:6px 8px}
   .draghint{display:none}
+  /* Строка предложения: на узком экране кнопки не сжимают название,
+     а встают под ним.                                                */
+  .suggrow{flex-wrap:wrap;gap:8px}
+  .suggrow .suggmain{flex:1 1 100%}
+  .suggrow .btn.take{margin-left:0}
   /* Окна — во весь экран, кнопки внизу всегда видны. */
   .veil{padding:0;align-items:stretch}
   .modal{width:100%;max-width:none;max-height:none;height:100%;border-radius:0;
