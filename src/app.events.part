@@ -224,6 +224,12 @@ document.addEventListener("click", e => {
     case "eplace":  if (it) { it.place = (v === "—" ? null : v); save(); refreshEdit(id); } break;
     case "eperson": if (it) { it.person = (v === "—" ? null : v); save(); refreshEdit(id); } break;
     case "step":    if (it) { const s = it.steps[+el.dataset.i]; s.done = !s.done;
+                      s.doneAt = s.done ? today() : null;
+                      /* Все шаги закрыты — дело сделано, как и галочкой на
+                         «Сегодня». Открыли шаг обратно — дело снова живое. */
+                      const left = it.steps.some(x => !x.done);
+                      if (!left && it.steps.length) { it.done = true; it.doneAt = today(); }
+                      else if (left && it.done && it.multi) { it.done = false; it.doneAt = null; }
                       save(); refreshEdit(id); } break;
     case "equad":   if (it) { it.forceImp = el.dataset.q === "imp";
                       save(); refreshEdit(id); } break;

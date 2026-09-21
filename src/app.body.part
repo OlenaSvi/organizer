@@ -507,6 +507,14 @@ function normalizeItems() {
     /* Встречу нельзя «сделать» — она либо состоялась, либо нет.
        Наутро после даты она сама уходит в архив своим днём. Если не
        состоялась — «вернуть» и поменять дату.                       */
+    /* Дело со всеми закрытыми шагами — сделанное: раньше шаг, закрытый
+       в окне правки, не закрывал дело, и оно жило «живым», всплывая
+       в подсказке о повторе. Дата — день последнего шага.          */
+    if (!i.done && i.multi && Array.isArray(i.steps) && i.steps.length && i.steps.every(s => s.done)) {
+      i.done = true;
+      i.doneAt = i.steps.map(s => s.doneAt).filter(Boolean).sort().pop() || today();
+      touched = true;
+    }
     if (!i.done && isAppt(i) && i.due && i.due < today() && i.autoDone !== i.due) {
       i.done = true; i.doneAt = i.due; i.autoDone = i.due; touched = true;
     }
