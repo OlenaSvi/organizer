@@ -7,15 +7,20 @@ const AXES = { sphere: "по сферам", place: "по местам", person: 
                type: "по «что это»" };
 const NOPLACE = "без места";
 
+/* Дело без человека — моё: ветка «Я» (или «Me»). Если себя в
+   справочнике нет, такие дела собирает отдельная ветка «без человека»,
+   а не первый попавшийся человек из списка.                        */
+const NOPERSON = "без человека";
+const selfPerson = () => S.people.find(isSelf) || null;
 const axisValues = a => a === "place" ? S.places.concat([NOPLACE])
-  : a === "person" ? S.people
+  : a === "person" ? (selfPerson() ? S.people : S.people.concat([NOPERSON]))
   : a === "type" ? S.types.map(t => t.key) : S.spheres;
 /* Ветка вида хранится ключом, а показывается именем — имена в «Что это»
    переименовываются, и подписи на карте следуют за ними сами.        */
 const axisLabel = v => AXIS === "type"
   ? typeLabel(S.types.find(t => t.key === v) || { name: v, key: v }) : tr(v);
 const inAxis = (it, v) => AXIS === "place" ? (it.place || NOPLACE) === v
-  : AXIS === "person" ? (it.person || S.people[0]) === v   // без пометки — значит моё
+  : AXIS === "person" ? (it.person || selfPerson() || NOPERSON) === v   // без пометки — значит моё
   : AXIS === "type" ? typeDef(it.type).key === v   // с запасом: битый вид падает на первый
   : (it.spheres || []).indexOf(v) >= 0;      // на оси сфер дело бывает в нескольких
 /* Дело без сферы на осях мест и людей видно как любое другое: место и
@@ -59,7 +64,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function renderMap() {
   /* Пустые ветки тоже видны — чтобы было куда положить первое дело.
      Прячется только пустое «без места»: это не ветка, а остаток.    */
-  const vals = axisValues(AXIS).filter(v => v !== NOPLACE || itemsIn(v).length);
+  const vals = axisValues(AXIS).filter(v => (v !== NOPLACE && v !== NOPERSON) || itemsIn(v).length);
 
   /* Дерево влево-вправо, а не круг. Круг упирался в себя: десять дел в
      ветке раздвигали соседей по окружности, и карта расползалась вширь.

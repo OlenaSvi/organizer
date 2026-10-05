@@ -226,7 +226,7 @@ const EN = {
 
   /* ── карта ─────────────────────────────────────────────────── */
   "Карта": "Map", "по сферам": "by area", "по местам": "by place",
-  "по людям": "by person", "по «что это»": "by kind", "без места": "no place",
+  "по людям": "by person", "по «что это»": "by kind", "без места": "no place", "без человека": "nobody",
   "Здесь ничего не теряется. Раскрытые ветки такими и остаются — можно раскрыть все сразу и увидеть картину целиком.":
     "Nothing gets lost here. Branches you open stay open — you can open them all and see the whole picture.",
   "раскрыть все": "open all", "свернуть все": "close all",

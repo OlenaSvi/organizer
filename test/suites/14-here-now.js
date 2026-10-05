@@ -80,4 +80,23 @@ T.ok("сделанное в другой стране видно",
 ALLFILTER = "all"; S.hereNow = null;
 T.reset();
 
+T.head("КАРТА ПО ЛЮДЯМ: ДЕЛО БЕЗ ЧЕЛОВЕКА — МОЁ, А НЕ ПЕРВОГО В СПИСКЕ");
+/* Без пометки — значит моё. Раньше такие дела уходили к первому
+   человеку в справочнике, и если первой стояла «Мама», её ветка
+   собирала чужое: витамины, цветы, инвестиции.                      */
+var keepPeople = S.people.slice();
+S.people = ["Мама", "Я", "Йони"];
+var noOne = T.tasks().find(function (i) { return !i.person; }) || T.tasks()[0];
+var savedPerson = noOne.person; noOne.person = null;
+AXIS = "person";
+T.ok("дело без человека — в ветке «Я»", itemsIn("Я").indexOf(noOne) >= 0);
+T.ok("и не в ветке «Мама»", itemsIn("Мама").indexOf(noOne) < 0);
+S.people = ["Мама", "Йони"];
+T.ok("если «Я» в справочнике нет — дело в ветке «без человека»",
+  axisValues("person").indexOf(NOPERSON) >= 0 && itemsIn(NOPERSON).indexOf(noOne) >= 0
+  && itemsIn("Мама").indexOf(noOne) < 0);
+S.people = ["Me", "Mama"];
+T.ok("английское «Me» — тоже я", itemsIn("Me").indexOf(noOne) >= 0);
+noOne.person = savedPerson; S.people = keepPeople; AXIS = "sphere";
+
 T.done();
